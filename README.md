@@ -1,7 +1,7 @@
 # RVTools Excel Merger
 
-[![.NET Build and Test](https://github.com/sborenne/RVToolsMerge/actions/workflows/dotnet.yml/badge.svg)](https://github.com/sborenne/RVToolsMerge/actions/workflows/dotnet.yml)
-[![CodeQL](https://github.com/sborenne/RVToolsMerge/actions/workflows/codeql.yml/badge.svg)](https://github.com/sborenne/RVToolsMerge/actions/workflows/codeql.yml)
+[![.NET Build and Test](https://github.com/sbroenne/RVToolsMerge/actions/workflows/dotnet.yml/badge.svg)](https://github.com/sbroenne/RvToolsMerge/actions/workflows/dotnet.yml)
+[![CodeQL](https://github.com/sbroenne/RVToolsMerge/actions/workflows/codeql.yml/badge.svg)](https://github.com/sbroenne/RVToolsMerge/actions/workflows/codeql.yml)
 [![GitHub Advanced Security](https://img.shields.io/badge/GitHub%20Advanced%20Security-enabled-brightgreen)](SECURITY.md)
 
 A .NET console application that merges multiple RVTools Excel files into a single consolidated file. This tool helps combine multiple RVTools exports for consolidated reporting and analysis. It also allows anonymization of key columns (e.g. VM names)
@@ -29,14 +29,14 @@ A .NET console application that merges multiple RVTools Excel files into a singl
 ## Installation
 
 ### Option 1: Download the latest release (Recommended)
-1. Go to the [Releases](https://github.com/sborenne/RVToolsMerge/releases) page
+1. Go to the [Releases](https://github.com/sbroenne/RVToolsMerge/releases) page
 2. Download the latest `RVToolsMerge.zip` file
 3. Extract the contents to a folder of your choice
 
 ### Option 2: Build from source
 1. Clone the repository
    ```
-   git clone https://github.com/sborenne/RVToolsMerge.git
+   git clone https://github.com/sbroenne/RVToolsMerge.git
    ```
 2. Navigate to the project directory
    ```
@@ -125,7 +125,7 @@ When using the `-i` option, files that don't contain the required sheets will be
 Clone the repository and build the solution:
 
 ```
-git clone https://github.com/sborenne/RVToolsMerge.git
+git clone https://github.com/sbroenne/RVToolsMerge.git
 cd RVToolsMerge
 dotnet build
 ```

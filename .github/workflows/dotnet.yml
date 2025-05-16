@@ -3,8 +3,27 @@ name: .NET Build and Test
 on:
   push:
     branches: [ "main" ]
+    paths:
+      - '**/*.cs'
+      - '**/*.csproj'
+      - '**/*.sln'
+      - '.editorconfig'
+      - 'global.json'
+      - 'Directory.Build.props'
+      - '.github/workflows/build.yml'
+      - '.github/workflows/dotnet.yml'
   pull_request:
     branches: [ "main" ]
+    paths:
+      - '**/*.cs'
+      - '**/*.csproj'
+      - '**/*.sln'
+      - '.editorconfig'
+      - 'global.json'
+      - 'Directory.Build.props'
+      - '.github/workflows/build.yml'
+      - '.github/workflows/dotnet.yml'
+  workflow_dispatch:  # Allow manual triggering regardless of file changes
 
 jobs:
   build-debug:
