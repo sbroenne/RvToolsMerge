@@ -102,7 +102,6 @@ This project uses GitHub Actions for CI/CD:
 | [secret-scanning.yml](/.github/workflows/secret-scanning.yml) | Identifies committed secrets and credentials |
 | [nuget-vulnerability-scan.yml](/.github/workflows/nuget-vulnerability-scan.yml) | Checks for vulnerable NuGet packages |
 | [generate-sbom.yml](/.github/workflows/generate-sbom.yml) | Creates Software Bill of Materials for releases |
-| [license-compliance.yml](/.github/workflows/license-compliance.yml) | Monitors open source license compliance |
 | [labeler.yml](/.github/workflows/labeler.yml) | Automatic labeling of PRs based on files changed |
 | [stale.yml](/.github/workflows/stale.yml) | Marks and closes stale issues and PRs |
 
@@ -123,7 +122,6 @@ This project uses GitHub Actions for CI/CD:
 | Secret Scanning | ✅ Enabled |
 | Dependabot Alerts | ✅ Enabled |
 | SBOM Generation | ✅ Enabled |
-| License Compliance | ✅ Enabled |
 | Security Policy | ✅ [View Policy](SECURITY.md) |
 
 ### Security Features
@@ -135,7 +133,6 @@ This repository is configured with GitHub Advanced Security features:
 - **Secret Scanning**: Prevents accidental commit of secrets
 - **Dependabot Security Updates**: Automatically creates pull requests for security vulnerabilities
 - **Software Bill of Materials (SBOM)**: Generated for each release to track components
-- **License Compliance**: Monitors open source license compliance
 - **NuGet Vulnerability Scanning**: Regularly checks for vulnerable packages
 
 To report a security vulnerability, please see our [Security Policy](SECURITY.md).

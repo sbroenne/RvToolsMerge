@@ -4,7 +4,7 @@
 [![CodeQL](https://github.com/Ysbroenne/RVToolsMerge/actions/workflows/codeql.yml/badge.svg)](https://github.com/Ysbroenne/RVToolsMerge/actions/workflows/codeql.yml)
 [![GitHub Advanced Security](https://img.shields.io/badge/GitHub%20Advanced%20Security-enabled-brightgreen)](SECURITY.md)
 
-A .NET console application that merges multiple RVTools Excel files into a single consolidated file. This tool helps combine multiple RVTools exports for consolidated reporting and analysis. It also also allow anonymization of key columns (e.g. VM names)
+A .NET console application that merges multiple RVTools Excel files into a single consolidated file. This tool helps combine multiple RVTools exports for consolidated reporting and analysis. It also allows anonymization of key columns (e.g. VM names)
 
 ## Features
 
@@ -151,7 +151,6 @@ This project uses GitHub Actions for continuous integration and delivery:
 | Dependency Review | Reviews dependency changes in pull requests |
 | NuGet Vulnerability Scan | Checks for vulnerable NuGet packages |
 | SBOM Generation | Creates Software Bill of Materials for releases |
-| License Compliance | Monitors open source license compliance |
 | Auto Labeler | Automatic labeling of PRs based on files changed |
 | Stale Management | Marks and closes stale issues and PRs |
 
