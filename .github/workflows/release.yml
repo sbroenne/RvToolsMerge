@@ -32,6 +32,9 @@ jobs:
         name: RVToolsMerge-Release
         path: ./RVToolsMerge
     
+    - name: Zip release
+      run: Compress-Archive -Path ./RVToolsMerge/* -DestinationPath ./RVToolsMerge.zip
+    
     - name: Extract version
       id: get_version
       shell: pwsh
@@ -48,7 +51,7 @@ jobs:
       with:
         tag_name: ${{ steps.get_version.outputs.VERSION }}
         name: Release ${{ steps.get_version.outputs.VERSION }}
-        files: './RVToolsMerge/**'
+        files: ./RVToolsMerge.zip
         draft: false
         prerelease: false
         generate_release_notes: true
