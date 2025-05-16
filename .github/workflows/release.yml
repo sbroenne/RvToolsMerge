@@ -4,6 +4,12 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (vX.Y.Z format)'
+        required: true
+        default: 'v1.0.0'
 
 jobs:
   build:
@@ -14,36 +20,35 @@ jobs:
   create-release:
     needs: build
     runs-on: windows-latest
-    
+    permissions:
+      contents: write
+      
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     
     - name: Download build artifacts
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: RVToolsMerge-Release
         path: ./RVToolsMerge
-        
-    - name: Zip release
-      run: Compress-Archive -Path ./RVToolsMerge/* -DestinationPath ./RVToolsMerge.zip
+    
+    - name: Extract version
+      id: get_version
+      shell: pwsh
+      run: |
+        $version = "${{ github.event.inputs.version }}"
+        if ("${{ github.event_name }}" -eq "push") {
+          $version = "${{ github.ref }}".Replace('refs/tags/', '')
+        }
+        echo "VERSION=$version" >> $env:GITHUB_OUTPUT
       
     - name: Create Release
       id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      uses: softprops/action-gh-release@v1
       with:
-        tag_name: ${{ github.ref }}
-        release_name: Release ${{ github.ref }}
+        tag_name: ${{ steps.get_version.outputs.VERSION }}
+        name: Release ${{ steps.get_version.outputs.VERSION }}
+        files: './RVToolsMerge/**'
         draft: false
         prerelease: false
-        
-    - name: Upload Release Asset
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./RVToolsMerge.zip
-        asset_name: RVToolsMerge.zip
-        asset_content_type: application/zip
+        generate_release_notes: true
