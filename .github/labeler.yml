@@ -1,0 +1,23 @@
+documentation:
+  - 'README*.md'
+  - 'docs/**/*'
+
+dependencies:
+  - 'RVToolsMerge.csproj'
+  - 'global.json'
+  - 'Directory.Build.props'
+  - any: ['.github/dependabot.yml']
+
+ci-cd:
+  - '.github/workflows/**'
+
+tests:
+  - 'tests/**/*'
+
+configuration:
+  - 'Properties/**/*'
+  - '.vscode/**'
+  - '.editorconfig'
+  
+core:
+  - 'Program.cs'

@@ -1,0 +1,48 @@
+name: Pull Request Validation
+
+on:
+  pull_request:
+    branches: [ "main" ]
+    types: [opened, synchronize, reopened]
+
+jobs:
+  validate:
+    runs-on: windows-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: 9.0.x
+    
+    - name: Restore dependencies
+      run: dotnet restore
+    
+    - name: Check formatting
+      run: |
+        dotnet format --verify-no-changes --verbosity diagnostic || (echo "::error::Code formatting issues found. Please run 'dotnet format' and commit the changes." && exit 1)
+    
+    - name: Check file size
+      shell: pwsh
+      run: |
+        $largeFiles = Get-ChildItem -Path . -Recurse -File | Where-Object { $_.Length -gt 5MB -and $_.Extension -ne ".xlsx" }
+        if ($largeFiles) {
+          Write-Output "::error::Large files detected (>5MB):"
+          $largeFiles | ForEach-Object { Write-Output "::error::$($_.FullName) - $([math]::Round($_.Length / 1MB, 2)) MB" }
+          exit 1
+        }
+    
+    - name: Check commit messages
+      shell: pwsh
+      run: |
+        $commits = git log --pretty=format:"%s" origin/${{ github.base_ref }}..HEAD
+        foreach ($commit in $commits) {
+          if ($commit.Length -lt 10) {
+            Write-Output "::error::Commit message too short: '$commit'. Please use descriptive commit messages (at least 10 characters)."
+            exit 1
+          }
+        }

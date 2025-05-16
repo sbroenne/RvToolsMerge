@@ -1,0 +1,13 @@
+# These owners will be the default owners for everything in the repo.
+# Unless a later match takes precedence, they will be requested for
+# review when someone opens a pull request.
+*       @sbroenne
+
+# Order is important; the last matching pattern takes the most precedence.
+# When someone opens a pull request that only modifies certain file types,
+# only the owners of those file types will be requested for a review.
+
+# Examples:
+# *.cs    @dotnet-codeowners
+# *.yml   @devops-team
+# /docs/  @documentation-team

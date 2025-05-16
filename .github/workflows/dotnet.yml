@@ -1,0 +1,19 @@
+name: .NET Build and Test
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-debug:
+    uses: ./.github/workflows/build.yml
+    with:
+      configuration: 'Debug'
+
+  build-release:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/build.yml
+    with:
+      configuration: 'Release'

@@ -1,0 +1,42 @@
+name: Build Workflow
+
+on:
+  workflow_call:
+    inputs:
+      configuration:
+        required: false
+        type: string
+        default: 'Debug'
+        description: 'Build configuration (Debug/Release)'
+
+jobs:
+  build:
+    runs-on: windows-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: 9.0.x
+        
+    - name: Restore dependencies
+      run: dotnet restore
+      
+    - name: Build
+      run: dotnet build --configuration ${{ inputs.configuration }} --no-restore
+      
+    - name: Test
+      run: dotnet test --configuration ${{ inputs.configuration }} --no-build --verbosity normal
+      
+    - name: Publish
+      if: ${{ inputs.configuration == 'Release' }}
+      run: dotnet publish -c ${{ inputs.configuration }} -r win-x64 --self-contained true -p:PublishSingleFile=true
+      
+    - name: Upload build artifacts
+      if: ${{ inputs.configuration == 'Release' }}
+      uses: actions/upload-artifact@v3
+      with:
+        name: RVToolsMerge-${{ inputs.configuration }}
+        path: bin/${{ inputs.configuration }}/net9.0/win-x64/publish/

@@ -1,0 +1,41 @@
+version: 2
+updates:
+  # Maintain dependencies for GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "ci-cd"
+    commit-message:
+      prefix: "ci"
+      include: "scope"
+    # Apply security fixes automatically
+    auto-merge: true
+    vulnerability-alerts: true
+
+  # Maintain dependencies for NuGet
+  - package-ecosystem: "nuget"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "security"
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+    # Apply security updates with higher priority
+    groups:
+      security-updates:
+        patterns:
+          - "*"
+        dependency-type: development
+        update-types:
+          - "patch"
+    # Apply security fixes automatically
+    auto-merge: true
+    vulnerability-alerts: true

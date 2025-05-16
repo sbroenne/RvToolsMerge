@@ -1,0 +1,64 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "RVToolsMerge",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/bin/Debug/net9.0/win-x64/RVToolsMerge.exe",
+      "args": [
+        "${workspaceFolder}/input",
+        "${workspaceFolder}/RVTools_merged.xlsx"
+      ],
+      "cwd": "${workspaceFolder}",
+      "console": "internalConsole",
+      "stopAtEntry": false
+    },
+    {
+      "name": "RVToolsMerge (Ignore Missing Optional Sheets)",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/bin/Debug/net9.0/win-x64/RVToolsMerge.exe",
+      "args": [
+        "--ignore-missing-optional-sheets",
+        "${workspaceFolder}/input",
+        "${workspaceFolder}/RVTools_merged.xlsx"
+      ],
+      "cwd": "${workspaceFolder}",
+      "console": "internalConsole",
+      "stopAtEntry": false
+    },
+    {
+      "name": "RVToolsMerge (Skip Invalid Files)",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/bin/Debug/net9.0/win-x64/RVToolsMerge.exe",
+      "args": [
+        "--skip-invalid-files",
+        "${workspaceFolder}/input",
+        "${workspaceFolder}/RVTools_merged.xlsx"
+      ],
+      "cwd": "${workspaceFolder}",
+      "console": "internalConsole",
+      "stopAtEntry": false
+    },
+    {
+      "name": "RVToolsMerge (Anonymize All)",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/bin/Debug/net9.0/win-x64/RVToolsMerge.exe",
+      "args": [
+        "-a",
+        "${workspaceFolder}/input",
+        "${workspaceFolder}/RVTools_anonymized.xlsx"
+      ],
+      "cwd": "${workspaceFolder}",
+      "console": "internalConsole",
+      "stopAtEntry": false
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{  "profiles": {    "RVToolsMerge": {
+      "commandName": "Project",
+      "commandLineArgs": "\"$(ProjectDir)input\" \"$(ProjectDir)RVTools_merged.xlsx\"",
+      "workingDirectory": "$(ProjectDir)"
+    },    "RVToolsMerge (Ignore Missing Optional Sheets)": {
+      "commandName": "Project",
+      "commandLineArgs": "--ignore-missing-optional-sheets \"$(ProjectDir)input\" \"$(ProjectDir)RVTools_merged.xlsx\"",
+      "workingDirectory": "$(ProjectDir)"
+    },    "RVToolsMerge (Skip Invalid Files)": {
+      "commandName": "Project",
+      "commandLineArgs": "--skip-invalid-files \"$(ProjectDir)input\" \"$(ProjectDir)RVTools_merged.xlsx\"",
+      "workingDirectory": "$(ProjectDir)"
+    },    "RVToolsMerge (Anonymize All)": {
+      "commandName": "Project",
+      "commandLineArgs": "-a \"$(ProjectDir)input\" \"$(ProjectDir)RVTools_anonymized.xlsx\"",
+      "workingDirectory": "$(ProjectDir)"
+    },
+  }
+}

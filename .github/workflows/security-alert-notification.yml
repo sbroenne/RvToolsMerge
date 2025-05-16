@@ -1,0 +1,36 @@
+name: Security Alert Notification
+
+on:
+  workflow_run:
+    workflows: 
+      - "CodeQL"
+      - "Vulnerability Scan"
+      - "Dependency Review"
+      - "Secret Scanning Push Protection"
+      - "NuGet Vulnerability Scan"
+      - "License Compliance"
+    types:
+      - completed
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'failure'
+    
+    steps:
+      - name: Get workflow details
+        run: |
+          echo "Workflow: ${{ github.event.workflow_run.name }}"
+          echo "Status: ${{ github.event.workflow_run.conclusion }}"
+          echo "URL: ${{ github.event.workflow_run.html_url }}"
+      
+      # Uncomment and configure this to send notifications to your security team
+      # - name: Send notification
+      #   uses: rtCamp/action-slack-notify@v2
+      #   env:
+      #     SLACK_WEBHOOK: ${{ secrets.SECURITY_ALERT_WEBHOOK }}
+      #     SLACK_CHANNEL: security-alerts
+      #     SLACK_COLOR: danger
+      #     SLACK_TITLE: "Security Alert: ${{ github.event.workflow_run.name }}"
+      #     SLACK_MESSAGE: "A security workflow has failed. Please check ${{ github.event.workflow_run.html_url }} for details."
+      #     SLACK_FOOTER: "RVToolsMerge Security Monitoring"

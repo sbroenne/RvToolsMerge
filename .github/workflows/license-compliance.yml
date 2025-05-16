@@ -1,0 +1,56 @@
+name: License Compliance
+
+on:
+  push:
+    paths:
+      - '**/*.csproj'
+      - '**/*.sln'
+      - '**/global.json'
+      - '**/packages.config'
+      - '**/packages.lock.json'
+  pull_request:
+    paths:
+      - '**/*.csproj'
+      - '**/*.sln'
+      - '**/global.json'
+      - '**/packages.config'
+      - '**/packages.lock.json'
+  workflow_dispatch:  # Allow manual triggering
+
+jobs:
+  license-check:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 9.0.x
+      
+      - name: Install License Finder
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ruby ruby-dev
+          sudo gem install license_finder
+      
+      - name: Restore dependencies
+        run: dotnet restore
+      
+      - name: Run License Finder
+        run: |
+          license_finder
+        continue-on-error: true  # Don't fail the build yet, just report
+      
+      - name: Generate License Report
+        run: |
+          license_finder report --format html > license-report.html
+        continue-on-error: true
+      
+      - name: Upload License Report
+        uses: actions/upload-artifact@v3
+        with:
+          name: license-report
+          path: license-report.html
