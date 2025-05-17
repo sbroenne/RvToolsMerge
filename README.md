@@ -194,3 +194,23 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 - [RVTools](https://www.robware.net/rvtools/) - The excellent tool that creates the Excel files this application is designed to merge
 - [ClosedXML](https://github.com/ClosedXML/ClosedXML) - .NET library for reading, manipulating and writing Excel files
+- [GitHub Copilot](https://github.com/features/copilot) - AI pair programmer that assisted in code development and maintenance
+
+## Development
+
+### Recommended VS Code Extensions
+
+This project includes a set of recommended VS Code extensions to enhance your development experience. When you open this repository in VS Code, you will be prompted to install these extensions. Alternatively, you can view and install them from the Extensions view by filtering on "Recommended".
+
+Key extensions include:
+
+- **C# Dev Kit** (ms-dotnettools.csdevkit): Comprehensive C# development tools
+- **C#** (ms-dotnettools.csharp): Language support for C#
+- **.NET Runtime Install Tool** (ms-dotnettools.vscode-dotnet-runtime): Install .NET runtime dependencies
+- **EditorConfig** (editorconfig.editorconfig): Maintain consistent coding styles
+- **Code Spell Checker** (streetsidesoftware.code-spell-checker): Spelling checker for source code
+- **Coverage Gutters** (ryanluker.vscode-coverage-gutters): Display code coverage in the editor
+- **GitHub Actions** (github.vscode-github-actions): GitHub Actions workflows support
+- **SARIF Viewer** (ms-sarifvscode.sarif-viewer): View Static Analysis Results Interchange Format (SARIF) files
+
+For the full list, see the `.vscode/extensions.json` file.
