@@ -86,16 +86,6 @@ namespace RVToolsMerge
                 }
             }
 
-            // Cannot use both skip options together as they have contradictory behavior
-            if (ignoreMissingOptionalSheets && skipInvalidFiles)
-            {
-                AnsiConsole.MarkupLine("[red]Error:[/] You cannot use both --ignore-missing-sheets and --skip-invalid-files together.");
-                AnsiConsole.MarkupLine("--ignore-missing-sheets: Ignores missing optional sheets (vHost, vPartition & vMemory) but processes all files");
-                AnsiConsole.MarkupLine("--skip-invalid-files: Keeps full sheet validation but skips non-compliant files");
-                AnsiConsole.MarkupLine("Use --help for more information.");
-                return;
-            }
-
             // Get input path (default to "input" if not specified)
             string inputPath = processedArgs.Count > 0 ? processedArgs[0] : Path.Combine(Directory.GetCurrentDirectory(), "input");
 
@@ -348,7 +338,6 @@ namespace RVToolsMerge
                 foreach (var filePath in validFilePaths)
                 {
                     var fileName = Path.GetFileName(filePath);
-
                     using (var workbook = new XLWorkbook(filePath))
                     {
                         for (int i = availableSheets.Count - 1; i >= 0; i--)
@@ -375,7 +364,6 @@ namespace RVToolsMerge
 
             AnsiConsole.MarkupLine($"[bold]Processing {validFilePaths.Count} valid files...[/]");
             AnsiConsole.MarkupLine("[bold]Analyzing columns...[/]");
-
             // First pass: Determine common columns across all files for each sheet
             AnsiConsole.Progress()
                 .AutoClear(false)
@@ -390,13 +378,10 @@ namespace RVToolsMerge
                 .Start(ctx =>
                 {
                     var columnsTask = ctx.AddTask("[green]Analyzing columns[/]", maxValue: availableSheets.Count);
-
                     foreach (var sheetName in availableSheets)
                     {
                         var allFileColumns = new List<List<string>>();
-
                         var fileAnalysisTask = ctx.AddTask($"[cyan]Analyzing '{sheetName}' sheet[/]", maxValue: validFilePaths.Count);
-
                         foreach (var filePath in validFilePaths)
                         {
                             using (var workbook = new XLWorkbook(filePath))
@@ -407,7 +392,6 @@ namespace RVToolsMerge
                             }
                             fileAnalysisTask.Increment(1);
                         }
-
                         fileAnalysisTask.StopTask();
 
                         // Find columns that exist in all files for this sheet
@@ -422,7 +406,6 @@ namespace RVToolsMerge
                             var processedMandatoryColumns = mandatoryColumns
                                 .Select(col => col.Contains("vInfo") ? col.Replace("vInfo", "").Trim() : col)
                                 .ToArray();
-
                             columnsInAllFiles = columnsInAllFiles.Intersect(processedMandatoryColumns).ToList();
 
                             // Make sure all mandatory columns are included
@@ -473,20 +456,16 @@ namespace RVToolsMerge
                 .Start(ctx =>
                 {
                     var extractionTask = ctx.AddTask("[green]Extracting data[/]", maxValue: availableSheets.Count);
-
                     foreach (var sheetName in availableSheets)
                     {
                         mergedData[sheetName] = new List<string[]>
                         {
                             commonColumns[sheetName].ToArray()
                         };
-
                         var sheetTask = ctx.AddTask($"[cyan]Processing '{sheetName}'[/]", maxValue: validFilePaths.Count);
-
                         foreach (var filePath in validFilePaths)
                         {
                             var fileName = Path.GetFileName(filePath);
-
                             using (var workbook = new XLWorkbook(filePath))
                             {
                                 var worksheet = workbook.Worksheet(sheetName);
@@ -502,19 +481,15 @@ namespace RVToolsMerge
                                     // VM Name
                                     int vmColIndex = commonColumns[sheetName].IndexOf("VM");
                                     if (vmColIndex >= 0) anonymizeColumnIndices["VM"] = vmColIndex;
-
                                     // DNS Name
                                     int dnsColIndex = commonColumns[sheetName].IndexOf("DNS Name");
                                     if (dnsColIndex >= 0) anonymizeColumnIndices["DNS Name"] = dnsColIndex;
-
                                     // Cluster Name
                                     int clusterColIndex = commonColumns[sheetName].IndexOf("Cluster");
                                     if (clusterColIndex >= 0) anonymizeColumnIndices["Cluster"] = clusterColIndex;
-
                                     // Host Name
                                     int hostColIndex = commonColumns[sheetName].IndexOf("Host");
                                     if (hostColIndex >= 0) anonymizeColumnIndices["Host"] = hostColIndex;
-
                                     // Datacenter Name
                                     int datacenterColIndex = commonColumns[sheetName].IndexOf("Datacenter");
                                     if (datacenterColIndex >= 0) anonymizeColumnIndices["Datacenter"] = datacenterColIndex;
@@ -531,7 +506,6 @@ namespace RVToolsMerge
                                 for (int row = 2; row <= lastRow; row++)
                                 {
                                     var rowData = new string[commonColumns[sheetName].Count];
-
                                     // Initialize with default values
                                     for (int i = 0; i < rowData.Length; i++)
                                     {
@@ -557,7 +531,6 @@ namespace RVToolsMerge
                                                 }
                                                 cellValue = vmNameMap[cellValue];
                                             }
-
                                             // DNS Name
                                             if (anonymizeColumnIndices.TryGetValue("DNS Name", out int dnsColIndex) &&
                                                 mapping.CommonColumnIndex == dnsColIndex && !string.IsNullOrWhiteSpace(cellValue))
@@ -568,7 +541,6 @@ namespace RVToolsMerge
                                                 }
                                                 cellValue = dnsNameMap[cellValue];
                                             }
-
                                             // Cluster Name
                                             if (anonymizeColumnIndices.TryGetValue("Cluster", out int clusterColIndex) &&
                                                 mapping.CommonColumnIndex == clusterColIndex && !string.IsNullOrWhiteSpace(cellValue))
@@ -579,7 +551,6 @@ namespace RVToolsMerge
                                                 }
                                                 cellValue = clusterNameMap[cellValue];
                                             }
-
                                             // Host Name
                                             if (anonymizeColumnIndices.TryGetValue("Host", out int hostColIndex) &&
                                                 mapping.CommonColumnIndex == hostColIndex && !string.IsNullOrWhiteSpace(cellValue))
@@ -590,7 +561,6 @@ namespace RVToolsMerge
                                                 }
                                                 cellValue = hostNameMap[cellValue];
                                             }
-
                                             // Datacenter Name
                                             if (anonymizeColumnIndices.TryGetValue("Datacenter", out int datacenterColIndex) &&
                                                 mapping.CommonColumnIndex == datacenterColIndex && !string.IsNullOrWhiteSpace(cellValue))
@@ -616,10 +586,8 @@ namespace RVToolsMerge
                                     mergedData[sheetName].Add(rowData);
                                 }
                             }
-
                             sheetTask.Increment(1);
                         }
-
                         sheetTask.StopTask();
                         extractionTask.Increment(1);
                     }
@@ -639,14 +607,12 @@ namespace RVToolsMerge
                 .Start(ctx =>
                 {
                     var outputTask = ctx.AddTask("[green]Creating output file[/]", maxValue: availableSheets.Count + 1);
-
                     using (var workbook = new XLWorkbook())
                     {
                         foreach (var sheetName in availableSheets)
                         {
                             var worksheet = workbook.Worksheets.Add(sheetName);
                             var rowTask = ctx.AddTask($"[cyan]Writing '{sheetName}' sheet[/]", maxValue: mergedData[sheetName].Count);
-
                             // Write data to sheet
                             for (int row = 0; row < mergedData[sheetName].Count; row++)
                             {
@@ -657,7 +623,6 @@ namespace RVToolsMerge
                                 }
                                 rowTask.Increment(1);
                             }
-
                             // Auto-fit columns
                             worksheet.Columns().AdjustToContents();
                             rowTask.StopTask();
@@ -727,6 +692,7 @@ namespace RVToolsMerge
             AnsiConsole.MarkupLine($"[bold green]{productName}[/] - Merges multiple RVTools Excel files into a single file");
             AnsiConsole.MarkupLine($"[yellow]Version {versionString}[/]");
             AnsiConsole.Write(new Rule().RuleStyle("grey"));
+            AnsiConsole.WriteLine();
             AnsiConsole.WriteLine();
 
             AnsiConsole.MarkupLine("[bold]USAGE:[/]");
@@ -819,6 +785,9 @@ namespace RVToolsMerge
             AnsiConsole.MarkupLine("    can be missing with warnings shown. The vInfo sheet is always required.");
             AnsiConsole.MarkupLine("  - When using [yellow]--skip-invalid-files[/], files without required sheets will be skipped");
             AnsiConsole.MarkupLine("    and reported, but processing will continue with valid files.");
+            AnsiConsole.MarkupLine("  - Both [yellow]--ignore-missing-sheets[/] and [yellow]--skip-invalid-files[/] can be used");
+            AnsiConsole.MarkupLine("    together to skip files with missing vInfo sheet and process others with potentially");
+            AnsiConsole.MarkupLine("    missing optional sheets.");
             AnsiConsole.MarkupLine("  - When using [yellow]--anonymize[/], sensitive names are replaced with generic identifiers");
             AnsiConsole.MarkupLine("    (vm1, dns1, host1, etc.) to protect sensitive information.");
             AnsiConsole.MarkupLine("  - When using [yellow]--only-mandatory-columns[/], only the mandatory columns for each sheet");
@@ -855,10 +824,8 @@ namespace RVToolsMerge
         static List<string> GetColumnNames(IXLWorksheet worksheet)
         {
             var columnNames = new List<string>();
-
             // Get the first row
             var headerRow = worksheet.Row(1);
-
             // Find the last column with data
             int lastColumn = worksheet.LastColumnUsed().ColumnNumber();
 
@@ -877,10 +844,8 @@ namespace RVToolsMerge
         static List<ColumnMapping> GetColumnMapping(IXLWorksheet worksheet, List<string> commonColumns)
         {
             var mapping = new List<ColumnMapping>();
-
             // Get the first row
             var headerRow = worksheet.Row(1);
-
             // Find the last column with data
             int lastColumn = worksheet.LastColumnUsed().ColumnNumber();
 

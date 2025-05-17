@@ -86,8 +86,6 @@ Each sheet must contain certain mandatory columns for proper processing:
 
 ## Installation
 
-### Download Pre-built Binaries
-
 Download the latest release for your platform from the [Releases page](https://github.com/sbroenne/RVToolsMerge/releases):
 
 - Windows (x64): `RVToolsMerge-windows-Release.zip`
@@ -95,16 +93,6 @@ Download the latest release for your platform from the [Releases page](https://g
 - Linux (x64): `RVToolsMerge-linux-Release.zip`
 - macOS (ARM64): `RVToolsMerge-macos-arm64-Release.zip`
 
-### Building from Source
-
-Prerequisites:
-- .NET 9.0 SDK or later
-
-```bash
-git clone https://github.com/sbroenne/RVToolsMerge.git
-cd RVToolsMerge
-dotnet build -c Release
-```
 
 ## Usage
 
@@ -114,52 +102,72 @@ RVToolsMerge [options] [inputPath] [outputFile]
 
 ### Arguments
 
-- **inputPath**: Path to an Excel file or a folder containing RVTools Excel files. Defaults to the "input" subfolder in the current directory.
-- **outputFile**: Path where the merged file will be saved. Defaults to "RVTools_Merged.xlsx" in the current directory.
+- **inputPath**: Path to an Excel file or folder containing RVTools Excel files (defaults to "input" subfolder)
+- **outputFile**: Path where the merged file will be saved (defaults to "RVTools_Merged.xlsx")
 
 ### Options
 
-- `-h, --help, /?`: Show help message and exit.
-- `-m, --ignore-missing-sheets`: Ignore missing optional sheets (vHost, vPartition & vMemory). Will still validate vInfo sheet exists.
-- `-i, --skip-invalid-files`: Skip files that don't contain all required sheets instead of failing with an error.
-- `-a, --anonymize`: Anonymize VM, DNS Name, Cluster, Host, and Datacenter columns with generic names (vm1, host1, etc.).
-- `-M, --only-mandatory-columns`: Include only the mandatory columns for each sheet in the output file instead of all common columns.
-- `-s, --include-source`: Include a 'Source File' column in each sheet showing the name of the source file for each record.
-- `-d, --debug`: Show detailed error information including stack traces when errors occur.
+| Option | Description |
+|--------|-------------|
+| `-h, --help, /?` | Show the help message and exit |
+| `-m, --ignore-missing-sheets` | Ignore missing optional sheets (vHost, vPartition, vMemory) |
+| `-i, --skip-invalid-files` | Skip files that don't contain required sheets instead of failing |
+| `-a, --anonymize` | Anonymize VM, DNS, Cluster, Host, and Datacenter names |
+| `-M, --only-mandatory-columns` | Include only mandatory columns for each sheet |
+| `-s, --include-source` | Include a 'Source File' column showing the source file for each record |
+| `-d, --debug` | Show detailed error information including stack traces |
 
-### Examples
+> **Note:** The `-i` and `-m` options can be used together. When combined, files with missing vInfo sheets will be skipped, and other files with missing optional sheets will be processed.
 
-```bash
-# Basic usage with default input and output locations
-RVToolsMerge
+## Examples
 
-# Using the default input folder
-RVToolsMerge C:\RVTools\Data
+### Basic Usage
 
-# Specify input file
-RVToolsMerge C:\RVTools\Data\SingleFile.xlsx
-
-# Specify input folder and output file
-RVToolsMerge C:\RVTools\Data C:\Reports\Merged_RVTools.xlsx
-
-# Process files with missing optional sheets
-RVToolsMerge -m C:\RVTools\Data
-
-# Skip invalid files
-RVToolsMerge -i C:\RVTools\Data
-
-# Anonymize sensitive data
-RVToolsMerge -a C:\RVTools\Data\RVTools.xlsx C:\Reports\Anonymized_RVTools.xlsx
-
-# Include only mandatory columns
-RVToolsMerge -M C:\RVTools\Data C:\Reports\Mandatory_Columns.xlsx
-
-# Include source file name in output
-RVToolsMerge -s C:\RVTools\Data C:\Reports\With_Source_Files.xlsx
-
-# Combine options
-RVToolsMerge -a -M -s C:\RVTools\Data C:\Reports\Complete_Analysis.xlsx
+Process all Excel files in a folder:
 ```
+RVToolsMerge C:\RVTools\Data
+```
+
+Process a single file:
+```
+RVToolsMerge C:\RVTools\Data\SingleFile.xlsx
+```
+
+### Advanced Options
+
+Skip files with missing optional sheets:
+```
+RVToolsMerge -m C:\RVTools\Data C:\Reports\Merged_RVTools.xlsx
+```
+
+Skip invalid files entirely:
+```
+RVToolsMerge -i C:\RVTools\Data
+```
+
+Skip invalid files and ignore missing optional sheets in valid files:
+```
+RVToolsMerge -i -m C:\RVTools\Data
+```
+
+Anonymize sensitive data:
+```
+RVToolsMerge -a C:\RVTools\Data\RVTools.xlsx C:\Reports\Anonymized_RVTools.xlsx
+```
+
+Include only mandatory columns:
+```
+RVToolsMerge -M C:\RVTools\Data C:\Reports\Mandatory_Columns.xlsx
+```
+
+Include source file information:
+```
+RVToolsMerge -s C:\RVTools\Data C:\Reports\With_Source_Files.xlsx
+```
+
+Combine multiple options:
+```
+RVToolsMerge -a -M -s C:\RVTools\Data C:\Reports\Complete_Analysis.xlsx
 
 ## Validation Behavior
 
@@ -178,6 +186,47 @@ RVToolsMerge -a -M -s C:\RVTools\Data C:\Reports\Complete_Analysis.xlsx
 - For permission issues, ensure you have write access to the output folder
 
 # Github Project
+
+## Building from Source
+
+Prerequisites:
+- .NET 9.0 SDK or later
+
+```bash
+git clone https://github.com/sbroenne/RVToolsMerge.git
+cd RVToolsMerge
+dotnet build -c Release
+```
+
+### Building for Specific Platforms
+
+By default, `dotnet build` creates a framework-dependent build for your current platform. To create deployable packages:
+
+```bash
+# Default build - creates Window x64 executable
+dotnet publish -c Release
+```
+
+The default build output will be located in the `bin/Release/net9.0/publish` directory and requires the .NET runtime to be installed on the target machine.
+
+For distributable, self-contained applications that don't require the .NET runtime to be pre-installed:
+
+```bash
+# For Windows x64
+dotnet publish -c Release -r win-x64
+
+# For Windows ARM64
+dotnet publish -c Release -r win-arm64
+
+# For Linux x64
+dotnet publish -c Release -r linux-x64
+
+# For macOS ARM64 (Apple Silicon)
+dotnet publish -c Release -r osx-arm64
+```
+
+These commands will create self-contained single-file applications for each platform, which can be found in the `bin/Release/net9.0/{RID}/publish` directory, where `{RID}` is the runtime identifier (e.g., `win-x64`, `linux-x64`).
+
 
 ## Contributing
 
