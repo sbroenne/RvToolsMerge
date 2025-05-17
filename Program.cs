@@ -45,6 +45,7 @@ namespace RVToolsMerge
             bool anonymizeData = false;
             bool onlyMandatoryColumns = false;
             bool debugMode = false;
+            bool includeSourceFileName = false;
 
             // Process options
             var processedArgs = new List<string>();
@@ -55,7 +56,7 @@ namespace RVToolsMerge
                     ShowHelp();
                     return;
                 }
-                else if (args[i] == "-m" || args[i] == "--ignore-missing-optional-sheets")
+                else if (args[i] == "-m" || args[i] == "--ignore-missing-sheets")
                 {
                     ignoreMissingOptionalSheets = true;
                 }
@@ -67,13 +68,17 @@ namespace RVToolsMerge
                 {
                     anonymizeData = true;
                 }
-                else if (args[i] == "-o" || args[i] == "--only-mandatory-columns")
+                else if (args[i] == "-M" || args[i] == "--only-mandatory-columns")
                 {
                     onlyMandatoryColumns = true;
                 }
                 else if (args[i] == "-d" || args[i] == "--debug")
                 {
                     debugMode = true;
+                }
+                else if (args[i] == "-s" || args[i] == "--include-source")
+                {
+                    includeSourceFileName = true;
                 }
                 else
                 {
@@ -84,18 +89,23 @@ namespace RVToolsMerge
             // Cannot use both skip options together as they have contradictory behavior
             if (ignoreMissingOptionalSheets && skipInvalidFiles)
             {
-                AnsiConsole.MarkupLine("[red]Error:[/] You cannot use both --ignore-missing-optional-sheets and --skip-invalid-files together.");
-                AnsiConsole.MarkupLine("--ignore-missing-optional-sheets: Ignores missing optional sheets (vHost, vPartition & vMemory) but processes all files");
+                AnsiConsole.MarkupLine("[red]Error:[/] You cannot use both --ignore-missing-sheets and --skip-invalid-files together.");
+                AnsiConsole.MarkupLine("--ignore-missing-sheets: Ignores missing optional sheets (vHost, vPartition & vMemory) but processes all files");
                 AnsiConsole.MarkupLine("--skip-invalid-files: Keeps full sheet validation but skips non-compliant files");
                 AnsiConsole.MarkupLine("Use --help for more information.");
                 return;
             }
 
-            // Get input folder (default to "input" if not specified)
-            string inputFolder = processedArgs.Count > 0 ? processedArgs[0] : Path.Combine(Directory.GetCurrentDirectory(), "input");
-            if (!Directory.Exists(inputFolder))
+            // Get input path (default to "input" if not specified)
+            string inputPath = processedArgs.Count > 0 ? processedArgs[0] : Path.Combine(Directory.GetCurrentDirectory(), "input");
+
+            // Determine if the input path is a file or directory
+            bool isInputFile = File.Exists(inputPath);
+            bool isInputDirectory = Directory.Exists(inputPath);
+
+            if (!isInputFile && !isInputDirectory)
             {
-                AnsiConsole.MarkupLine($"[red]Error:[/] Input folder '[yellow]{inputFolder}[/]' does not exist.");
+                AnsiConsole.MarkupLine($"[red]Error:[/] Input path '[yellow]{inputPath}[/]' does not exist as either a file or directory.");
                 AnsiConsole.MarkupLine("Use --help to see usage information.");
                 return;
             }
@@ -105,18 +115,32 @@ namespace RVToolsMerge
 
             try
             {
-                // Get all Excel files in the input folder
-                var excelFiles = Directory.GetFiles(inputFolder, "*.xlsx");
-
-                if (excelFiles.Length == 0)
+                // Get Excel files - either the single file or all Excel files in the directory
+                string[] excelFiles;
+                if (isInputFile)
                 {
-                    AnsiConsole.MarkupLine($"[yellow]No Excel files found in '{inputFolder}'.[/]");
-                    return;
+                    // Check if the file has the correct extension
+                    if (!Path.GetExtension(inputPath).Equals(".xlsx", StringComparison.OrdinalIgnoreCase))
+                    {
+                        AnsiConsole.MarkupLine($"[red]Error:[/] Input file '[yellow]{inputPath}[/]' must be an Excel file (.xlsx).");
+                        return;
+                    }
+                    excelFiles = new[] { inputPath };
+                    AnsiConsole.MarkupLine($"[green]Processing single Excel file: {Path.GetFileName(inputPath)}[/]");
                 }
-                AnsiConsole.MarkupLine($"[green]Found {excelFiles.Length} Excel files to process.[/]");
+                else // isInputDirectory
+                {
+                    excelFiles = Directory.GetFiles(inputPath, "*.xlsx");
+                    if (excelFiles.Length == 0)
+                    {
+                        AnsiConsole.MarkupLine($"[yellow]No Excel files found in '{inputPath}'.[/]");
+                        return;
+                    }
+                    AnsiConsole.MarkupLine($"[green]Found {excelFiles.Length} Excel files to process in directory.[/]");
+                }
 
                 // Process the files
-                MergeRVToolsFiles(excelFiles, outputFile, ignoreMissingOptionalSheets, skipInvalidFiles, anonymizeData, onlyMandatoryColumns);
+                MergeRVToolsFiles(excelFiles, outputFile, ignoreMissingOptionalSheets, skipInvalidFiles, anonymizeData, onlyMandatoryColumns, includeSourceFileName);
                 AnsiConsole.MarkupLine($"[green]Successfully merged files.[/] Output saved to: [blue]{outputFile}[/]");
 
                 // Get product name from assembly attributes
@@ -168,7 +192,7 @@ namespace RVToolsMerge
             }
         }
 
-        static void MergeRVToolsFiles(string[] filePaths, string outputPath, bool ignoreMissingOptionalSheets = false, bool skipInvalidFiles = false, bool anonymizeData = false, bool onlyMandatoryColumns = false)
+        static void MergeRVToolsFiles(string[] filePaths, string outputPath, bool ignoreMissingOptionalSheets = false, bool skipInvalidFiles = false, bool anonymizeData = false, bool onlyMandatoryColumns = false, bool includeSourceFileName = false)
         {
             if (filePaths.Length == 0) return;
 
@@ -198,12 +222,13 @@ namespace RVToolsMerge
             AnsiConsole.Progress()
                 .AutoClear(false)
                 .Columns(
-                [
+                new ProgressColumn[]
+                {
                     new TaskDescriptionColumn(),
                     new ProgressBarColumn(),
                     new PercentageColumn(),
                     new SpinnerColumn()
-                ])
+                })
                 .Start(ctx =>
                 {
                     var validationTask = ctx.AddTask("[green]Validating files[/]", maxValue: validFilePaths.Count);
@@ -355,12 +380,13 @@ namespace RVToolsMerge
             AnsiConsole.Progress()
                 .AutoClear(false)
                 .Columns(
-                [
+                new ProgressColumn[]
+                {
                     new TaskDescriptionColumn(),
                     new ProgressBarColumn(),
                     new PercentageColumn(),
                     new SpinnerColumn()
-                ])
+                })
                 .Start(ctx =>
                 {
                     var columnsTask = ctx.AddTask("[green]Analyzing columns[/]", maxValue: availableSheets.Count);
@@ -409,15 +435,24 @@ namespace RVToolsMerge
                             }
                         }
 
+                        // If includeSourceFileName option is enabled, prepare to add source file column
+                        if (includeSourceFileName)
+                        {
+                            const string sourceFileColumnName = "Source File";
+                            // Add source file column if it doesn't already exist
+                            if (!columnsInAllFiles.Contains(sourceFileColumnName))
+                            {
+                                columnsInAllFiles.Add(sourceFileColumnName);
+                            }
+                        }
+
                         commonColumns[sheetName] = columnsInAllFiles;
                         AnsiConsole.MarkupLine($"Sheet '[green]{sheetName}[/]' has [yellow]{columnsInAllFiles.Count}[/] {(onlyMandatoryColumns ? "mandatory" : "common")} columns across all files.");
-
                         columnsTask.Increment(1);
                     }
                 });
 
             AnsiConsole.MarkupLine("[bold]Extracting data from files...[/]");
-
             // Display anonymization message if enabled
             if (anonymizeData)
             {
@@ -428,12 +463,13 @@ namespace RVToolsMerge
             AnsiConsole.Progress()
                 .AutoClear(false)
                 .Columns(
-                [
+                new ProgressColumn[]
+                {
                     new TaskDescriptionColumn(),
                     new ProgressBarColumn(),
                     new PercentageColumn(),
                     new SpinnerColumn()
-                ])
+                })
                 .Start(ctx =>
                 {
                     var extractionTask = ctx.AddTask("[green]Extracting data[/]", maxValue: availableSheets.Count);
@@ -482,6 +518,13 @@ namespace RVToolsMerge
                                     // Datacenter Name
                                     int datacenterColIndex = commonColumns[sheetName].IndexOf("Datacenter");
                                     if (datacenterColIndex >= 0) anonymizeColumnIndices["Datacenter"] = datacenterColIndex;
+                                }
+
+                                // Find source file column index if the option is enabled
+                                int sourceFileColumnIndex = -1;
+                                if (includeSourceFileName)
+                                {
+                                    sourceFileColumnIndex = commonColumns[sheetName].IndexOf("Source File");
                                 }
 
                                 // Extract data rows
@@ -564,6 +607,12 @@ namespace RVToolsMerge
                                         rowData[mapping.CommonColumnIndex] = cellValue;
                                     }
 
+                                    // Add source file name if the option is enabled
+                                    if (includeSourceFileName && sourceFileColumnIndex >= 0)
+                                    {
+                                        rowData[sourceFileColumnIndex] = Path.GetFileName(filePath);
+                                    }
+
                                     mergedData[sheetName].Add(rowData);
                                 }
                             }
@@ -577,16 +626,16 @@ namespace RVToolsMerge
                 });
 
             AnsiConsole.MarkupLine("[bold]Creating output file...[/]");
-
             AnsiConsole.Progress()
                 .AutoClear(false)
                 .Columns(
-                [
+                new ProgressColumn[]
+                {
                     new TaskDescriptionColumn(),
                     new ProgressBarColumn(),
                     new PercentageColumn(),
                     new SpinnerColumn()
-                ])
+                })
                 .Start(ctx =>
                 {
                     var outputTask = ctx.AddTask("[green]Creating output file[/]", maxValue: availableSheets.Count + 1);
@@ -628,7 +677,6 @@ namespace RVToolsMerge
             summaryTable.AddColumn(new TableColumn("Details").RightAligned());
             summaryTable.AddRow("[cyan]Files Processed[/]", $"[green]{validFilePaths.Count}[/] of [green]{filePaths.Length}[/]");
             summaryTable.AddRow("[cyan]Sheets Included[/]", $"[green]{availableSheets.Count}[/]");
-
             int totalRows = 0;
             foreach (var sheetName in availableSheets)
             {
@@ -686,7 +734,7 @@ namespace RVToolsMerge
             AnsiConsole.WriteLine();
 
             AnsiConsole.MarkupLine("[bold]ARGUMENTS:[/]");
-            AnsiConsole.MarkupLine("  [green]inputFolder[/]   Path to the folder containing RVTools Excel files.");
+            AnsiConsole.MarkupLine("  [green]inputPath[/]     Path to an Excel file or a folder containing RVTools Excel files.");
             AnsiConsole.MarkupLine("                Defaults to \"input\" subfolder in the current directory.");
             AnsiConsole.MarkupLine("  [green]outputFile[/]    Path where the merged file will be saved.");
             AnsiConsole.MarkupLine("                Defaults to \"RVTools_Merged.xlsx\" in the current directory.");
@@ -694,16 +742,18 @@ namespace RVToolsMerge
 
             AnsiConsole.MarkupLine("[bold]OPTIONS:[/]");
             AnsiConsole.MarkupLine("  [yellow]-h, --help, /?[/]            Show this help message and exit.");
-            AnsiConsole.MarkupLine("  [yellow]-m, --ignore-missing-optional-sheets[/]");
+            AnsiConsole.MarkupLine("  [yellow]-m, --ignore-missing-sheets[/]");
             AnsiConsole.MarkupLine("                            Ignore missing optional sheets (vHost, vPartition & vMemory).");
             AnsiConsole.MarkupLine("                            Will still validate vInfo sheet exists.");
             AnsiConsole.MarkupLine("  [yellow]-i, --skip-invalid-files[/]  Skip files that don't contain all required sheets");
             AnsiConsole.MarkupLine("                            instead of failing with an error.");
             AnsiConsole.MarkupLine("  [yellow]-a, --anonymize[/]           Anonymize VM, DNS Name, Cluster, Host, and Datacenter");
             AnsiConsole.MarkupLine("                            columns with generic names (vm1, host1, etc.).");
-            AnsiConsole.MarkupLine("  [yellow]-o, --only-mandatory-columns[/]");
+            AnsiConsole.MarkupLine("  [yellow]-M, --only-mandatory-columns[/]");
             AnsiConsole.MarkupLine("                            Include only the mandatory columns for each sheet in the");
             AnsiConsole.MarkupLine("                            output file instead of all common columns.");
+            AnsiConsole.MarkupLine("  [yellow]-s, --include-source[/]      Include a 'Source File' column in each sheet showing");
+            AnsiConsole.MarkupLine("                            the name of the source file for each record.");
             AnsiConsole.MarkupLine("  [yellow]-d, --debug[/]               Show detailed error information including stack traces");
             AnsiConsole.MarkupLine("                            when errors occur.");
             AnsiConsole.WriteLine();
@@ -737,41 +787,35 @@ namespace RVToolsMerge
             table.AddColumn(new TableColumn("Sheet").LeftAligned());
             table.AddColumn(new TableColumn("Status").Centered());
             table.AddColumn(new TableColumn("Required Columns").LeftAligned());
-
             table.AddRow(
                 "[green]vInfo[/]",
                 "[bold green]Required[/]",
                 "Template, SRM Placeholder, Powerstate, [bold]VM[/], [bold]CPUs[/], [bold]Memory[/], [bold]In Use MiB[/], [bold]OS according to the VMware Tools[/]"
             );
-
             table.AddRow(
                 "[cyan]vHost[/]",
                 "[yellow]Optional[/]",
                 "[bold]Host[/], [bold]Datacenter[/], [bold]Cluster[/], CPU Model, Speed, # CPU, Cores per CPU, # Cores, CPU usage %, # Memory, Memory usage %"
             );
-
             table.AddRow(
                 "[cyan]vPartition[/]",
                 "[yellow]Optional[/]",
                 "[bold]VM[/], [bold]Disk[/], [bold]Capacity MiB[/], [bold]Consumed MiB[/]"
             );
-
             table.AddRow(
                 "[cyan]vMemory[/]",
                 "[yellow]Optional[/]",
                 "[bold]VM[/], [bold]Size MiB[/], [bold]Reservation[/]"
             );
-
             table.Border(TableBorder.Rounded);
             AnsiConsole.Write(table);
             AnsiConsole.WriteLine();
-
             AnsiConsole.MarkupLine("[grey]Note: Bold column names indicate the most critical columns for analysis.[/]");
             AnsiConsole.WriteLine();
 
             AnsiConsole.MarkupLine("[bold]Validation behavior:[/]");
             AnsiConsole.MarkupLine("  - By default, all sheets must exist in all files");
-            AnsiConsole.MarkupLine("  - When using [yellow]--ignore-missing-optional-sheets[/], optional sheets (vHost, vPartition, vMemory)");
+            AnsiConsole.MarkupLine("  - When using [yellow]--ignore-missing-sheets[/], optional sheets (vHost, vPartition, vMemory)");
             AnsiConsole.MarkupLine("    can be missing with warnings shown. The vInfo sheet is always required.");
             AnsiConsole.MarkupLine("  - When using [yellow]--skip-invalid-files[/], files without required sheets will be skipped");
             AnsiConsole.MarkupLine("    and reported, but processing will continue with valid files.");
@@ -780,17 +824,22 @@ namespace RVToolsMerge
             AnsiConsole.MarkupLine("  - When using [yellow]--only-mandatory-columns[/], only the mandatory columns for each sheet");
             AnsiConsole.MarkupLine("    are included in the output, regardless of what other columns might be common");
             AnsiConsole.MarkupLine("    across all files.");
+            AnsiConsole.MarkupLine("  - When using [yellow]--include-source[/], a 'Source File' column is added to each");
+            AnsiConsole.MarkupLine("    sheet to show which source file each record came from, helping with data traceability.");
+            AnsiConsole.WriteLine();
             AnsiConsole.WriteLine();
 
             AnsiConsole.MarkupLine("[bold]EXAMPLES:[/]");
             string appName = Assembly.GetExecutingAssembly().GetName().Name ?? "RVToolsMerge";
             AnsiConsole.MarkupLine($"  [cyan]{appName}[/] C:\\RVTools\\Data");
+            AnsiConsole.MarkupLine($"  [cyan]{appName}[/] C:\\RVTools\\Data\\SingleFile.xlsx");
             AnsiConsole.MarkupLine($"  [cyan]{appName}[/] [yellow]-m[/] C:\\RVTools\\Data C:\\Reports\\Merged_RVTools.xlsx");
-            AnsiConsole.MarkupLine($"  [cyan]{appName}[/] [yellow]--ignore-missing-optional-sheets[/] C:\\RVTools\\Data");
+            AnsiConsole.MarkupLine($"  [cyan]{appName}[/] [yellow]--ignore-missing-sheets[/] C:\\RVTools\\Data");
             AnsiConsole.MarkupLine($"  [cyan]{appName}[/] [yellow]-i[/] C:\\RVTools\\Data");
-            AnsiConsole.MarkupLine($"  [cyan]{appName}[/] [yellow]-a[/] C:\\RVTools\\Data C:\\Reports\\Anonymized_RVTools.xlsx");
-            AnsiConsole.MarkupLine($"  [cyan]{appName}[/] [yellow]-o[/] C:\\RVTools\\Data C:\\Reports\\Mandatory_Columns.xlsx");
-            AnsiConsole.MarkupLine($"  [cyan]{appName}[/] [yellow]-a -o[/] C:\\RVTools\\Data C:\\Reports\\Anonymized_Mandatory.xlsx");
+            AnsiConsole.MarkupLine($"  [cyan]{appName}[/] [yellow]-a[/] C:\\RVTools\\Data\\RVTools.xlsx C:\\Reports\\Anonymized_RVTools.xlsx");
+            AnsiConsole.MarkupLine($"  [cyan]{appName}[/] [yellow]-M[/] C:\\RVTools\\Data C:\\Reports\\Mandatory_Columns.xlsx");
+            AnsiConsole.MarkupLine($"  [cyan]{appName}[/] [yellow]-s[/] C:\\RVTools\\Data C:\\Reports\\With_Source_Files.xlsx");
+            AnsiConsole.MarkupLine($"  [cyan]{appName}[/] [yellow]-a -M -s[/] C:\\RVTools\\Data C:\\Reports\\Complete_Analysis.xlsx");
             AnsiConsole.WriteLine();
 
             AnsiConsole.MarkupLine("[bold]DOWNLOADS:[/]");
@@ -841,7 +890,6 @@ namespace RVToolsMerge
                 var cellValue = headerRow.Cell(fileColIndex).Value.ToString();
                 if (!string.IsNullOrWhiteSpace(cellValue))
                 {
-                    // Remove the code that processes column names
                     int commonIndex = commonColumns.IndexOf(cellValue);
                     if (commonIndex >= 0)
                     {
