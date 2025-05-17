@@ -1,8 +1,25 @@
+# .NET Build and Test Workflow
+#
+# Purpose:
+# This workflow handles CI for development branches and pull requests:
+# 1. Builds and tests code on all non-main branches when code is pushed
+# 2. Builds and tests code when a PR is opened against the main branch
+# 3. Can be manually triggered via GitHub UI
+#
+# Trigger conditions:
+# - On push to any branch
+# - On pull requests targeting main branch (when relevant files change)
+# - Manual trigger via workflow_dispatch
+#
+# Jobs:
+# - build-debug: Builds and tests the code in Debug configuration
+# - build-release: Builds and tests the code in Release configuration
+#   (only runs for PRs targeting main)
+
 name: .NET Build and Test
 
 on:
   push:
-    branches: [ "main" ]
     paths:
       - '**/*.cs'
       - '**/*.csproj'
@@ -13,7 +30,7 @@ on:
       - '.github/workflows/build.yml'
       - '.github/workflows/dotnet.yml'
   pull_request:
-    branches: [ "main" ]
+    branches: [ "main" ]  # This correctly triggers on PRs targeting main branch
     paths:
       - '**/*.cs'
       - '**/*.csproj'
@@ -23,16 +40,18 @@ on:
       - 'Directory.Build.props'
       - '.github/workflows/build.yml'
       - '.github/workflows/dotnet.yml'
-  workflow_dispatch:  # Allow manual triggering regardless of file changes
+  workflow_dispatch:  # Manual trigger works as expected
 
 jobs:
   build-debug:
+    # Uses the reusable build workflow with Debug configuration
     uses: ./.github/workflows/build.yml
     with:
       configuration: 'Debug'
 
   build-release:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # Only runs for PRs targeting main to validate production builds
+    if: github.event_name == 'pull_request' && github.base_ref == 'main'
     uses: ./.github/workflows/build.yml
     with:
       configuration: 'Release'
