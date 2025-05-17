@@ -45,8 +45,7 @@
       "console": "internalConsole",
       "stopAtEntry": false
     },
-    {
-      "name": "RVToolsMerge (Anonymize All)",
+    {      "name": "RVToolsMerge (Anonymize All)",
       "type": "coreclr",
       "request": "launch",
       "preLaunchTask": "build",
@@ -55,6 +54,37 @@
         "-a",
         "${workspaceFolder}/input",
         "${workspaceFolder}/RVTools_anonymized.xlsx"
+      ],
+      "cwd": "${workspaceFolder}",
+      "console": "internalConsole",
+      "stopAtEntry": false
+    },
+    {
+      "name": "RVToolsMerge (Only Mandatory Columns)",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/bin/Debug/net9.0/win-x64/RVToolsMerge.exe",
+      "args": [
+        "-o",
+        "${workspaceFolder}/input",
+        "${workspaceFolder}/RVTools_mandatory.xlsx"
+      ],
+      "cwd": "${workspaceFolder}",
+      "console": "internalConsole",
+      "stopAtEntry": false
+    },
+    {
+      "name": "RVToolsMerge (Anonymize & Mandatory Columns)",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/bin/Debug/net9.0/win-x64/RVToolsMerge.exe",
+      "args": [
+        "-a",
+        "-o",
+        "${workspaceFolder}/input",
+        "${workspaceFolder}/RVTools_anonymized_mandatory.xlsx"
       ],
       "cwd": "${workspaceFolder}",
       "console": "internalConsole",

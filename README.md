@@ -30,16 +30,15 @@ A .NET console application that merges multiple RVTools Excel files into a singl
 - Option to export only mandatory columns for each sheet
 - Fast processing with minimal memory footprint
 
-## Requirements
-
-- .NET 9.0 or later
-- ClosedXML library (automatically installed via NuGet)
-
 ## Installation
 
 ### Option 1: Download the latest release (Recommended)
 1. Go to the [Releases](https://github.com/sbroenne/RVToolsMerge/releases) page
-2. Download the latest `RVToolsMerge.zip` file
+2. Download the latest version for your platform:
+   - `RVToolsMerge-windows-Release.zip` - For Windows (x64)
+   - `RVToolsMerge-windows-arm64-Release.zip` - For Windows on ARM devices
+   - `RVToolsMerge-linux-Release.zip` - For Linux (x64)
+   - `RVToolsMerge-macos-arm64-Release.zip` - For macOS on Apple Silicon (M1/M2/M3)
 3. Extract the contents to a folder of your choice
 
 ### Option 2: Build from source
@@ -55,6 +54,10 @@ A .NET console application that merges multiple RVTools Excel files into a singl
    ```
    dotnet build
    ```
+
+#### Build Requirements
+- .NET 9.0 SDK or later
+- ClosedXML library (automatically installed via NuGet)
 
 ## Usage
 
@@ -188,6 +191,12 @@ The project is configured for multi-platform, single-file publishing. You can pu
 dotnet publish -c Release
 ```
 
+When run without additional parameters, this command produces a Windows x64 executable by default. The executable will be available at:
+
+```
+bin\Release\net9.0\win-x64\publish\RVToolsMerge.exe
+```
+
 The GitHub Actions workflow automatically builds the following platform versions when a release is created:
 
 - Windows x64: Standard Windows desktop/server environments
@@ -253,6 +262,5 @@ Key extensions include:
 - **Code Spell Checker** (streetsidesoftware.code-spell-checker): Spelling checker for source code
 - **Coverage Gutters** (ryanluker.vscode-coverage-gutters): Display code coverage in the editor
 - **GitHub Actions** (github.vscode-github-actions): GitHub Actions workflows support
-- **SARIF Viewer** (ms-sarifvscode.sarif-viewer): View Static Analysis Results Interchange Format (SARIF) files
 
 For the full list, see the `.vscode/extensions.json` file.
