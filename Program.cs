@@ -231,8 +231,8 @@ namespace RVToolsMerge
 
             if (filePaths.Length == 0) return;
 
-            // Dictionary to store merged data for each sheet - using string arrays to avoid casting issues
-            var mergedData = new Dictionary<string, List<string[]>>();
+            // Dictionary to store merged data for each sheet - using XLCellValue arrays to preserve data types
+            var mergedData = new Dictionary<string, List<XLCellValue[]>>();
 
             // Dictionary to store common columns for each sheet
             var commonColumns = new Dictionary<string, List<string>>();
@@ -612,9 +612,9 @@ namespace RVToolsMerge
                     var extractionTask = ctx.AddTask("[green]Extracting data[/]", maxValue: availableSheets.Count);
                     foreach (var sheetName in availableSheets)
                     {
-                        mergedData[sheetName] = new List<string[]>
+                        mergedData[sheetName] = new List<XLCellValue[]>
                         {
-                            commonColumns[sheetName].ToArray()
+                            commonColumns[sheetName].Select(col => (XLCellValue)col).ToArray()
                         };
 
                         var sheetTask = ctx.AddTask($"[cyan]Processing '{sheetName}'[/]", maxValue: validFilePaths.Count);
@@ -670,72 +670,19 @@ namespace RVToolsMerge
                                 // Extract data rows
                                 for (int row = 2; row <= lastRow; row++)
                                 {
-                                    var rowData = new string[commonColumns[sheetName].Count];
-                                    // Initialize with default values
-                                    for (int i = 0; i < rowData.Length; i++)
-                                    {
-                                        rowData[i] = string.Empty;
-                                    }
+                                    var rowData = new XLCellValue[commonColumns[sheetName].Count];
 
                                     // Only fill data for columns that exist in this file
                                     foreach (var mapping in columnMapping)
                                     {
                                         var cell = worksheet.Cell(row, mapping.FileColumnIndex);
-                                        string cellValue = cell.Value.ToString();
+                                        var cellValue = cell.Value;
 
                                         // Apply anonymization if needed
                                         if (anonymizeData)
                                         {
-                                            // VM Name
-                                            if (anonymizeColumnIndices.TryGetValue("VM", out int vmColIndex) &&
-                                                mapping.CommonColumnIndex == vmColIndex && !string.IsNullOrWhiteSpace(cellValue))
-                                            {
-                                                if (!vmNameMap.ContainsKey(cellValue))
-                                                {
-                                                    vmNameMap[cellValue] = $"vm{vmNameMap.Count + 1}";
-                                                }
-                                                cellValue = vmNameMap[cellValue];
-                                            }
-                                            // DNS Name
-                                            if (anonymizeColumnIndices.TryGetValue("DNS Name", out int dnsColIndex) &&
-                                                mapping.CommonColumnIndex == dnsColIndex && !string.IsNullOrWhiteSpace(cellValue))
-                                            {
-                                                if (!dnsNameMap.ContainsKey(cellValue))
-                                                {
-                                                    dnsNameMap[cellValue] = $"dns{dnsNameMap.Count + 1}";
-                                                }
-                                                cellValue = dnsNameMap[cellValue];
-                                            }
-                                            // Cluster Name
-                                            if (anonymizeColumnIndices.TryGetValue("Cluster", out int clusterColIndex) &&
-                                                mapping.CommonColumnIndex == clusterColIndex && !string.IsNullOrWhiteSpace(cellValue))
-                                            {
-                                                if (!clusterNameMap.ContainsKey(cellValue))
-                                                {
-                                                    clusterNameMap[cellValue] = $"cluster{clusterNameMap.Count + 1}";
-                                                }
-                                                cellValue = clusterNameMap[cellValue];
-                                            }
-                                            // Host Name
-                                            if (anonymizeColumnIndices.TryGetValue("Host", out int hostColIndex) &&
-                                                mapping.CommonColumnIndex == hostColIndex && !string.IsNullOrWhiteSpace(cellValue))
-                                            {
-                                                if (!hostNameMap.ContainsKey(cellValue))
-                                                {
-                                                    hostNameMap[cellValue] = $"host{hostNameMap.Count + 1}";
-                                                }
-                                                cellValue = hostNameMap[cellValue];
-                                            }
-                                            // Datacenter Name
-                                            if (anonymizeColumnIndices.TryGetValue("Datacenter", out int datacenterColIndex) &&
-                                                mapping.CommonColumnIndex == datacenterColIndex && !string.IsNullOrWhiteSpace(cellValue))
-                                            {
-                                                if (!datacenterNameMap.ContainsKey(cellValue))
-                                                {
-                                                    datacenterNameMap[cellValue] = $"datacenter{datacenterNameMap.Count + 1}";
-                                                }
-                                                cellValue = datacenterNameMap[cellValue];
-                                            }
+                                            cellValue = AnonymizeValue(cellValue, mapping.CommonColumnIndex, anonymizeColumnIndices,
+                                                vmNameMap, dnsNameMap, clusterNameMap, hostNameMap, datacenterNameMap);
                                         }
 
                                         // Store the value
@@ -799,8 +746,13 @@ namespace RVToolsMerge
                             {
                                 for (int col = 0; col < mergedData[sheetName][row].Length; col++)
                                 {
-                                    // Use SetValue instead of directly assigning to Value property
-                                    worksheet.Cell(row + 1, col + 1).SetValue(mergedData[sheetName][row][col]);
+                                    var cell = worksheet.Cell(row + 1, col + 1);
+                                    var value = mergedData[sheetName][row][col];
+
+
+                                    // Use SetValue which handles the type conversion properly
+                                    cell.SetValue(value);
+
                                 }
                                 rowTask.Increment(1);
                             }
@@ -1030,10 +982,11 @@ namespace RVToolsMerge
 
             for (int col = 1; col <= lastColumn; col++)
             {
-                var cellValue = headerRow.Cell(col).Value.ToString();
-                if (!string.IsNullOrWhiteSpace(cellValue))
+                var cell = headerRow.Cell(col);
+                var cellValue = cell.Value;
+                if (!string.IsNullOrWhiteSpace(cellValue.ToString()))
                 {
-                    columnNames.Add(cellValue);
+                    columnNames.Add(cellValue.ToString());
                 }
             }
 
@@ -1051,10 +1004,11 @@ namespace RVToolsMerge
             // Create a mapping between the file's column indices and the common column indices
             for (int fileColIndex = 1; fileColIndex <= lastColumn; fileColIndex++)
             {
-                var cellValue = headerRow.Cell(fileColIndex).Value.ToString();
-                if (!string.IsNullOrWhiteSpace(cellValue))
+                var cell = headerRow.Cell(fileColIndex);
+                var cellValue = cell.Value;
+                if (!string.IsNullOrWhiteSpace(cellValue.ToString()))
                 {
-                    int commonIndex = commonColumns.IndexOf(cellValue);
+                    int commonIndex = commonColumns.IndexOf(cellValue.ToString());
                     if (commonIndex >= 0)
                     {
                         mapping.Add(new ColumnMapping
@@ -1073,6 +1027,68 @@ namespace RVToolsMerge
         {
             public int FileColumnIndex { get; set; }
             public int CommonColumnIndex { get; set; }
+        }
+
+        // Helper method to anonymize values
+        private static XLCellValue AnonymizeValue(XLCellValue value, int currentColumnIndex,
+            Dictionary<string, int> anonymizeColumnIndices,
+            Dictionary<string, string> vmNameMap,
+            Dictionary<string, string> dnsNameMap,
+            Dictionary<string, string> clusterNameMap,
+            Dictionary<string, string> hostNameMap,
+            Dictionary<string, string> datacenterNameMap)
+        {
+
+            // VM Name
+            if (anonymizeColumnIndices.TryGetValue("VM", out int vmColIndex) &&
+                currentColumnIndex == vmColIndex)
+            {
+                return GetOrCreateAnonymizedName(value, vmNameMap, "vm");
+            }
+            // DNS Name
+            else if (anonymizeColumnIndices.TryGetValue("DNS Name", out int dnsColIndex) &&
+                currentColumnIndex == dnsColIndex)
+            {
+                return GetOrCreateAnonymizedName(value, dnsNameMap, "dns");
+            }
+            // Cluster Name
+            else if (anonymizeColumnIndices.TryGetValue("Cluster", out int clusterColIndex) &&
+                currentColumnIndex == clusterColIndex)
+            {
+                return GetOrCreateAnonymizedName(value, clusterNameMap, "cluster");
+            }
+            // Host Name
+            else if (anonymizeColumnIndices.TryGetValue("Host", out int hostColIndex) &&
+                currentColumnIndex == hostColIndex)
+            {
+                return GetOrCreateAnonymizedName(value, hostNameMap, "host");
+            }
+            // Datacenter Name
+            else if (anonymizeColumnIndices.TryGetValue("Datacenter", out int datacenterColIndex) &&
+                currentColumnIndex == datacenterColIndex)
+            {
+                return GetOrCreateAnonymizedName(value, datacenterNameMap, "datacenter");
+            }
+            // Return orginal value if no anonymization is needed
+            return value;
+        }
+
+        // Helper to get or create an anonymized name
+        private static XLCellValue GetOrCreateAnonymizedName(XLCellValue originalValue, Dictionary<string, string> nameMap, string prefix)
+        {
+
+            var lookupValue = originalValue.ToString();
+            if (string.IsNullOrWhiteSpace(lookupValue))
+            {
+                return originalValue; // Return original value if empty
+            }
+
+            if (!nameMap.TryGetValue(lookupValue, out string? value))
+            {
+                value = $"{prefix}{nameMap.Count + 1}";
+                nameMap[lookupValue] = value;
+            }
+            return value;
         }
     }
 }
