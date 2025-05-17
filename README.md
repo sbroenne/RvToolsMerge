@@ -107,13 +107,13 @@ RVToolsMerge [options] [inputPath] [outputFile]
 |--------|-------------|
 | `-h, --help, /?` | Show the help message and exit |
 | `-m, --ignore-missing-sheets` | Ignore missing optional sheets (vHost, vPartition, vMemory) |
-| `-i, --skip-invalid-files` | Skip files that don't meet validation requirements (no vInfo sheet or mandatory columns are missing) instead of failing |
+| `-i, --skip-invalid-files` | Skip files that don't meet validation requirements (no vInfo sheet or mandatory columns are missing) instead of failing with an error |
 | `-a, --anonymize` | Anonymize VM, DNS, Cluster, Host, and Datacenter names |
 | `-M, --only-mandatory-columns` | Include only mandatory columns for each sheet |
 | `-s, --include-source` | Include a 'Source File' column showing the source file for each record |
 | `-d, --debug` | Show detailed error information including stack traces |
 
-> **Note:** The `-i` and `-m` options can  be used together. When combined, files with missing vInfo sheets or missing required columns will be skipped, and other files with missing optional sheets will be processed.
+> **Note:** The `-i` and `-m` options can be used together. When combined, files with missing vInfo sheets will be skipped, and other files with missing optional sheets will be processed.
 
 ## Examples
 
@@ -164,15 +164,25 @@ RVToolsMerge -s C:\RVTools\Data C:\Reports\With_Source_Files.xlsx
 Combine multiple options:
 ```
 RVToolsMerge -a -M -s C:\RVTools\Data C:\Reports\Complete_Analysis.xlsx
+```
 
 ## Validation Behavior
 
 - By default, all sheets must exist in all files
-- When using `--ignore-missing-sheets`, optional sheets (vHost, vPartition, vMemory) can be missing with warnings shown. The vInfo sheet is always required.
-- When using `--skip-invalid-files`, files without required sheets will be skipped and reported, but processing will continue with valid files.
-- When using `--anonymize`, sensitive names are replaced with generic identifiers (vm1, dns1, host1, etc.) to protect sensitive information.
-- When using `--only-mandatory-columns`, only the mandatory columns for each sheet are included in the output, regardless of what other columns might be common across all files.
-- When using `--include-source`, a 'Source File' column is added to each sheet to show which source file each record came from, helping with data traceability.
+- When using `--ignore-missing-sheets` (`-m`):
+  - The vInfo sheet is still required in all files
+  - Optional sheets (vHost, vPartition, vMemory) can be missing with warnings shown
+  - If an optional sheet exists but has missing mandatory columns, it will either cause an error or be excluded based on other options
+- When using `--skip-invalid-files` (`-i`):
+  - Files without the required vInfo sheet will be skipped
+  - Files with vInfo sheet but missing mandatory vInfo columns will be skipped
+  - Files with optional sheets that have missing mandatory columns will be skipped
+- When using both `--ignore-missing-sheets` and `--skip-invalid-files` together:
+  - Files without vInfo sheet will be skipped
+  - Files with vInfo sheet but missing mandatory vInfo columns will be skipped
+  - Files with complete vInfo sheet but missing optional sheets will be processed
+  - Files with optional sheets that have missing columns will still be processed, but those sheets may be excluded
+
 
 ## Troubleshooting
 

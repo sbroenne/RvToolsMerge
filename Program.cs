@@ -17,6 +17,14 @@ namespace RVToolsMerge
         private static readonly string[] RequiredSheets = ["vInfo", "vHost", "vPartition", "vMemory"];
         private static readonly string[] MinimumRequiredSheets = ["vInfo"];
 
+        // Class to store validation issues
+        private class ValidationIssue
+        {
+            public string FileName { get; set; } = string.Empty;
+            public bool Skipped { get; set; }
+            public string ValidationError { get; set; } = string.Empty;
+        }
+
         // Mandatory columns for each sheet
         private static readonly Dictionary<string, string[]> MandatoryColumns = new Dictionary<string, string[]>
         {
@@ -95,7 +103,7 @@ namespace RVToolsMerge
 
             if (!isInputFile && !isInputDirectory)
             {
-                AnsiConsole.MarkupLine($"[red]Error:[/] Input path '[yellow]{inputPath}[/]' does not exist as either a file or directory.");
+                AnsiConsole.MarkupLineInterpolated($"[red]Error:[/] Input path '[yellow]{inputPath}[/]' does not exist as either a file or directory.");
                 AnsiConsole.MarkupLine("Use --help to see usage information.");
                 return;
             }
@@ -112,32 +120,35 @@ namespace RVToolsMerge
                     // Check if the file has the correct extension
                     if (!Path.GetExtension(inputPath).Equals(".xlsx", StringComparison.OrdinalIgnoreCase))
                     {
-                        AnsiConsole.MarkupLine($"[red]Error:[/] Input file '[yellow]{inputPath}[/]' must be an Excel file (.xlsx).");
+                        AnsiConsole.MarkupLineInterpolated($"[red]Error:[/] Input file '[yellow]{inputPath}[/]' must be an Excel file (.xlsx).");
                         return;
                     }
-                    excelFiles = new[] { inputPath };
-                    AnsiConsole.MarkupLine($"[green]Processing single Excel file: {Path.GetFileName(inputPath)}[/]");
+                    excelFiles = [inputPath];
+                    AnsiConsole.MarkupLineInterpolated($"[green]Processing single Excel file: {Path.GetFileName(inputPath)}[/]");
                 }
                 else // isInputDirectory
                 {
                     excelFiles = Directory.GetFiles(inputPath, "*.xlsx");
                     if (excelFiles.Length == 0)
                     {
-                        AnsiConsole.MarkupLine($"[yellow]No Excel files found in '{inputPath}'.[/]");
+                        AnsiConsole.MarkupLineInterpolated($"[yellow]No Excel files found in '{inputPath}'.[/]");
                         return;
                     }
-                    AnsiConsole.MarkupLine($"[green]Found {excelFiles.Length} Excel files to process in directory.[/]");
+                    AnsiConsole.MarkupLineInterpolated($"[green]Found {excelFiles.Length} Excel files to process in directory.[/]");
                 }
 
-                // Process the files
-                MergeRVToolsFiles(excelFiles, outputFile, ignoreMissingOptionalSheets, skipInvalidFiles, anonymizeData, onlyMandatoryColumns, includeSourceFileName);
-                AnsiConsole.MarkupLine($"[green]Successfully merged files.[/] Output saved to: [blue]{outputFile}[/]");
+                // Process the files - collect validation issues
+                var validationIssues = new List<ValidationIssue>();
+                MergeRVToolsFiles(excelFiles, outputFile, ignoreMissingOptionalSheets, skipInvalidFiles, anonymizeData,
+                    onlyMandatoryColumns, includeSourceFileName, validationIssues, debugMode);
+
+                AnsiConsole.MarkupLineInterpolated($"[green]Successfully merged files.[/] Output saved to: [blue]{outputFile}[/]");
 
                 // Get product name from assembly attributes
                 var finalProductAttr = Attribute.GetCustomAttribute(Assembly.GetExecutingAssembly(), typeof(AssemblyProductAttribute)) as AssemblyProductAttribute;
                 string finalProdName = finalProductAttr?.Product ?? "RVToolsMerge";
 
-                AnsiConsole.MarkupLine($"Thank you for using [green]{finalProdName}[/]");
+                AnsiConsole.MarkupLineInterpolated($"Thank you for using [green]{finalProdName}[/]");
             }
             catch (Exception ex)
             {
@@ -153,6 +164,34 @@ namespace RVToolsMerge
                     AnsiConsole.MarkupLine("[grey]Use --debug flag to see detailed error information.[/]");
                 }
             }
+        }
+
+        // Helper method to display validation issues
+        private static void DisplayValidationIssues(List<ValidationIssue> issues)
+        {
+            AnsiConsole.WriteLine();
+            AnsiConsole.Write(new Rule("[yellow]Validation Issues[/]").RuleStyle("grey"));
+
+            var table = new Table();
+            table.AddColumn(new TableColumn("File Name").LeftAligned());
+            table.AddColumn(new TableColumn("Status").Centered());
+            table.AddColumn(new TableColumn("Details").LeftAligned());
+
+            foreach (var issue in issues)
+            {
+                table.AddRow(
+                    $"[cyan]{issue.FileName}[/]",
+                    issue.Skipped ? "[yellow]Skipped[/]" : "[green]Processed with warning[/]",
+                    $"[grey]{issue.ValidationError}[/]"
+                );
+            }
+
+            table.Border(TableBorder.Rounded);
+            AnsiConsole.Write(table);
+            AnsiConsole.WriteLine();
+
+            AnsiConsole.MarkupLineInterpolated($"[yellow]Total of {issues.Count} validation issues detected.[/]");
+            AnsiConsole.WriteLine();
         }
 
         // Helper method to get user-friendly error messages
@@ -182,8 +221,14 @@ namespace RVToolsMerge
             }
         }
 
-        static void MergeRVToolsFiles(string[] filePaths, string outputPath, bool ignoreMissingOptionalSheets = false, bool skipInvalidFiles = false, bool anonymizeData = false, bool onlyMandatoryColumns = false, bool includeSourceFileName = false)
+        static void MergeRVToolsFiles(string[] filePaths, string outputPath, bool ignoreMissingOptionalSheets = false,
+            bool skipInvalidFiles = false, bool anonymizeData = false, bool onlyMandatoryColumns = false,
+            bool includeSourceFileName = false, List<ValidationIssue>? validationIssues = null, bool debugMode = false)
         {
+            // Create validation issues list if not provided
+            validationIssues ??= [];
+
+
             if (filePaths.Length == 0) return;
 
             // Dictionary to store merged data for each sheet - using string arrays to avoid casting issues
@@ -212,16 +257,21 @@ namespace RVToolsMerge
             AnsiConsole.Progress()
                 .AutoClear(false)
                 .Columns(
-                new ProgressColumn[]
-                {
+                [
                     new TaskDescriptionColumn(),
                     new ProgressBarColumn(),
                     new PercentageColumn(),
                     new SpinnerColumn()
-                })
+                ])
                 .Start(ctx =>
                 {
+                    // Create a validation task
                     var validationTask = ctx.AddTask("[green]Validating files[/]", maxValue: validFilePaths.Count);
+
+                    // Add subtasks for each validation step
+                    var basicValidationTask = ctx.AddTask("[cyan]Basic validation[/]", maxValue: validFilePaths.Count);
+                    var requiredSheetTask = ctx.AddTask("[cyan]Checking required sheets[/]", maxValue: validFilePaths.Count);
+                    var columnValidationTask = ctx.AddTask("[cyan]Validating columns[/]", maxValue: validFilePaths.Count);
 
                     for (int i = validFilePaths.Count - 1; i >= 0; i--)
                     {
@@ -233,74 +283,151 @@ namespace RVToolsMerge
                         {
                             using (var workbook = new XLWorkbook(filePath))
                             {
-                                // Always check for the minimum required sheets (vInfo must exist)
-                                var missingMinimumSheets = MinimumRequiredSheets.Where(sheet => !SheetExists(workbook, sheet)).ToList();
+                                basicValidationTask.Increment(1);
 
-                                if (missingMinimumSheets.Any())
+                                // Step 1: Validate vInfo sheet (always required)
+                                if (!SheetExists(workbook, "vInfo"))
                                 {
                                     fileIsValid = false;
                                     if (skipInvalidFiles)
                                     {
-                                        AnsiConsole.MarkupLine($"[yellow]Warning:[/] Skipping file '[yellow]{fileName}[/]' - missing required sheet(s): [red]{string.Join(", ", missingMinimumSheets)}[/]");
+                                        // Add to validation issues instead of outputting immediately
+                                        validationIssues.Add(new ValidationIssue
+                                        {
+                                            FileName = fileName,
+                                            Skipped = true,
+                                            ValidationError = "Missing essential 'vInfo' sheet which is required for processing."
+                                        });
                                         skippedFiles.Add(fileName);
                                     }
                                     else
                                     {
-                                        throw new Exception($"The file '{fileName}' is missing essential sheet(s): {string.Join(", ", missingMinimumSheets)}. These sheets are required for processing.");
+                                        throw new Exception($"The file '{fileName}' is missing the essential 'vInfo' sheet. This sheet is required for processing. Use --skip-invalid-files to skip these files.");
                                     }
                                 }
-                                else if (!ignoreMissingOptionalSheets)
+                                else
                                 {
-                                    // Full validation for all sheets when not ignoring missing optional sheets
-                                    var missingSheets = RequiredSheets.Where(sheet => !SheetExists(workbook, sheet)).ToList();
+                                    // vInfo exists, check its mandatory columns
+                                    var worksheet = workbook.Worksheet("vInfo");
+                                    var columnNames = GetColumnNames(worksheet);
 
-                                    if (missingSheets.Any())
+                                    requiredSheetTask.Increment(1);
+
+                                    if (MandatoryColumns.TryGetValue("vInfo", out var mandatoryColumns))
                                     {
-                                        fileIsValid = false;
-                                        if (skipInvalidFiles)
+                                        var missingColumns = mandatoryColumns.Where(col => !columnNames.Contains(col)).ToList();
+
+                                        if (missingColumns.Any())
                                         {
-                                            AnsiConsole.MarkupLine($"[yellow]Warning:[/] Skipping file '[yellow]{fileName}[/]' - missing sheet(s): [red]{string.Join(", ", missingSheets)}[/]");
-                                            skippedFiles.Add(fileName);
-                                        }
-                                        else
-                                        {
-                                            throw new Exception($"The file '{fileName}' is missing required sheet(s): {string.Join(", ", missingSheets)}. Use --ignore-missing-optional-sheets to process files without all sheets.");
+                                            fileIsValid = false;
+                                            if (skipInvalidFiles)
+                                            {
+                                                validationIssues.Add(new ValidationIssue
+                                                {
+                                                    FileName = fileName,
+                                                    Skipped = true,
+                                                    ValidationError = $"'vInfo' sheet is missing mandatory column(s): {string.Join(", ", missingColumns)}"
+                                                });
+                                                skippedFiles.Add(fileName);
+                                            }
+                                            else
+                                            {
+                                                throw new Exception($"The file '{fileName}', sheet 'vInfo' is missing required column(s): {string.Join(", ", missingColumns)}. These columns are necessary for proper data merging.");
+                                            }
                                         }
                                     }
                                 }
 
-                                // Validate mandatory columns in each sheet that exists
+                                // Step 2: If the file is still valid, check the optional sheets if they exist
                                 if (fileIsValid)
                                 {
-                                    foreach (var sheetName in RequiredSheets)
+                                    // Check each optional sheet (vHost, vPartition, vMemory)
+                                    foreach (var sheetName in RequiredSheets.Where(s => s != "vInfo"))
                                     {
                                         if (SheetExists(workbook, sheetName))
                                         {
+                                            // Optional sheet exists, validate its mandatory columns
                                             var worksheet = workbook.Worksheet(sheetName);
                                             var columnNames = GetColumnNames(worksheet);
 
-                                            // Check for mandatory columns
                                             if (MandatoryColumns.TryGetValue(sheetName, out var mandatoryColumns))
                                             {
                                                 var missingColumns = mandatoryColumns.Where(col => !columnNames.Contains(col)).ToList();
 
                                                 if (missingColumns.Any())
                                                 {
-                                                    fileIsValid = false;
+                                                    // For optional sheets with missing columns:
+                                                    // If -i (skipInvalidFiles) is set, skip the entire file
+                                                    // If -m (ignoreMissingOptionalSheets) is set, just log a warning but keep the file
                                                     if (skipInvalidFiles)
                                                     {
-                                                        AnsiConsole.MarkupLine($"[yellow]Warning:[/] Skipping file '[yellow]{fileName}[/]' - sheet '[cyan]{sheetName}[/]' is missing mandatory column(s): [red]{string.Join(", ", missingColumns)}[/]");
+                                                        fileIsValid = false;
+                                                        validationIssues.Add(new ValidationIssue
+                                                        {
+                                                            FileName = fileName,
+                                                            Skipped = true,
+                                                            ValidationError = $"Sheet '{sheetName}' is missing mandatory column(s): {string.Join(", ", missingColumns)}"
+                                                        });
                                                         skippedFiles.Add(fileName);
                                                         break;
                                                     }
+                                                    else if (!ignoreMissingOptionalSheets)
+                                                    {
+                                                        // Only throw error if we're not ignoring optional sheets
+                                                        throw new Exception($"The file '{fileName}', sheet '{sheetName}' is missing required column(s): {string.Join(", ", missingColumns)}. Use --ignore-missing-optional-sheets to process files with missing or incomplete optional sheets.");
+                                                    }
                                                     else
                                                     {
-                                                        throw new Exception($"The file '{fileName}', sheet '{sheetName}' is missing required column(s): {string.Join(", ", missingColumns)}. These columns are necessary for proper data merging.");
+                                                        // Add a warning but continue processing the file
+                                                        validationIssues.Add(new ValidationIssue
+                                                        {
+                                                            FileName = fileName,
+                                                            Skipped = false,
+                                                            ValidationError = $"Sheet '{sheetName}' has missing column(s): {string.Join(", ", missingColumns)}. This sheet may be excluded from processing."
+                                                        });
                                                     }
                                                 }
                                             }
                                         }
+                                        else if (!ignoreMissingOptionalSheets)
+                                        {
+                                            // Optional sheet is missing and we're not ignoring missing sheets
+                                            fileIsValid = false;
+                                            if (skipInvalidFiles)
+                                            {
+                                                validationIssues.Add(new ValidationIssue
+                                                {
+                                                    FileName = fileName,
+                                                    Skipped = true,
+                                                    ValidationError = $"Missing optional sheet '{sheetName}'"
+                                                });
+                                                skippedFiles.Add(fileName);
+                                                break;
+                                            }
+                                            else
+                                            {
+                                                throw new Exception($"The file '{fileName}' is missing the '{sheetName}' sheet. Use --ignore-missing-optional-sheets to process files with missing optional sheets.");
+                                            }
+                                        }
+                                        else
+                                        {
+                                            // Sheet is missing but we're ignoring missing sheets, add to validation issues
+                                            validationIssues.Add(new ValidationIssue
+                                            {
+                                                FileName = fileName,
+                                                Skipped = false,
+                                                ValidationError = $"Missing optional sheet '{sheetName}'. This sheet will be excluded from processing."
+                                            });
+                                        }
                                     }
+
+                                    columnValidationTask.Increment(1);
+                                }
+                                else
+                                {
+                                    // If not valid after required sheet check, still increment the column validation task
+                                    // to keep progress consistent
+                                    columnValidationTask.Increment(1);
                                 }
                             }
                         }
@@ -308,9 +435,22 @@ namespace RVToolsMerge
                         {
                             // If we're skipping invalid files and there's any error opening the file, skip it
                             var friendlyMessage = GetUserFriendlyErrorMessage(ex);
-                            AnsiConsole.MarkupLine($"[yellow]Warning:[/] Skipping file '[yellow]{fileName}[/]' due to error: [red]{friendlyMessage}[/]");
+                            validationIssues.Add(new ValidationIssue
+                            {
+                                FileName = fileName,
+                                Skipped = true,
+                                ValidationError = $"Error: {friendlyMessage}"
+                            });
                             fileIsValid = false;
                             skippedFiles.Add(fileName);
+
+                            // Ensure we increment all tasks even if we hit an exception
+                            if (basicValidationTask.MaxValue > basicValidationTask.Value)
+                                basicValidationTask.Increment(1);
+                            if (requiredSheetTask.MaxValue > requiredSheetTask.Value)
+                                requiredSheetTask.Increment(1);
+                            if (columnValidationTask.MaxValue > columnValidationTask.Value)
+                                columnValidationTask.Increment(1);
                         }
 
                         if (!fileIsValid && skipInvalidFiles)
@@ -321,9 +461,14 @@ namespace RVToolsMerge
                         validationTask.Increment(1);
                     }
 
+                    // Complete any tasks that might not have reached 100% due to skipping files
+                    basicValidationTask.StopTask();
+                    requiredSheetTask.StopTask();
+                    columnValidationTask.StopTask();
+
                     if (skippedFiles.Count > 0)
                     {
-                        AnsiConsole.MarkupLine($"[yellow]Warning:[/] Skipped {skippedFiles.Count} invalid files out of {filePaths.Length}[/]");
+                        AnsiConsole.MarkupLineInterpolated($"[yellow]Warning:[/] Skipped [green]{skippedFiles.Count}[/] invalid files out of [green]{filePaths.Length}[/]. See validation issues for details.");
                     }
 
                     if (validFilePaths.Count == 0)
@@ -332,108 +477,118 @@ namespace RVToolsMerge
                     }
                 });
 
-            // Second pass for valid files to determine which sheets are available
+            // Display validation issues immediately after validation is complete
+            if (validationIssues.Count > 0)
+            {
+                DisplayValidationIssues(validationIssues);
+            }
+
+            // Check if any of the optinal sheets are missing
+            // If we're ignoring missing optional sheets, we need to check how many files have missing optional sheets
             if (ignoreMissingOptionalSheets)
             {
-                foreach (var filePath in validFilePaths)
+                // Check how many file names have warning but not been skipped
+                var processedWithWarningCount = validationIssues.Where(issue => !issue.Skipped).DistinctBy(issue => issue.FileName).Count();
+                if (processedWithWarningCount > 0)
                 {
-                    var fileName = Path.GetFileName(filePath);
-                    using (var workbook = new XLWorkbook(filePath))
-                    {
-                        for (int i = availableSheets.Count - 1; i >= 0; i--)
-                        {
-                            string sheet = availableSheets[i];
-                            if (!MinimumRequiredSheets.Contains(sheet) && !SheetExists(workbook, sheet))
-                            {
-                                AnsiConsole.MarkupLine($"[yellow]Warning:[/] File '[cyan]{fileName}[/]' is missing optional sheet '[green]{sheet}[/]'");
-                                availableSheets.RemoveAt(i);
-                            }
-                        }
-                    }
-                }
-
-                if (ignoreMissingOptionalSheets && availableSheets.Count < RequiredSheets.Length)
-                {
-                    AnsiConsole.MarkupLine($"[yellow]Warning:[/] Some sheets are not available in all files. Only processing: [green]{string.Join(", ", availableSheets)}[/]");
-                }
-                else
-                {
-                    AnsiConsole.MarkupLine("[green]All files have the required sheets.[/]");
+                    AnsiConsole.MarkupLineInterpolated($"[yellow]Warning:[/] {processedWithWarningCount} files have missing optional sheets. Only processing the vInfo sheet for these files. Your data will be incomplete.");
                 }
             }
 
-            AnsiConsole.MarkupLine($"[bold]Processing {validFilePaths.Count} valid files...[/]");
+            AnsiConsole.MarkupLineInterpolated($"[bold]Processing {validFilePaths.Count} valid files...[/]");
             AnsiConsole.MarkupLine("[bold]Analyzing columns...[/]");
-            // First pass: Determine common columns across all files for each sheet
-            AnsiConsole.Progress()
-                .AutoClear(false)
-                .Columns(
-                new ProgressColumn[]
-                {
-                    new TaskDescriptionColumn(),
-                    new ProgressBarColumn(),
-                    new PercentageColumn(),
-                    new SpinnerColumn()
-                })
-                .Start(ctx =>
-                {
-                    var columnsTask = ctx.AddTask("[green]Analyzing columns[/]", maxValue: availableSheets.Count);
-                    foreach (var sheetName in availableSheets)
+
+            // First determine what columns are available across all files for each sheet
+            foreach (var sheetName in availableSheets)
+            {
+                var allFileColumns = new List<List<string>>();
+
+                // First analyze all files to collect column information
+                AnsiConsole.MarkupLineInterpolated($"Analyzing columns for sheet '[cyan]{sheetName}[/]'...");
+
+                AnsiConsole.Progress()
+                    .AutoClear(false)
+                    .Columns(
+                    [
+                        new TaskDescriptionColumn(),
+                        new ProgressBarColumn(),
+                        new PercentageColumn(),
+                        new SpinnerColumn()
+                    ])
+                    .Start(ctx =>
                     {
-                        var allFileColumns = new List<List<string>>();
+                        // Create main task for analysis
                         var fileAnalysisTask = ctx.AddTask($"[cyan]Analyzing '{sheetName}' sheet[/]", maxValue: validFilePaths.Count);
+
+                        // Add subtasks for different aspects of column analysis
+                        var readingColumnsTask = ctx.AddTask($"[grey]Reading column headers[/]", maxValue: validFilePaths.Count);
+                        var processingColumnsTask = ctx.AddTask($"[grey]Processing columns[/]", maxValue: validFilePaths.Count);
+
                         foreach (var filePath in validFilePaths)
                         {
                             using (var workbook = new XLWorkbook(filePath))
                             {
-                                var worksheet = workbook.Worksheet(sheetName);
-                                var columnNames = GetColumnNames(worksheet);
-                                allFileColumns.Add(columnNames);
-                            }
-                            fileAnalysisTask.Increment(1);
-                        }
-                        fileAnalysisTask.StopTask();
-
-                        // Find columns that exist in all files for this sheet
-                        var columnsInAllFiles = allFileColumns.Count > 0
-                            ? allFileColumns.Aggregate((a, b) => a.Intersect(b).ToList())
-                            : new List<string>();
-
-                        // If only mandatory columns are requested, filter the common columns
-                        if (onlyMandatoryColumns && MandatoryColumns.TryGetValue(sheetName, out var mandatoryColumns))
-                        {
-                            // Process mandatory column names for comparison
-                            var processedMandatoryColumns = mandatoryColumns
-                                .Select(col => col.Contains("vInfo") ? col.Replace("vInfo", "").Trim() : col)
-                                .ToArray();
-                            columnsInAllFiles = columnsInAllFiles.Intersect(processedMandatoryColumns).ToList();
-
-                            // Make sure all mandatory columns are included
-                            foreach (var col in processedMandatoryColumns)
-                            {
-                                if (!columnsInAllFiles.Contains(col))
+                                if (SheetExists(workbook, sheetName))
                                 {
-                                    AnsiConsole.MarkupLine($"[yellow]Warning:[/] Mandatory column '[cyan]{col}[/]' for sheet '[green]{sheetName}[/]' is missing from common columns.");
+                                    var worksheet = workbook.Worksheet(sheetName);
+                                    var columnNames = GetColumnNames(worksheet);
+                                    allFileColumns.Add(columnNames);
                                 }
                             }
+                            readingColumnsTask.Increment(1);
+                            processingColumnsTask.Increment(1);
+                            fileAnalysisTask.Increment(1);
                         }
 
-                        // If includeSourceFileName option is enabled, prepare to add source file column
-                        if (includeSourceFileName)
+                        // Make sure all tasks complete
+                        readingColumnsTask.StopTask();
+                        processingColumnsTask.StopTask();
+                    });
+
+                // If only mandatory columns are requested, filter the common columns
+                if (onlyMandatoryColumns && MandatoryColumns.TryGetValue(sheetName, out var mandatoryColumns))
+                {
+                    var processedMandatoryColumns = mandatoryColumns
+                        .Select(col => col.Contains("vInfo") ? col.Replace("vInfo", "").Trim() : col)
+                        .ToList();
+
+                    var columnsInAllFiles = allFileColumns.Count > 0
+                        ? allFileColumns.Aggregate((a, b) => a.Intersect(b).ToList())
+                        : new List<string>();
+
+                    foreach (var col in processedMandatoryColumns)
+                    {
+                        if (!columnsInAllFiles.Contains(col))
                         {
-                            const string sourceFileColumnName = "Source File";
-                            // Add source file column if it doesn't already exist
-                            if (!columnsInAllFiles.Contains(sourceFileColumnName))
-                            {
-                                columnsInAllFiles.Add(sourceFileColumnName);
-                            }
+                            AnsiConsole.MarkupLineInterpolated($"[yellow]Warning:[/] Mandatory column '[cyan]{col}[/]' for sheet '[green]{sheetName}[/]' is missing from common columns.");
                         }
-
-                        commonColumns[sheetName] = columnsInAllFiles;
-                        AnsiConsole.MarkupLine($"Sheet '[green]{sheetName}[/]' has [yellow]{columnsInAllFiles.Count}[/] {(onlyMandatoryColumns ? "mandatory" : "common")} columns across all files.");
-                        columnsTask.Increment(1);
                     }
-                });
+
+                    commonColumns[sheetName] = columnsInAllFiles.Intersect(processedMandatoryColumns).ToList();
+                }
+                else
+                {
+                    // Find columns that exist in all files for this sheet
+                    var columnsInAllFiles = allFileColumns.Count > 0
+                        ? allFileColumns.Aggregate((a, b) => a.Intersect(b).ToList())
+                        : new List<string>();
+
+                    // If includeSourceFileName option is enabled, prepare to add source file column
+                    if (includeSourceFileName)
+                    {
+                        const string sourceFileColumnName = "Source File";
+                        // Add source file column if it doesn't already exist
+                        if (!columnsInAllFiles.Contains(sourceFileColumnName))
+                        {
+                            columnsInAllFiles.Add(sourceFileColumnName);
+                        }
+                    }
+
+                    commonColumns[sheetName] = columnsInAllFiles;
+                }
+
+                AnsiConsole.MarkupLineInterpolated($"Sheet '[green]{sheetName}[/]' has [yellow]{commonColumns[sheetName].Count}[/] {(onlyMandatoryColumns ? "mandatory" : "common")} columns across all files.");
+            }
 
             AnsiConsole.MarkupLine("[bold]Extracting data from files...[/]");
             // Display anonymization message if enabled
@@ -446,13 +601,12 @@ namespace RVToolsMerge
             AnsiConsole.Progress()
                 .AutoClear(false)
                 .Columns(
-                new ProgressColumn[]
-                {
+                [
                     new TaskDescriptionColumn(),
                     new ProgressBarColumn(),
                     new PercentageColumn(),
                     new SpinnerColumn()
-                })
+                ])
                 .Start(ctx =>
                 {
                     var extractionTask = ctx.AddTask("[green]Extracting data[/]", maxValue: availableSheets.Count);
@@ -462,17 +616,28 @@ namespace RVToolsMerge
                         {
                             commonColumns[sheetName].ToArray()
                         };
+
                         var sheetTask = ctx.AddTask($"[cyan]Processing '{sheetName}'[/]", maxValue: validFilePaths.Count);
+
+                        // Add subtasks for data extraction phases
+                        var openingFilesTask = ctx.AddTask($"[grey]Opening files[/]", maxValue: validFilePaths.Count);
+                        var readingDataTask = ctx.AddTask($"[grey]Reading data[/]", maxValue: validFilePaths.Count);
+                        var processingDataTask = ctx.AddTask($"[grey]Processing {(anonymizeData ? "and anonymizing " : "")}data[/]", maxValue: validFilePaths.Count);
+
                         foreach (var filePath in validFilePaths)
                         {
                             var fileName = Path.GetFileName(filePath);
                             using (var workbook = new XLWorkbook(filePath))
                             {
+                                openingFilesTask.Increment(1);
+
                                 var worksheet = workbook.Worksheet(sheetName);
                                 var columnMapping = GetColumnMapping(worksheet, commonColumns[sheetName]);
 
                                 // Find the last row with data
                                 int lastRow = worksheet.LastRowUsed().RowNumber();
+
+                                readingDataTask.Increment(1);
 
                                 // Find columns to anonymize in this sheet
                                 var anonymizeColumnIndices = new Dictionary<string, int>();
@@ -585,10 +750,18 @@ namespace RVToolsMerge
 
                                     mergedData[sheetName].Add(rowData);
                                 }
+
+                                processingDataTask.Increment(1);
                             }
                             sheetTask.Increment(1);
                         }
+
+                        // Complete all subtasks for this sheet
+                        openingFilesTask.StopTask();
+                        readingDataTask.StopTask();
+                        processingDataTask.StopTask();
                         sheetTask.StopTask();
+
                         extractionTask.Increment(1);
                     }
                 });
@@ -597,22 +770,30 @@ namespace RVToolsMerge
             AnsiConsole.Progress()
                 .AutoClear(false)
                 .Columns(
-                new ProgressColumn[]
-                {
+                [
                     new TaskDescriptionColumn(),
                     new ProgressBarColumn(),
                     new PercentageColumn(),
                     new SpinnerColumn()
-                })
+                ])
                 .Start(ctx =>
                 {
                     var outputTask = ctx.AddTask("[green]Creating output file[/]", maxValue: availableSheets.Count + 1);
+
+                    // Add subtasks for file creation phases
+                    var preparingWorkbookTask = ctx.AddTask("[grey]Preparing workbook[/]", maxValue: 1);
+                    var writingDataTask = ctx.AddTask("[grey]Writing data[/]", maxValue: availableSheets.Count);
+                    var formattingTask = ctx.AddTask("[grey]Formatting and saving[/]", maxValue: availableSheets.Count + 1);
+
                     using (var workbook = new XLWorkbook())
                     {
+                        preparingWorkbookTask.Increment(1);
+
                         foreach (var sheetName in availableSheets)
                         {
                             var worksheet = workbook.Worksheets.Add(sheetName);
                             var rowTask = ctx.AddTask($"[cyan]Writing '{sheetName}' sheet[/]", maxValue: mergedData[sheetName].Count);
+
                             // Write data to sheet
                             for (int row = 0; row < mergedData[sheetName].Count; row++)
                             {
@@ -623,17 +804,29 @@ namespace RVToolsMerge
                                 }
                                 rowTask.Increment(1);
                             }
+
+                            writingDataTask.Increment(1);
+
                             // Auto-fit columns
                             worksheet.Columns().AdjustToContents();
+
+                            formattingTask.Increment(1);
                             rowTask.StopTask();
                             outputTask.Increment(1);
                         }
 
                         // Save the output file
-                        AnsiConsole.MarkupLine($"[cyan]Saving file to disk...[/]");
+                        AnsiConsole.MarkupLine("[cyan]Saving file to disk...[/]");
                         workbook.SaveAs(outputPath);
+
+                        formattingTask.Increment(1);
                         outputTask.Increment(1);
                     }
+
+                    // Complete all tasks
+                    preparingWorkbookTask.StopTask();
+                    writingDataTask.StopTask();
+                    formattingTask.StopTask();
                 });
 
             AnsiConsole.Write(new Rule("[yellow]File Summary[/]").RuleStyle("grey"));
@@ -669,7 +862,7 @@ namespace RVToolsMerge
                 AnsiConsole.Write(table);
 
                 int totalAnonymized = vmNameMap.Count + dnsNameMap.Count + clusterNameMap.Count + hostNameMap.Count + datacenterNameMap.Count;
-                AnsiConsole.MarkupLine($"[bold]Total:[/] [green]{totalAnonymized}[/] items anonymized");
+                AnsiConsole.MarkupLineInterpolated($"[bold]Total:[/] [green]{totalAnonymized}[/] items anonymized");
             }
         }
 
@@ -689,14 +882,14 @@ namespace RVToolsMerge
             string productName = productAttribute?.Product ?? "RVTools Excel Merger";
 
             // Enhanced header display with Spectre.Console
-            AnsiConsole.MarkupLine($"[bold green]{productName}[/] - Merges multiple RVTools Excel files into a single file");
-            AnsiConsole.MarkupLine($"[yellow]Version {versionString}[/]");
+            AnsiConsole.MarkupLineInterpolated($"[bold green]{productName}[/] - Merges multiple RVTools Excel files into a single file");
+            AnsiConsole.MarkupLineInterpolated($"[yellow]Version {versionString}[/]");
             AnsiConsole.Write(new Rule().RuleStyle("grey"));
             AnsiConsole.WriteLine();
             AnsiConsole.WriteLine();
 
             AnsiConsole.MarkupLine("[bold]USAGE:[/]");
-            AnsiConsole.MarkupLine($"  [cyan]{Assembly.GetExecutingAssembly().GetName().Name}[/] [grey][[options]] [[inputFolder]] [[outputFile]][/]");
+            AnsiConsole.MarkupLineInterpolated($"  [cyan]{Assembly.GetExecutingAssembly().GetName().Name}[/] [grey][[options]] [[inputFolder]] [[outputFile]][/]");
             AnsiConsole.WriteLine();
 
             AnsiConsole.MarkupLine("[bold]ARGUMENTS:[/]");
@@ -705,14 +898,16 @@ namespace RVToolsMerge
             AnsiConsole.MarkupLine("  [green]outputFile[/]    Path where the merged file will be saved.");
             AnsiConsole.MarkupLine("                Defaults to \"RVTools_Merged.xlsx\" in the current directory.");
             AnsiConsole.WriteLine();
+            AnsiConsole.WriteLine();
 
             AnsiConsole.MarkupLine("[bold]OPTIONS:[/]");
             AnsiConsole.MarkupLine("  [yellow]-h, --help, /?[/]            Show this help message and exit.");
             AnsiConsole.MarkupLine("  [yellow]-m, --ignore-missing-sheets[/]");
             AnsiConsole.MarkupLine("                            Ignore missing optional sheets (vHost, vPartition & vMemory).");
             AnsiConsole.MarkupLine("                            Will still validate vInfo sheet exists.");
-            AnsiConsole.MarkupLine("  [yellow]-i, --skip-invalid-files[/]  Skip files that don't meet validation requirements (no vInfo Sheet or mandatory columns are missing) instead of failing with an error.");
-            AnsiConsole.MarkupLine("                            Can be used with -m to skip files that fail validation while");
+            AnsiConsole.MarkupLine("  [yellow]-i, --skip-invalid-files[/]  Skip files that don't meet validation requirements (no vInfo sheet or");
+            AnsiConsole.MarkupLine("                            mandatory columns are missing) instead of failing with an error.");
+            AnsiConsole.MarkupLine("                            Can be used with -m to skip files with missing vInfo sheet while");
             AnsiConsole.MarkupLine("                            processing others that may have missing optional sheets.");
             AnsiConsole.MarkupLine("  [yellow]-a, --anonymize[/]           Anonymize VM, DNS Name, Cluster, Host, and Datacenter");
             AnsiConsole.MarkupLine("                            columns with generic names (vm1, host1, etc.).");
@@ -724,6 +919,7 @@ namespace RVToolsMerge
             AnsiConsole.MarkupLine("  [yellow]-d, --debug[/]               Show detailed error information including stack traces");
             AnsiConsole.MarkupLine("                            when errors occur.");
             AnsiConsole.WriteLine();
+            AnsiConsole.WriteLine();
 
             AnsiConsole.MarkupLine("[bold]DESCRIPTION:[/]");
             AnsiConsole.MarkupLine("  This tool merges all RVTools Excel files (XLSX format) from the specified");
@@ -732,6 +928,7 @@ namespace RVToolsMerge
             AnsiConsole.MarkupLine("    - [cyan]vHost[/] (optional): Host information (CPU, memory, cluster details)");
             AnsiConsole.MarkupLine("    - [cyan]vPartition[/] (optional): Virtual machine disk partition information");
             AnsiConsole.MarkupLine("    - [cyan]vMemory[/] (optional): Virtual machine memory configuration information");
+            AnsiConsole.WriteLine();
             AnsiConsole.WriteLine();
 
             AnsiConsole.MarkupLine("[bold]Features:[/]");
@@ -747,6 +944,7 @@ namespace RVToolsMerge
             AnsiConsole.MarkupLine("Works on multiple platforms (Windows, Linux, macOS)");
             AnsiConsole.Markup("  - ");
             AnsiConsole.MarkupLine("Minimal memory footprint with efficient processing");
+            AnsiConsole.WriteLine();
             AnsiConsole.WriteLine();
 
             AnsiConsole.MarkupLine("[bold]Mandatory columns by sheet:[/]");
@@ -784,10 +982,10 @@ namespace RVToolsMerge
             AnsiConsole.MarkupLine("  - By default, all sheets must exist in all files");
             AnsiConsole.MarkupLine("  - When using [yellow]--ignore-missing-sheets[/], optional sheets (vHost, vPartition, vMemory)");
             AnsiConsole.MarkupLine("    can be missing with warnings shown. The vInfo sheet is always required.");
-            AnsiConsole.MarkupLine("  - When using [yellow]--skip-invalid-files[/], files without required sheets will be skipped");
-            AnsiConsole.MarkupLine("    and reported, but processing will continue with valid files.");
+            AnsiConsole.MarkupLine("  - When using [yellow]--skip-invalid-files[/], files without required sheets or missing mandatory");
+            AnsiConsole.MarkupLine("    columns will be skipped and reported, but processing will continue with valid files.");
             AnsiConsole.MarkupLine("  - Both [yellow]--ignore-missing-sheets[/] and [yellow]--skip-invalid-files[/] can be used");
-            AnsiConsole.MarkupLine("    together to skip files with missing vInfo sheet and process others with potentially");
+            AnsiConsole.MarkupLine("    together to skip files with missing vInfo sheet while processing others with potentially");
             AnsiConsole.MarkupLine("    missing optional sheets.");
             AnsiConsole.MarkupLine("  - When using [yellow]--anonymize[/], sensitive names are replaced with generic identifiers");
             AnsiConsole.MarkupLine("    (vm1, dns1, host1, etc.) to protect sensitive information.");

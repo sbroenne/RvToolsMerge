@@ -1,5 +1,6 @@
 {
-    "version": "2.0.0",    "tasks": [
+    "version": "2.0.0",
+    "tasks": [
         {
             "label": "build",
             "command": "dotnet",
@@ -11,34 +12,6 @@
                 "/consoleloggerparameters:NoSummary"
             ],
             "problemMatcher": "$msCompile"
-        },
-        {
-            "label": "run-standard",
-            "command": "dotnet",
-            "type": "process",
-            "args": [
-                "run",
-                "--project",
-                "${workspaceFolder}/RVToolsMerge.csproj"
-            ],
-            "problemMatcher": "$msCompile",
-            "dependsOn": ["build"]
-        },
-        {
-            "label": "run-with-mandatory-columns",
-            "command": "dotnet",
-            "type": "process",
-            "args": [
-                "run",
-                "--project",
-                "${workspaceFolder}/RVToolsMerge.csproj",
-                "--",
-                "-o",
-                "${workspaceFolder}/input",
-                "${workspaceFolder}/RVTools_mandatory.xlsx"
-            ],
-            "problemMatcher": "$msCompile",
-            "dependsOn": ["build"]
         }
     ]
 }
