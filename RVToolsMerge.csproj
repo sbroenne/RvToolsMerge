@@ -11,7 +11,7 @@
     <PublishTrimmed>true</PublishTrimmed>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
     <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
-    <TrimmerSingleWarn>false</TrimmerSingleWarn>
+    <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
     <DebugType>embedded</DebugType>
     <Version>0.0.1</Version>
     <AssemblyVersion>0.0.1</AssemblyVersion>
