@@ -31,7 +31,11 @@ A .NET console application that merges multiple RVTools Excel files into a singl
 
 #### Option 1: Download the latest release
 1. Go to the [Releases](https://github.com/sbroenne/RVToolsMerge/releases) page
-2. Download the latest `RVToolsMerge.zip` file
+2. Download the latest version for your platform:
+   - `RVToolsMerge-windows-Release.zip` - For Windows (x64)
+   - `RVToolsMerge-windows-arm64-Release.zip` - For Windows on ARM devices
+   - `RVToolsMerge-linux-Release.zip` - For Linux (x64)
+   - `RVToolsMerge-macos-arm64-Release.zip` - For macOS on Apple Silicon (M1/M2/M3)
 3. Extract the contents to a folder of your choice
 
 #### Option 2: Build from source
@@ -93,7 +97,7 @@ This project uses GitHub Actions for CI/CD:
 | Workflow | Description |
 |----------|-------------|
 | [dotnet.yml](/.github/workflows/dotnet.yml) | Builds and tests the application on every push and pull request |
-| [build.yml](/.github/workflows/build.yml) | Reusable workflow for building the application |
+| [build.yml](/.github/workflows/build.yml) | Reusable workflow for building the application across multiple platforms (Windows x64/ARM64, Linux, macOS ARM64) |
 | [release.yml](/.github/workflows/release.yml) | Creates releases when tags are pushed |
 | [codeql.yml](/.github/workflows/codeql.yml) | Security scanning with CodeQL |
 | [pr-validation.yml](/.github/workflows/pr-validation.yml) | Additional validation for pull requests |

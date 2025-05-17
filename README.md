@@ -6,19 +6,28 @@
 
 A .NET console application that merges multiple RVTools Excel files into a single consolidated file. This tool helps combine multiple RVTools exports for consolidated reporting and analysis. It also allows anonymization of key columns (e.g. VM names)
 
+> **Note:** This project utilizes GitHub Copilot to assist with code development, maintenance, and documentation.
+
 ## Features
 
 - Merges all RVTools Excel files (XLSX format) from a specified folder into one consolidated file
 - Extracts data from the following sheets:
-  - vInfo
-  - vHost
-  - vPartition
+  - vInfo (required)
+  - vHost (optional)
+  - vPartition (optional)
+  - vMemory (optional)
+- Validates mandatory columns in each sheet:
+  - vInfo: Template, SRM Placeholder, Powerstate, VM, CPUs, Memory, In Use MiB, OS according to the VMware Tools
+  - vHost: Host, Datacenter, Cluster, CPU Model, Speed, # CPU, Cores per CPU, # Cores, CPU usage %, # Memory, Memory usage %
+  - vPartition: VM, Disk, Disk Path, Capacity MiB, Consumed MiB
+  - vMemory: VM, Size MiB, Reservation
 - Only includes columns that exist in all files for each respective sheet
 - Validates that all required sheets exist in each file
 - Configurable input folder and output file
-- Option to ignore missing optional sheets (vHost and vPartition)
+- Option to ignore missing optional sheets (vHost, vPartition, and vMemory)
 - Option to skip files that don't contain required sheets
 - Option to anonymize VM, DNS, Cluster, Host, and Datacenter names (replaces with generic names like vm1, dns1, host1, etc.)
+- Option to export only mandatory columns for each sheet
 - Fast processing with minimal memory footprint
 
 ## Requirements
@@ -55,9 +64,10 @@ RVToolsMerge [options] [inputFolder] [outputFile]
 
 ### Options
 - `-h`, `--help`, `/?`: Show help message and exit
-- `-m`, `--ignore-missing-optional-sheets`: Ignore missing optional sheets (vHost & vPartition)
+- `-m`, `--ignore-missing-optional-sheets`: Ignore missing optional sheets (vHost, vPartition & vMemory)
 - `-i`, `--skip-invalid-files`: Skip files that don't contain required sheets instead of failing
 - `-a`, `--anonymize`: Anonymize VM, DNS Name, Cluster, Host, and Datacenter names with generic identifiers
+- `-o`, `--only-mandatory-columns`: Include only the mandatory columns for each sheet in the output file
 
 **Note:** The `-m` and `-i` options cannot be used together as they have contradictory behaviors.
 
@@ -83,7 +93,7 @@ RVToolsMerge C:\RVTools\Data
 RVToolsMerge C:\RVTools\Data C:\Reports\Merged_RVTools.xlsx
 ```
 
-4. Skipping validation for vHost and vPartition sheets:
+4. Skipping validation for vHost, vPartition, and vMemory sheets:
 ```
 RVToolsMerge -m C:\RVTools\Data
 ```
@@ -98,22 +108,38 @@ RVToolsMerge -i C:\RVTools\Data
 RVToolsMerge -a C:\RVTools\Data C:\Reports\Anonymized_RVTools.xlsx
 ```
 
-7. Combining options:
+7. Including only mandatory columns:
 ```
-RVToolsMerge -a -m C:\RVTools\Data C:\Reports\Anonymized_RVTools.xlsx
+RVToolsMerge -o C:\RVTools\Data C:\Reports\Mandatory_Columns.xlsx
+```
+
+8. Combining options:
+```
+RVToolsMerge -a -m -o C:\RVTools\Data C:\Reports\Anonymized_Mandatory_Columns.xlsx
 ```
 
 Options `-m` and `-i` cannot be used together as they have contradictory behaviors.
 
 ## Error Handling
 
-By default, the application validates that all required sheets (vInfo, vHost, vPartition) exist in each file before processing. If any file is missing a required sheet, the application will display an error message and exit.
+By default, the application validates that all required sheets (vInfo, vHost, vPartition, vMemory) exist in each file before processing. It also validates that all mandatory columns exist in each sheet. If any file is missing a required sheet or mandatory column, the application will display an error message and exit.
 
-When using the `-m` option, only the vInfo sheet is required, and optional sheets (vHost and vPartition) can be missing with warnings shown.
+When using the `-m` option, only the vInfo sheet is required, and optional sheets (vHost, vPartition, and vMemory) can be missing with warnings shown. Mandatory column validation still applies to all sheets that exist.
 
-When using the `-i` option, files that don't contain the required sheets will be skipped rather than causing the application to exit. The application will report which files were skipped and why.
+When using the `-i` option, files that don't contain the required sheets or mandatory columns will be skipped rather than causing the application to exit. The application will report which files were skipped and why.
+
+When using the `-o` option, only the mandatory columns for each sheet will be included in the output file, regardless of what other columns might be common across all files.
 
 ## Development
+
+### Development Approach
+
+This project follows modern .NET development practices and employs the following techniques:
+
+- **Test-Driven Development**: Core functionality is covered by unit tests
+- **CI/CD Automation**: Comprehensive GitHub Actions workflows for quality assurance
+- **AI-Assisted Development**: GitHub Copilot is used to enhance code quality, generate boilerplate, and assist with documentation
+- **Clean Code Principles**: Focus on readability, maintainability, and SOLID principles
 
 ### Prerequisites
 
@@ -156,25 +182,40 @@ This project uses GitHub Actions for continuous integration and delivery:
 
 ## Publishing a Standalone Executable
 
-The project is already configured for single-file publishing. You can publish a standalone Windows executable using:
+The project is configured for multi-platform, single-file publishing. You can publish standalone executables for different platforms using:
 
 ```
 dotnet publish -c Release
 ```
 
-This will produce a self-contained, single-file executable with the following settings (from the project file):
-- Self-contained (no .NET installation required)
-- Single file deployment
-- Optimized with ReadyToRun compilation
-- Windows x64 runtime
+The GitHub Actions workflow automatically builds the following platform versions when a release is created:
 
-The output will be located in the `bin\Release\net9.0\win-x64\publish` folder.
+- Windows x64: Standard Windows desktop/server environments
+- Windows ARM64: Windows on ARM devices (Surface Pro X, etc.)
+- Linux x64: Linux desktop/server environments
+- macOS ARM64: Apple Silicon Macs (M1, M2, M3, etc.)
 
-For other platforms, edit the `RuntimeIdentifier` in the .csproj file before publishing:
-- Windows ARM64: `win-arm64`
-- Linux x64: `linux-x64`
-- macOS x64: `osx-x64`
-- macOS ARM64: `osx-arm64`
+These builds are available as separate downloadable artifacts from the GitHub release page.
+
+### Manual Publishing for Specific Platforms
+
+You can also manually publish for specific platforms by specifying the runtime identifier:
+
+```
+# Windows x64
+dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:PublishTrimmed=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true
+
+# Windows ARM64
+dotnet publish -c Release -r win-arm64 --self-contained true -p:PublishSingleFile=true -p:PublishTrimmed=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true
+
+# Linux x64
+dotnet publish -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true -p:PublishTrimmed=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true
+
+# macOS ARM64 (Apple Silicon)
+dotnet publish -c Release -r osx-arm64 --self-contained true -p:PublishSingleFile=true -p:PublishTrimmed=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true
+```
+
+Each build will be output to its respective folder under `bin\Release\net9.0\[runtime-id]\publish\`.
 
 ## Contributing
 
@@ -195,6 +236,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - [RVTools](https://www.robware.net/rvtools/) - The excellent tool that creates the Excel files this application is designed to merge
 - [ClosedXML](https://github.com/ClosedXML/ClosedXML) - .NET library for reading, manipulating and writing Excel files
 - [GitHub Copilot](https://github.com/features/copilot) - AI pair programmer that assisted in code development and maintenance
+- [Claude 3.7 Sonnet](https://www.anthropic.com/claude) - AI assistant that created most of the code for this project
 
 ## Development
 
