@@ -111,13 +111,13 @@ RVToolsMerge [options] [inputPath] [outputFile]
 |--------|-------------|
 | `-h, --help, /?` | Show the help message and exit |
 | `-m, --ignore-missing-sheets` | Ignore missing optional sheets (vHost, vPartition, vMemory) |
-| `-i, --skip-invalid-files` | Skip files that don't contain required sheets instead of failing |
+| `-i, --skip-invalid-files` | Skip files that don't meet validation requirements (no vInfo sheet or mandatory columns are missing) instead of failing |
 | `-a, --anonymize` | Anonymize VM, DNS, Cluster, Host, and Datacenter names |
 | `-M, --only-mandatory-columns` | Include only mandatory columns for each sheet |
 | `-s, --include-source` | Include a 'Source File' column showing the source file for each record |
 | `-d, --debug` | Show detailed error information including stack traces |
 
-> **Note:** The `-i` and `-m` options can be used together. When combined, files with missing vInfo sheets will be skipped, and other files with missing optional sheets will be processed.
+> **Note:** The `-i` and `-m` options can  be used together. When combined, files with missing vInfo sheets or missing required columns will be skipped, and other files with missing optional sheets will be processed.
 
 ## Examples
 

@@ -711,8 +711,9 @@ namespace RVToolsMerge
             AnsiConsole.MarkupLine("  [yellow]-m, --ignore-missing-sheets[/]");
             AnsiConsole.MarkupLine("                            Ignore missing optional sheets (vHost, vPartition & vMemory).");
             AnsiConsole.MarkupLine("                            Will still validate vInfo sheet exists.");
-            AnsiConsole.MarkupLine("  [yellow]-i, --skip-invalid-files[/]  Skip files that don't contain all required sheets");
-            AnsiConsole.MarkupLine("                            instead of failing with an error.");
+            AnsiConsole.MarkupLine("  [yellow]-i, --skip-invalid-files[/]  Skip files that don't meet validation requirements (no vInfo Sheet or mandatory columns are missing) instead of failing with an error.");
+            AnsiConsole.MarkupLine("                            Can be used with -m to skip files that fail validation while");
+            AnsiConsole.MarkupLine("                            processing others that may have missing optional sheets.");
             AnsiConsole.MarkupLine("  [yellow]-a, --anonymize[/]           Anonymize VM, DNS Name, Cluster, Host, and Datacenter");
             AnsiConsole.MarkupLine("                            columns with generic names (vm1, host1, etc.).");
             AnsiConsole.MarkupLine("  [yellow]-M, --only-mandatory-columns[/]");
