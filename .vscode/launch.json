@@ -110,6 +110,17 @@
             "cwd": "${workspaceFolder}",
             "console": "internalConsole",
             "stopAtEntry": false
+        },
+          {
+            "name": "Launch with -s -i -a (Most Permissive + Anonymize)",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            "program": "${workspaceFolder}/bin/Debug/net9.0/win-x64/RVToolsMerge.exe",
+            "args": ["-s", "-i", "${workspaceFolder}/input", "${workspaceFolder}/output/MostPermissive.xlsx"],
+            "cwd": "${workspaceFolder}",
+            "console": "internalConsole",
+            "stopAtEntry": false
         }
     ],
     "inputs": [
