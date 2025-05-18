@@ -1,137 +1,103 @@
-# CI/CD Workflows for RVToolsMerge
+# CI/CD Documentation for RVToolsMerge
 
-This document describes the GitHub Actions workflows used for continuous integration and continuous deployment in the RVToolsMerge project.
+This document outlines the continuous integration and continuous deployment (CI/CD) processes used in the RVToolsMerge project.
 
-## Overview
+## Workflow Overview
 
-The CI/CD system in RVToolsMerge consists of multiple workflows that handle different aspects of the development lifecycle:
+RVToolsMerge uses GitHub Actions for all CI/CD pipelines. The main workflows are:
 
-1. Continuous Integration
-2. Release Management
-3. Version Management
-4. Security Monitoring
-5. Dependency Management
+1. **Build and Test** - Triggered on pull requests and pushes to main branch for code changes
+2. **Version Management** - Manual workflow for incrementing version numbers with automatic PR creation
+3. **Release** - Triggered when a version tag is pushed, builds and publishes releases
+4. **Security Scanning** - Includes CodeQL analysis, dependency review, and vulnerability scanning
+5. **Auto Labeling** - Automatically adds labels to pull requests based on file changes
 
-## Main Workflows
+## Build Workflow
 
-### 1. Build and Test (dotnet.yml)
+The Build workflow (`build.yml`) is a reusable workflow that handles building and testing the application on all supported platforms:
 
-This workflow runs on every push to the main branch and on pull requests. It:
-- Builds the application across multiple platforms
-- Runs unit tests
-- Ignores changes to documentation files
-- Uses the reusable build workflow that handles the actual build process
+- **Platforms**: Windows (x64, ARM64), Linux (x64), macOS (ARM64)
+- **Usage**: Called by other workflows to ensure consistent builds
+- **Features**:
+  - Caches NuGet packages for faster builds
+  - Builds the application in the specified configuration
+  - Runs all tests with code coverage collection
+  - When building in Release mode, publishes platform-specific self-contained executables
 
-### 2. Build Workflow (build.yml)
+## .NET CI Workflow
 
-This is a reusable workflow used by both the CI and release processes:
-- Builds for multiple platforms: Windows (x64/ARM64), Linux, and macOS ARM64
-- Runs tests with code coverage collection
-- Creates self-contained, single-file executables for release builds
-- Uploads build artifacts for later use in the release process
-- Implements caching for NuGet packages to speed up builds
+The .NET CI workflow (`dotnet.yml`) is triggered on code changes:
 
-### 3. Release Management (release.yml)
+- **Trigger**: Push or pull request that modifies .NET code files or project settings 
+- **Platform**: Windows
+- **Function**:
+  - Builds the application in Debug configuration
+  - Runs all tests with code coverage collection
 
-This workflow is triggered when:
-- A tag is pushed in the format `vX.Y.Z`
-- Manually triggered with a specified version
+## Version Management Workflow
 
-Features:
-- Creates release builds for multiple platforms (Windows x64/ARM64, Linux, macOS ARM64)
-- Generates checksums for all artifacts
-- Creates ZIP archives for each platform
-- Creates a GitHub release with all binaries
-- Supports pre-release designation
-- Updates version information in the project file
-- Generates release notes based on merged PRs
-- Automatically commits version updates back to the main branch
+The Version Management workflow (`version-management.yml`) handles systematic version increments:
 
-### 4. Version Management (version-management.yml)
+- **Trigger**: Manual workflow dispatch
+- **Inputs**:
+  - `versionType`: Type of version increment (major, minor, patch)
+- **Function**:
+  1. Extracts current version from the project file
+  2. Validates version components are within .NET limits (0-65535)
+  3. Increments version based on specified type
+  4. Updates both package version and assembly version
+  5. Creates a PR with version changes
+  6. Automatically approves and attempts to merge the PR
+  7. Creates a version tag if the merge is successful
 
-This workflow handles semantic versioning:
-- Allows incrementing the major, minor, or patch version
-- Supports adding pre-release suffix
-- Automatically creates tags and triggers the release workflow
-- Updates version information in the csproj file
-- Validates version compatibility
-- Creates Git tags for new versions
+### Version Management Process
 
-### 5. Security Workflows
+The automated version management process follows these steps:
 
-Multiple security-focused workflows:
+1. Extract the current version number from the project file
+2. Validate that all version components are valid integers within the .NET range (0-65535)
+3. Increment the appropriate component based on the selected increment type
+4. Update version elements in the project file:
+   - `<Version>` (NuGet package version)
+   - `<AssemblyVersion>` (Assembly metadata version)
+   - `<FileVersion>` (File version for Windows)
+5. Create a new branch for the version change
+6. Commit the changes and push to the repository
+7. Create a pull request with conventional commit format: "chore: bump version to X.Y.Z"
+8. Auto-approve the PR to satisfy branch protection requirements
+9. Attempt to auto-merge the PR with retry logic
+10. Create and push a version tag (vX.Y.Z) once the PR is merged
 
-#### CodeQL Analysis (codeql.yml)
-- Runs advanced code scanning for security vulnerabilities
-- Scheduled to run weekly and on all pull requests and pushes to main
-- Focuses on C# code quality and security issues
-- Uses extended security and quality queries
+## Release Workflow
 
-#### Dependency Review (dependency-review.yml)
-- Analyzes dependencies in pull requests
-- Checks for known vulnerabilities in packages
-- Fails on critical severity issues
+The Release workflow (`release.yml`) handles the build and deployment process:
 
-#### Security Alert Notification (security-alert-notification.yml)
-- Monitors results from all security workflows
-- Sends notifications when security workflows fail
-- Provides configurable alerting capabilities
+- **Trigger**: Push of a version tag (e.g., `v1.2.3`)
+- **Function**:
+  1. Builds the application in Release configuration
+  2. Runs all tests
+  3. Creates platform-specific single-file executables (Windows, Linux, macOS)
+  4. Packages executables into platform-specific archives
+  5. Creates a GitHub Release with the archives attached
 
-## Using the Workflows
+## Release Process Guide
 
-### Creating a Release
+To create a new release:
 
-1. **Automated Version Increment and Release**:
-   - Go to the Actions tab in GitHub repository
-   - Select "Version Management" workflow
-   - Click "Run workflow" button
-   - Choose the version increment type (major/minor/patch)
-   - Optionally add a pre-release suffix (e.g., "alpha", "beta", "rc1")
-   - Click "Run workflow" to start the process
-   - The workflow will automatically update version files, create a tag, and trigger the release process
+1. Use the Version Management workflow to increment the version
+2. The Release workflow will automatically build and publish the release
 
-2. **Manual Release Creation**:
-   - Go to the Actions tab in GitHub repository
-   - Select "Release" workflow
-   - Click "Run workflow" button
-   - Enter a specific version number in semver format (X.Y.Z)
-   - Choose whether it's a pre-release using the dropdown
-   - Click "Run workflow" to start the release process
+## CI/CD Security Considerations
 
-### Handling Release Failures
+- GitHub Actions permissions are carefully scoped for each workflow
+- Secrets are managed through GitHub Secrets
+- Build artifacts are created in a clean, isolated environment
+- All dependencies are explicitly pinned to specific versions
 
-If a release workflow fails:
+## Troubleshooting
 
-1. Check the workflow logs for specific error messages
-2. Common issues include:
-   - Test failures preventing release
-   - Version conflicts (tag already exists)
-   - Insufficient permissions for the GitHub token
-   - Build failures on specific platforms
-3. After fixing the issue, you can:
-   - Rerun the failed workflow
-   - Delete the partially created tag (if applicable) and restart
-   - Create a manual release if automated processes continue to fail
+Common issues and solutions:
 
-## Troubleshooting CI/CD Issues
-
-### Common Problems and Solutions
-
-1. **Workflow Permission Issues**:
-   - Ensure repository permissions for GitHub Actions are configured correctly
-   - Check that secrets are properly set up and accessible
-
-2. **Failed Tests Blocking Release**:
-   - Review test logs to identify and fix failing tests
-   - Consider conditionally allowing releases with known test issues using workflow parameters
-
-3. **Version Conflicts**:
-   - If a tag already exists, either delete it or choose a different version
-   - Use the version management workflow to avoid conflicts
-
-4. **Platform-Specific Build Issues**:
-   - Check logs for the specific platform that failed
-   - Test locally using Docker to simulate the build environment
-   - Consider platform-specific conditionals in the build process
-
-For additional help, contact the repository maintainers or consult the GitHub Actions documentation.
+- **Version workflow fails**: Ensure csproj file exists and has proper version elements
+- **Release workflow fails**: Verify tag format follows `v1.2.3` pattern exactly
+- **Publication error**: Check for valid GitHub permissions and tokens
