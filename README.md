@@ -10,9 +10,9 @@ A modern, high-performance .NET 9 console application for merging multiple RVToo
 
 ## Overview
 
-RVToolsMerge is a powerful command-line utility designed to consolidate multiple RVTools exports into one Excel file, making it easier to analyze VMware environment data from different sources or time periods.
+RVToolsMerge is a powerful command-line utility designed to consolidate multiple RVTools exports into one Excel file, making it easier to analyze VMware environment data from different sources.
 
-Built with .NET 9 and leveraging modern libraries like ClosedXML and Spectre.Console, this cross-platform tool efficiently processes individual RVTools Excel files or entire directories, intelligently merging data from key sheets while ensuring consistency across the consolidated output.
+Built with .NET 9, this cross-platform tool efficiently processes individual RVTools Excel files or entire directories, intelligently merging data from key sheets while ensuring consistency across the consolidated output.
 
 ### What is RVTools?
 
