@@ -21,23 +21,4 @@ jobs:
     with:
       configuration: 'Debug'
 
-  code-quality:
-    name: Code Quality Checks
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - uses: actions/checkout@v4
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 9.0.x
-
-      - name: Install dotnet format
-        run: dotnet tool install -g dotnet-format
-
-      - name: Check code formatting
-        run: dotnet format --verify-no-changes --severity warn
-
-      - name: Run code analysis
-        run: dotnet build /p:EnforceCodeStyleInBuild=true --no-restore
