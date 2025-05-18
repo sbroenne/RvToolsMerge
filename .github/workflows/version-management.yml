@@ -48,13 +48,12 @@ jobs:
             "https://api.github.com/repos/${{ github.repository }}/branches/$BRANCH_NAME/protection")
 
           if [[ "$STATUS_CODE" == "200" ]]; then
-            echo "is_protected=true" >> $GITHUB_OUTPUT
             echo "Current branch '$BRANCH_NAME' is protected. Will create PR instead of direct commit."
           else
             # Always treat branches as protected
-            echo "is_protected=true" >> $GITHUB_OUTPUT
             echo "Creating PR for version change regardless of branch protection status."
           fi
+          echo "is_protected=true" >> $GITHUB_OUTPUT
 
       - name: Get Current Version
         id: get-version
