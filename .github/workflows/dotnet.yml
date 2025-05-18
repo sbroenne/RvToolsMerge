@@ -1,24 +1,52 @@
-name: .NET CI
+name: .NET CI - Builds only windows-latest
 
 on:
   push:
-    branches: [ main ]
-    paths-ignore:
-      - '**.md'
-      - '.github/ISSUE_TEMPLATE/**'
-      - '.github/PULL_REQUEST_TEMPLATE.md'
+    paths:
+      - '**.cs'
+      - '**.csproj'
+      - '**.sln'
+      - '**/nuget.config'
+      - '**/Directory.Build.props'
+      - '**/Directory.Build.targets'
+      - '**/global.json'
   pull_request:
-    branches: [ main ]
-    paths-ignore:
-      - '**.md'
-      - '.github/ISSUE_TEMPLATE/**'
-      - '.github/PULL_REQUEST_TEMPLATE.md'
+    paths:
+      - '**.cs'
+      - '**.csproj'
+      - '**.sln'
+      - '**/nuget.config'
+      - '**/Directory.Build.props'
+      - '**/Directory.Build.targets'
+      - '**/global.json'
 
 jobs:
   build:
     name: Build and Test
-    uses: ./.github/workflows/build.yml
-    with:
-      configuration: 'Debug'
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 9.0.x
+
+    - name: Cache NuGet packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.nuget/packages
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/RVToolsMerge.csproj') }}
+        restore-keys: |
+          ${{ runner.os }}-nuget-
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Build
+      run: dotnet build --configuration Debug --no-restore
+
+    - name: Test
+      run: dotnet test --configuration Debug --no-build --verbosity normal --collect:"XPlat Code Coverage"
 
 
