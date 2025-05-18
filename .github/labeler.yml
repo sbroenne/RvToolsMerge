@@ -1,36 +1,23 @@
 
+# GitHub PR Labeler Configuration
 # Code changes
-'functionality':
-  - 'src/**/**.cs'
+functionality:
+  - any: ['**/*.cs']
+    all: ['!**/*Test*.cs', '!**/*.Test.cs', '!**/*.Tests.cs']
 
 # Tests and test infrastructure
-'tests':
-  - 'src/Tests/**/*'
-  - '**/*.Test.cs'
-  - '**/*.Tests.cs'
-  - '**/*Test*.cs'
+tests:
+  - any: ['**/*Test*.cs', '**/*.Test.cs', '**/*.Tests.cs']
 
 # Documentation updates
-'documentation':
-  - '**/*.md'
-  - 'docs/**/*'
-  - '**/*.txt'
-  - '**/README.*'
+documentation:
+  - any: ['**/*.md', 'docs/**/*', '**/*.txt', '**/README.*']
 
 # Configuration changes
-'config':
-  - '**/*.json'
-  - '**/*.yml'
-  - '**/*.yaml'
-  - '**/*.config'
-  - '.github/**/*'
+config:
+  - any: ['**/*.json', '**/*.yml', '**/*.yaml', '**/*.config', '.github/**/*']
 
 # Build system and dependencies
-'build':
-  - '**/*.csproj'
-  - '**/*.sln'
-  - '**/Directory.Build.props'
-  - '**/Directory.Build.targets'
-  - '**/nuget.config'
-  - '**/global.json'
+build:
+  - any: ['**/*.csproj', '**/*.sln', '**/Directory.Build.props', '**/Directory.Build.targets', '**/nuget.config', '**/global.json']
 
