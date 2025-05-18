@@ -1,23 +1,28 @@
 
 # GitHub PR Labeler Configuration
 # Code changes
-functionality:
-  - any: ['**/*.cs']
-    all: ['!**/*Test*.cs', '!**/*.Test.cs', '!**/*.Tests.cs']
+Functionality:
+- changed-files:
+  - any-glob-to-any-file: ['**/*.cs']
+  - all-globs-to-any-file: ['!**/*Test*.cs', '!**/*.Test.cs', '!**/*.Tests.cs']
 
 # Tests and test infrastructure
-tests:
-  - any: ['**/*Test*.cs', '**/*.Test.cs', '**/*.Tests.cs']
+Tests:
+- changed-files:
+  - any-glob-to-any-file: ['**/*Test*.cs', '**/*.Test.cs', '**/*.Tests.cs']
 
 # Documentation updates
-documentation:
-  - any: ['**/*.md', 'docs/**/*', '**/*.txt', '**/README.*']
+Documentation:
+- changed-files:
+  - any-glob-to-any-file: ['**/*.md', 'docs/**/*', '**/*.txt', '**/README.*']
 
 # Configuration changes
-config:
-  - any: ['**/*.json', '**/*.yml', '**/*.yaml', '**/*.config', '.github/**/*']
+Config:
+- changed-files:
+  - any-glob-to-any-file: ['**/*.json', '**/*.yml', '**/*.yaml', '**/*.config', '.github/**/*']
 
 # Build system and dependencies
-build:
-  - any: ['**/*.csproj', '**/*.sln', '**/Directory.Build.props', '**/Directory.Build.targets', '**/nuget.config', '**/global.json']
+Build:
+- changed-files:
+  - any-glob-to-any-file: ['**/*.csproj', '**/*.sln', '**/Directory.Build.props', '**/Directory.Build.targets', '**/nuget.config', '**/global.json']
 
