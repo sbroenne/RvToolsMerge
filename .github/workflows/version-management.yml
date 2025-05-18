@@ -51,8 +51,9 @@ jobs:
             echo "is_protected=true" >> $GITHUB_OUTPUT
             echo "Current branch '$BRANCH_NAME' is protected. Will create PR instead of direct commit."
           else
-            echo "is_protected=false" >> $GITHUB_OUTPUT
-            echo "Current branch '$BRANCH_NAME' is not protected. Will commit directly."
+            # Always treat branches as protected
+            echo "is_protected=true" >> $GITHUB_OUTPUT
+            echo "Creating PR for version change regardless of branch protection status."
           fi
 
       - name: Get Current Version
@@ -112,7 +113,6 @@ jobs:
           echo "::notice::Version updated from ${{ steps.get-version.outputs.current_version }} to $NEW_VERSION"
 
       - name: Create Version Update Branch
-        if: steps.check-branch-protection.outputs.is_protected == 'true'
         id: create-branch
         run: |
           # Create a new branch for the version update
@@ -126,7 +126,6 @@ jobs:
           git push origin $VERSION_BRANCH
 
       - name: Create Pull Request
-        if: steps.check-branch-protection.outputs.is_protected == 'true'
         id: create-pr
         run: |
           # Create a PR for the version update
@@ -137,23 +136,5 @@ jobs:
             --head "${{ steps.create-branch.outputs.branch_name }}")
           echo "pr_url=$PR_URL" >> $GITHUB_OUTPUT
           echo "::notice::Created PR for version update: $PR_URL"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Direct Commit Version Update
-        if: steps.check-branch-protection.outputs.is_protected == 'false'
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: "chore: bump version to ${{ steps.calc-version.outputs.new_version }} [skip ci]"
-          branch: ${{ github.ref_name }}
-          commit_user_name: "GitHub Actions"
-          commit_user_email: "actions@github.com"
-          commit_author: "GitHub Actions <actions@github.com>"
-
-      - name: Create Tag (for unprotected branch)
-        if: steps.check-branch-protection.outputs.is_protected == 'false'
-        run: |
-          git tag v${{ steps.calc-version.outputs.new_version }}
-          git push origin v${{ steps.calc-version.outputs.new_version }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

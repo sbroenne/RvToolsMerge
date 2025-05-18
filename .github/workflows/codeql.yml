@@ -3,24 +3,10 @@ name: "CodeQL"
 on:
   push:
     branches: [ "main" ]
-    paths:
-      - '**.cs'
-      - '**.csproj'
-      - '**.sln'
-      - '**/nuget.config'
-      - '**/Directory.Build.props'
-      - '**/Directory.Build.targets'
-      - '**/global.json'
+
   pull_request:
     branches: [ "main" ]
-    paths:
-      - '**.cs'
-      - '**.csproj'
-      - '**.sln'
-      - '**/nuget.config'
-      - '**/Directory.Build.props'
-      - '**/Directory.Build.targets'
-      - '**/global.json'
+
   schedule:
     - cron: '20 13 * * 5'
 
