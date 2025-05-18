@@ -1,57 +1,190 @@
-name: Create Release
+name: Release
 
 on:
   push:
     tags:
-      - 'v*'
+      - 'v*.*.*'
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to release (vX.Y.Z format)'
+        description: 'Version to release (without v prefix)'
         required: true
-        default: 'v1.0.0'
+        type: string
+      prerelease:
+        description: 'Is this a pre-release?'
+        required: true
+        default: false
+        type: boolean
 
 jobs:
+  version:
+    name: Extract Version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.extract-version.outputs.version }}
+      prerelease: ${{ steps.extract-version.outputs.prerelease }}
+    steps:
+      - name: Extract version from tag
+        id: extract-version
+        if: github.event_name == 'push'
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          # Check if this is a pre-release (contains - in version)
+          if [[ "$VERSION" == *"-"* ]]; then
+            echo "prerelease=true" >> $GITHUB_OUTPUT
+          else
+            echo "prerelease=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Use workflow dispatch inputs
+        id: workflow-inputs
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          echo "prerelease=${{ github.event.inputs.prerelease }}" >> $GITHUB_OUTPUT
+
+      - name: Validate version format
+        run: |
+          VERSION="${{ steps.extract-version.outputs.version || steps.workflow-inputs.outputs.version }}"
+          if ! [[ $VERSION =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$ ]]; then
+            echo "::error::Invalid version format: $VERSION. Must be in format X.Y.Z or X.Y.Z-suffix"
+            exit 1
+          fi
+          echo "::notice::Version $VERSION validated successfully"
+
+      - name: Set version as environment variable
+        run: echo "VERSION=${{ steps.extract-version.outputs.version || steps.workflow-inputs.outputs.version }}" >> $GITHUB_ENV
+
   build:
+    name: Build Release
     uses: ./.github/workflows/build.yml
     with:
       configuration: 'Release'
-      
+
   create-release:
-    needs: build
-    runs-on: windows-latest
+    name: Create Release
+    needs: [version, build]
+    runs-on: ubuntu-latest
     permissions:
       contents: write
-      
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Download build artifacts
-      uses: actions/download-artifact@v4
-      with:
-        name: RVToolsMerge-Release
-        path: ./RVToolsMerge
-    
-    - name: Zip release
-      run: Compress-Archive -Path ./RVToolsMerge/* -DestinationPath ./RVToolsMerge.zip
-    
-    - name: Extract version
-      id: get_version
-      shell: pwsh
-      run: |
-        $version = "${{ github.event.inputs.version }}"
-        if ("${{ github.event_name }}" -eq "push") {
-          $version = "${{ github.ref }}".Replace('refs/tags/', '')
-        }
-        echo "VERSION=$version" >> $env:GITHUB_OUTPUT
-      
-    - name: Create Release
-      id: create_release
-      uses: softprops/action-gh-release@v1
-      with:
-        tag_name: ${{ steps.get_version.outputs.VERSION }}
-        name: Release ${{ steps.get_version.outputs.VERSION }}
-        files: ./RVToolsMerge.zip
-        draft: false
-        prerelease: false
-        generate_release_notes: true
+      - name: Download Windows x64 Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: RVToolsMerge-windows-Release
+          path: RVToolsMerge-windows
+
+      - name: Download Windows ARM64 Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: RVToolsMerge-windows-arm64-Release
+          path: RVToolsMerge-windows-arm64
+
+      - name: Download Linux Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: RVToolsMerge-linux-Release
+          path: RVToolsMerge-linux
+
+      - name: Download macOS ARM64 Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: RVToolsMerge-macos-arm64-Release
+          path: RVToolsMerge-macos-arm64
+
+      - name: Generate checksums
+        run: |
+          mkdir -p checksums
+          find RVToolsMerge-* -type f -not -path "*/\.*" | sort | xargs sha256sum > checksums/RVToolsMerge-all-checksums.sha256
+
+          cd RVToolsMerge-windows
+          sha256sum * > ../checksums/RVToolsMerge-windows-Release.sha256
+          cd ../RVToolsMerge-windows-arm64
+          sha256sum * > ../checksums/RVToolsMerge-windows-arm64-Release.sha256
+          cd ../RVToolsMerge-linux
+          sha256sum * > ../checksums/RVToolsMerge-linux-Release.sha256
+          cd ../RVToolsMerge-macos-arm64
+          sha256sum * > ../checksums/RVToolsMerge-macos-arm64-Release.sha256
+          cd ..
+
+          echo "::notice::Checksums generated successfully"
+
+      - name: Create ZIP Archives
+        run: |
+          cd RVToolsMerge-windows
+          zip -r ../RVToolsMerge-windows-Release.zip .
+          cd ../RVToolsMerge-windows-arm64
+          zip -r ../RVToolsMerge-windows-arm64-Release.zip .
+          cd ../RVToolsMerge-linux
+          zip -r ../RVToolsMerge-linux-Release.zip .
+          cd ../RVToolsMerge-macos-arm64
+          zip -r ../RVToolsMerge-macos-arm64-Release.zip .
+          cd ../checksums
+          zip -r ../RVToolsMerge-checksums.zip .
+          echo "::notice::ZIP archives created successfully"
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "RVTools Merger v${{ needs.version.outputs.version }}"
+          draft: false
+          prerelease: ${{ needs.version.outputs.prerelease == 'true' }}
+          generate_release_notes: true
+          files: |
+            RVToolsMerge-windows-Release.zip
+            RVToolsMerge-windows-arm64-Release.zip
+            RVToolsMerge-linux-Release.zip
+            RVToolsMerge-macos-arm64-Release.zip
+            RVToolsMerge-checksums.zip
+
+  update-project-version:
+    name: Update Project Version
+    needs: [version, create-release]
+    runs-on: ubuntu-latest
+    if: (github.event_name == 'push' && github.ref_type == 'tag') || github.event_name == 'workflow_dispatch'
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Check if main branch is up to date
+        run: |
+          git fetch
+          if ! git merge-base --is-ancestor origin/main HEAD; then
+            echo "::warning::Main branch has newer commits. Version update might cause conflicts."
+          fi
+
+      - name: Update Version in csproj
+        run: |
+          VERSION="${{ needs.version.outputs.version }}"
+
+          # Use XML tools to properly update the version numbers
+          if command -v xmlstarlet &> /dev/null; then
+            xmlstarlet ed --inplace \
+              -u "/Project/PropertyGroup/Version" -v "$VERSION" \
+              -u "/Project/PropertyGroup/AssemblyVersion" -v "$VERSION" \
+              -u "/Project/PropertyGroup/FileVersion" -v "$VERSION" \
+              RVToolsMerge.csproj
+          else
+            # Fallback to sed approach
+            sed -i "s/<Version>.*<\/Version>/<Version>$VERSION<\/Version>/g" RVToolsMerge.csproj
+            sed -i "s/<AssemblyVersion>.*<\/AssemblyVersion>/<AssemblyVersion>$VERSION<\/AssemblyVersion>/g" RVToolsMerge.csproj
+            sed -i "s/<FileVersion>.*<\/FileVersion>/<FileVersion>$VERSION<\/FileVersion>/g" RVToolsMerge.csproj
+          fi
+
+          echo "::notice::Project version updated to $VERSION"
+
+      - name: Commit Version Update
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore: update version to ${{ needs.version.outputs.version }} [skip ci]"
+          branch: main
+          file_pattern: RVToolsMerge.csproj
+          commit_user_name: "GitHub Actions"
+          commit_user_email: "actions@github.com"
+          commit_author: "GitHub Actions <actions@github.com>"

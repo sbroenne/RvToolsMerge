@@ -1,58 +1,67 @@
-﻿# RVTools Excel Merger
+﻿# RVToolsMerge
 
 [![.NET Build and Test](https://github.com/sbroenne/RVToolsMerge/actions/workflows/dotnet.yml/badge.svg)](https://github.com/sbroenne/RVToolsMerge/actions/workflows/dotnet.yml)
 [![CodeQL](https://github.com/sbroenne/RVToolsMerge/actions/workflows/codeql.yml/badge.svg)](https://github.com/sbroenne/RVToolsMerge/actions/workflows/codeql.yml)
 [![GitHub Advanced Security](https://img.shields.io/badge/GitHub%20Advanced%20Security-enabled-brightgreen)](SECURITY.md)
 
-A cross-platform utility to merge multiple RVTools Excel export files into a single consolidated file.
+A modern, high-performance .NET 9 console application for merging multiple RVTools Excel export files into a single consolidated file.
+
+> Created by Stefan Broenner (github.com/sbroenne) and contributors
 
 ## Overview
 
-RVToolsMerge is a powerful command-line tool designed to combine multiple RVTools exports into one Excel file, making it easier to analyze VMware environment data from different sources or time periods.
+RVToolsMerge is a powerful command-line utility designed to consolidate multiple RVTools exports into one Excel file, making it easier to analyze VMware environment data from different sources or time periods.
 
-This utility can process individual RVTools Excel files or all files in a specified folder, extracting and merging data from key sheets while ensuring consistency across the merged output.
+Built with .NET 9 and leveraging modern libraries like ClosedXML and Spectre.Console, this cross-platform tool efficiently processes individual RVTools Excel files or entire directories, intelligently merging data from key sheets while ensuring consistency across the consolidated output.
+
+### What is RVTools?
+
+[RVTools](https://www.robware.net/rvtools/) is a popular VMware utility that exports detailed information about your virtual environment, including:
+- Virtual machines (vInfo)
+- ESXi hosts (vHost)
+- Storage configurations (vPartition)
+- Memory usage (vMemory)
+- And many other aspects of a VMware infrastructure
+
+When managing multiple vCenter environments or collecting data over time, you may end up with numerous RVTools export files that need to be combined for comprehensive analysis. RVToolsMerge solves this challenge by providing an efficient way to consolidate these files.
 
 ## Features
 
-- Combines multiple RVTools exports into a single Excel file
-- Validates required sheets and mandatory columns
-- Includes only columns that appear in all source files
-- Optionally anonymizes sensitive data (VMs, DNS names, Clusters, Hosts, Datacenters)
-- Provides detailed progress feedback and summary reports
-- Option to filter for only mandatory columns
-- Comprehensive error handling with user-friendly messages
-- Cross-platform support (Windows, Linux, macOS)
-- Efficient memory usage for processing large files
-- Option to include source file names for traceability
-- Ability to process either a single Excel file or an entire directory of files
+- **High-Performance Processing**: Built with .NET 9 and optimized for speed and memory efficiency
+- **Rich Console Experience**: Beautiful console output with progress bars, status indicators, and colorful tables
+- **Intelligent Sheet Handling**: Combines multiple RVTools exports while validating required sheets and columns
+- **Flexible Processing Options**:
+  - Processes single files or entire directories of RVTools exports
+  - Includes only columns that appear in all source files
+  - Optionally ignores missing optional sheets
+  - Selectively includes only mandatory columns
+  - Adds source file tracking for data lineage
+- **Data Protection**: Option to anonymize sensitive data (VMs, DNS names, Clusters, Hosts, Datacenters)
+- **Cross-Platform**: Runs on Windows, Linux, and macOS with native binaries for each platform
+- **Enterprise-Grade Error Handling**: Comprehensive validation with clear, actionable error messages
 
-## Sheets and Required Columns
+## Supported Sheets and Required Columns
 
-The tool processes the following sheets from RVTools exports:
+RVToolsMerge processes the following key sheets from RVTools exports:
 
-### Required Sheets
+### Required and Optional Sheets
 
-| Sheet | Status | Description |
-|-------|--------|-------------|
-| **vInfo** | **Required** | Virtual machine information including CPU, memory, and OS details |
+| Sheet Name | Status | Description |
+|------------|--------|-------------|
+| **vInfo** | **Required** | Core VM information (CPU, memory, OS) |
+| **vHost** | Optional | ESXi host configuration and performance data |
+| **vPartition** | Optional | VM disk partition information |
+| **vMemory** | Optional | VM memory configuration details |
 
-### Optional Sheets
+The `vInfo` sheet must be present in all processed files. The other sheets are considered optional and can be handled according to your configuration.
 
-| Sheet | Status | Description |
-|-------|--------|-------------|
-| **vHost** | Optional | Host information including CPU, memory, and cluster details |
-| **vPartition** | Optional | Virtual machine disk partition information |
-| **vMemory** | Optional | Virtual machine memory configuration information |
+### Mandatory Columns by Sheet
 
-At minimum, the `vInfo` sheet must be present in all Excel files being processed. The other sheets (`vHost`, `vPartition`, `vMemory`) are optional and can be skipped with the `--ignore-missing-optional-sheets` option.
-
-### Required Columns by Sheet
-
-Each sheet must contain certain mandatory columns for proper processing:
+Each sheet has specific required columns that must be present for proper processing:
 
 #### vInfo Sheet (Required)
 - Template
-- SRM Placeholder
+- SRM Placeholder  
 - Powerstate
 - VM
 - CPUs
@@ -93,6 +102,11 @@ Download the latest release for your platform from the [Releases page](https://g
 - Linux (x64): `RVToolsMerge-linux-Release.zip`
 - macOS (ARM64): `RVToolsMerge-macos-arm64-Release.zip`
 
+### Prerequisites
+
+- No additional prerequisites required! The application is published as a self-contained executable with all dependencies included.
+- Minimum disk space: ~60MB
+
 
 ## Usage
 
@@ -102,20 +116,22 @@ RVToolsMerge [options] [inputPath] [outputFile]
 
 ### Arguments
 
-- **inputPath**: Path to an Excel file or folder containing RVTools Excel files (defaults to "input" subfolder)
-- **outputFile**: Path where the merged file will be saved (defaults to "RVTools_Merged.xlsx")
+| Argument | Description | Default |
+|----------|-------------|---------|
+| `inputPath` | Path to an Excel file or folder containing RVTools exports | `./input` subfolder |
+| `outputFile` | Path where the merged file will be saved | `./RVTools_Merged.xlsx` |
 
 ### Options
 
 | Option | Description |
 |--------|-------------|
 | `-h, --help, /?` | Show the help message and exit |
-| `-m, --ignore-missing-sheets` | Ignore missing optional sheets (vHost, vPartition, vMemory) |
-| `-i, --skip-invalid-files` | Skip files that don't meet validation requirements (no vInfo sheet or mandatory columns are missing) instead of failing with an error |
+| `-m, --ignore-missing-optional-sheets` | Process files even when optional sheets are missing |
+| `-i, --skip-invalid-files` | Skip files that don't meet validation requirements |
 | `-a, --anonymize` | Anonymize VM, DNS, Cluster, Host, and Datacenter names |
-| `-M, --only-mandatory-columns` | Include only mandatory columns for each sheet |
-| `-s, --include-source` | Include a 'Source File' column showing the source file for each record |
-| `-d, --debug` | Show detailed error information including stack traces |
+| `-M, --only-mandatory-columns` | Include only mandatory columns in the output |
+| `-s, --include-source` | Add a 'Source File' column to track data origin |
+| `-d, --debug` | Show detailed error information with stack traces |
 
 > **Note:** The `-i` and `-m` options can be used together. When combined, files with missing vInfo sheets will be skipped, and other files with missing optional sheets will be processed.
 
@@ -123,84 +139,108 @@ RVToolsMerge [options] [inputPath] [outputFile]
 
 ### Basic Usage
 
-Process all Excel files in a folder:
-```
-RVToolsMerge C:\RVTools\Data
-```
+```cmd
+:: Process all Excel files in a folder 
+RVToolsMerge.exe C:\RVTools\Exports
 
-Process a single file:
-```
-RVToolsMerge C:\RVTools\Data\SingleFile.xlsx
+:: Process a single file
+RVToolsMerge.exe C:\RVTools\Exports\SingleFile.xlsx
+
+:: Specify custom output file
+RVToolsMerge.exe C:\RVTools\Exports C:\Reports\Merged_RVTools.xlsx
 ```
 
 ### Advanced Options
 
-Skip files with missing optional sheets:
-```
-RVToolsMerge -m C:\RVTools\Data C:\Reports\Merged_RVTools.xlsx
+```cmd
+:: Skip files with missing optional sheets
+RVToolsMerge.exe -m C:\RVTools\Exports
+
+:: Skip invalid files entirely
+RVToolsMerge.exe -i C:\RVTools\Exports
+
+:: Skip invalid files and ignore missing optional sheets in valid files
+RVToolsMerge.exe -i -m C:\RVTools\Exports
+
+:: Anonymize sensitive data
+RVToolsMerge.exe -a C:\RVTools\Exports\RVTools.xlsx C:\Reports\Anonymized.xlsx
+
+:: Include only mandatory columns
+RVToolsMerge.exe -M C:\RVTools\Exports
+
+:: Include source file information
+RVToolsMerge.exe -s C:\RVTools\Exports
+
+:: Combine multiple options
+RVToolsMerge.exe -a -M -s C:\RVTools\Exports C:\Reports\Complete_Analysis.xlsx
 ```
 
-Skip invalid files entirely:
-```
-RVToolsMerge -i C:\RVTools\Data
-```
+## Validation Behavior and Error Handling
 
-Skip invalid files and ignore missing optional sheets in valid files:
-```
-RVToolsMerge -i -m C:\RVTools\Data
-```
+RVToolsMerge implements robust validation to ensure data integrity:
 
-Anonymize sensitive data:
-```
-RVToolsMerge -a C:\RVTools\Data\RVTools.xlsx C:\Reports\Anonymized_RVTools.xlsx
-```
+### Validation Rules
 
-Include only mandatory columns:
-```
-RVToolsMerge -M C:\RVTools\Data C:\Reports\Mandatory_Columns.xlsx
-```
-
-Include source file information:
-```
-RVToolsMerge -s C:\RVTools\Data C:\Reports\With_Source_Files.xlsx
-```
-
-Combine multiple options:
-```
-RVToolsMerge -a -M -s C:\RVTools\Data C:\Reports\Complete_Analysis.xlsx
-```
-
-## Validation Behavior
-
-- By default, all sheets must exist in all files
-- When using `--ignore-missing-sheets` (`-m`):
-  - The vInfo sheet is still required in all files
-  - Optional sheets (vHost, vPartition, vMemory) can be missing with warnings shown
-  - If an optional sheet exists but has missing mandatory columns, it will either cause an error or be excluded based on other options
-- When using `--skip-invalid-files` (`-i`):
+- **By default**: All required sheets with all mandatory columns must exist in all files
+- **With `-m` (ignore-missing-optional-sheets)**: 
+  - The vInfo sheet remains required in all files
+  - Optional sheets (vHost, vPartition, vMemory) can be missing
+  - Missing mandatory columns in optional sheets will cause errors unless handled by other options
+- **With `-i` (skip-invalid-files)**:
   - Files without the required vInfo sheet will be skipped
   - Files with vInfo sheet but missing mandatory vInfo columns will be skipped
-  - Files with optional sheets that have missing mandatory columns will be skipped
-- When using both `--ignore-missing-sheets` and `--skip-invalid-files` together:
+  - Files with optional sheets having missing mandatory columns will be skipped
+- **With both `-i` and `-m` together**:
   - Files without vInfo sheet will be skipped
   - Files with vInfo sheet but missing mandatory vInfo columns will be skipped
   - Files with complete vInfo sheet but missing optional sheets will be processed
-  - Files with optional sheets that have missing columns will still be processed, but those sheets may be excluded
+  - Files with optional sheets missing mandatory columns will be processed, but those sheets may be excluded
 
+### Error Messages
+
+Error messages are designed to be clear and actionable, with debug mode providing additional details when needed. The application uses Spectre.Console to provide rich, colorful output with proper formatting of errors and warnings.
+
+## Sample Files
+
+The project includes sample files in the `input` directory:
+
+- `default.xlsx`: Standard RVTools export format with all required sheets and columns
+- `altenativeColumnNames.xlsx`: Example file with alternative column naming variations
+
+These files can be used to test the application and understand the expected format of RVTools exports.
 
 ## Troubleshooting
 
-- Use the `-d` or `--debug` flag to see detailed error information when problems occur
-- If you encounter missing sheets errors, consider using the `-m` flag to ignore missing optional sheets
-- If some files are causing errors, use the `-i` flag to skip invalid files
-- For permission issues, ensure you have write access to the output folder
+If you encounter issues while using RVToolsMerge:
 
-# Github Project
+| Issue | Recommended Action |
+|-------|-------------------|
+| General errors | Enable debug mode with `-d` to see detailed error information |
+| Missing sheets errors | Use `-m` to ignore missing optional sheets |
+| Files causing validation errors | Use `-i` to skip invalid files and continue processing others |
+| Low memory issues | Process smaller batches of files |
+| Permission errors | Ensure you have write access to the output folder |
+| Excel file locked | Close any applications that might have the file open |
+| Slow performance | Check for antivirus scanning; consider excluding the working folders |
+
+## Technical Architecture
+
+RVToolsMerge is built with .NET 9 and follows modern C# development practices:
+
+### Key Components
+
+- **ClosedXML**: High-performance Excel file handling
+- **Spectre.Console**: Rich console UI with progress bars, tables, and colors
+- **Modern C# Features**: Using the latest C# features like records, pattern matching, and nullable reference types
+
 
 ## Building from Source
 
-Prerequisites:
+### Prerequisites
+
 - .NET 9.0 SDK or later
+
+### Basic Build
 
 ```bash
 git clone https://github.com/sbroenne/RVToolsMerge.git
@@ -208,18 +248,9 @@ cd RVToolsMerge
 dotnet build -c Release
 ```
 
-### Building for Specific Platforms
+### Creating Deployable Packages
 
-By default, `dotnet build` creates a framework-dependent build for your current platform. To create deployable packages:
-
-```bash
-# Default build - creates Window x64 executable
-dotnet publish -c Release
-```
-
-The default build output will be located in the `bin/Release/net9.0/publish` directory and requires the .NET runtime to be installed on the target machine.
-
-For distributable, self-contained applications that don't require the .NET runtime to be pre-installed:
+By default, `dotnet build` creates a framework-dependent build. For self-contained applications that don't require .NET runtime:
 
 ```bash
 # For Windows x64
@@ -235,12 +266,23 @@ dotnet publish -c Release -r linux-x64
 dotnet publish -c Release -r osx-arm64
 ```
 
-These commands will create self-contained single-file applications for each platform, which can be found in the `bin/Release/net9.0/{RID}/publish` directory, where `{RID}` is the runtime identifier (e.g., `win-x64`, `linux-x64`).
+Output will be in `bin/Release/net9.0/{RID}/publish` directory, where `{RID}` is the runtime identifier.
 
+### Development Workflow
+
+When running from source with parameters, use a double-dash (`--`) to separate the `dotnet run` command from the application parameters:
+
+```bash
+# Basic syntax
+dotnet run -- [options] [inputPath] [outputFile]
+
+# Example
+dotnet run -- -m -i C:\RVTools\Exports C:\Output\Merged.xlsx
+```
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are welcome! Please follow these steps:
 
 1. Fork the repository
 2. Create your feature branch (`git checkout -b feature/amazing-feature`)
@@ -248,65 +290,44 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
+### Development Standards
+
+This project follows strict development standards:
+
+- **Coding Style**: C# coding best practices with PascalCase for public members, camelCase for private fields
+- **Documentation**: XML documentation for all public methods and classes
+- **Error Handling**: Robust exception handling and validation
+
+
 ### Continuous Integration
 
-This project uses GitHub Actions for CI/CD:
+This project uses GitHub Actions for automated workflows:
 
-| Workflow | Description |
-|----------|-------------|
-| [dotnet.yml](/.github/workflows/dotnet.yml) | Builds and tests the application on every push and pull request |
-| [build.yml](/.github/workflows/build.yml) | Reusable workflow for building the application across multiple platforms (Windows x64/ARM64, Linux, macOS ARM64) |
-| [release.yml](/.github/workflows/release.yml) | Creates releases when tags are pushed |
-| [codeql.yml](/.github/workflows/codeql.yml) | Security scanning with CodeQL |
-| [pr-validation.yml](/.github/workflows/pr-validation.yml) | Additional validation for pull requests |
-| [vulnerability-scan.yml](/.github/workflows/vulnerability-scan.yml) | Weekly security scanning with CodeQL |
-| [dependency-review.yml](/.github/workflows/dependency-review.yml) | Reviews dependency changes in pull requests |
-| [secret-scanning.yml](/.github/workflows/secret-scanning.yml) | Identifies committed secrets and credentials |
-| [nuget-vulnerability-scan.yml](/.github/workflows/nuget-vulnerability-scan.yml) | Checks for vulnerable NuGet packages |
-| [generate-sbom.yml](/.github/workflows/generate-sbom.yml) | Creates Software Bill of Materials for releases |
-| [labeler.yml](/.github/workflows/labeler.yml) | Automatic labeling of PRs based on files changed |
-| [stale.yml](/.github/workflows/stale.yml) | Marks and closes stale issues and PRs |
+| Workflow | Purpose |
+|----------|---------|
+| **Build & Test** | Validates code on every push and PR |
+| **Code Quality** | Static analysis and test coverage |
+| **Security** | CodeQL scanning and vulnerability checks |
+| **Release** | Creates versioned releases with artifacts |
+| **Dependencies** | Automated dependency management with Dependabot |
 
-### Development Environment
+Detailed CI/CD documentation is available in [CI-CD.md](/docs/CI-CD.md).
 
-- [EditorConfig](/.editorconfig) is used to maintain consistent coding styles
-- GitHub issue and pull request templates are available
-- Dependabot keeps dependencies up to date
+### Version Management
 
-## Development
+The project follows [Semantic Versioning](https://semver.org/):
 
-### Running from Source with Parameters
+- **major** (1.0.0 → 2.0.0): Incompatible API changes 
+- **minor** (1.0.0 → 1.1.0): New backward-compatible functionality
+- **patch** (1.0.0 → 1.0.1): Backward-compatible bug fixes
 
-When running the application with `dotnet run`, you need to use a double-dash (`--`) to separate the `dotnet run` command from the application parameters:
-
-```bash
-# Basic syntax
-dotnet run -- [options] [inputPath] [outputFile]
-
-# Examples
-dotnet run -- C:\RVTools\Data
-dotnet run -- -m -i C:\RVTools\Data C:\Output\Merged.xlsx
-dotnet run -- --anonymize --include-source C:\RVTools\Data
-dotnet run -- -h
-```
-
-The double-dash tells the `dotnet run` command that any arguments that follow are for the application being run, not for the `dotnet run` command itself.
-
-### Passing Configuration During Development
-
-You can also set configuration values when running in development:
-
-```bash
-# Run with specific configuration
-dotnet run --configuration Release -- -a C:\RVTools\Data
-
-# Run with specific framework
-dotnet run --framework net9.0 -- C:\RVTools\Data
-```
+Version bumping is managed through GitHub Actions workflows.
 
 ## Security
 
-### Security Overview
+This project takes security seriously, with multiple layers of protection:
+
+### GitHub Advanced Security Features
 
 | Feature | Status |
 |---------|--------|
@@ -314,29 +335,24 @@ dotnet run --framework net9.0 -- C:\RVTools\Data
 | Dependency Review | ✅ Enabled |
 | Secret Scanning | ✅ Enabled |
 | Dependabot Alerts | ✅ Enabled |
-| SBOM Generation | ✅ Enabled |
 | Security Policy | ✅ [View Policy](SECURITY.md) |
 
-### Security Features
+### Security Practices
 
-This repository is configured with GitHub Advanced Security features:
+- **Automated Scanning**: Regular code scanning for vulnerabilities
+- **Dependency Management**: Automated updates for security patches
+- **Secure Coding**: Following established security best practices
+- **Vulnerability Reporting**: Clear process for reporting security issues
 
-- **CodeQL Analysis**: Automatically scans code for vulnerabilities
-- **Dependency Review****: Reviews dependencies for known vulnerabilities
-- **Secret Scanning**: Prevents accidental commit of secrets
-- **Dependabot Security Updates**: Automatically creates pull requests for security vulnerabilities
-- **Software Bill of Materials (SBOM)**: Generated for each release to track components
-- **NuGet Vulnerability Scanning**: Regularly checks for vulnerable packages
-
-To report a security vulnerability, please see our [Security Policy](SECURITY.md).
+For details on reporting security vulnerabilities, please see our [Security Policy](SECURITY.md).
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## Acknowledgments
 
-- [RVTools](https://www.robware.net/rvtools/) by Robware for the amazing virtualization documentation tool
-- [ClosedXML](https://github.com/ClosedXML/ClosedXML) for Excel file handling
-- [Spectre.Console](https://spectreconsole.net/) for beautiful console output
+- [RVTools](https://www.robware.net/rvtools/) by Robware for the virtualization documentation tool that this project enhances
+- [ClosedXML](https://github.com/ClosedXML/ClosedXML) for excellent Excel file handling capabilities
+- [Spectre.Console](https://spectreconsole.net/) for beautiful console output and UX
 

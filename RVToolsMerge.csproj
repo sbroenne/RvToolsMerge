@@ -12,15 +12,14 @@
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
     <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
     <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
-    <DebugType>embedded</DebugType>
-    <Version>0.0.1</Version>
+    <DebugType>embedded</DebugType>    <Version>0.0.1</Version>
     <AssemblyVersion>0.0.1</AssemblyVersion>
     <FileVersion>0.0.1</FileVersion>
-    <Authors>Stefan Brönner</Authors>
-    <Company>Stefan Brönner</Company>
+    <Authors>Stefan Broenner</Authors>
+    <Company>Stefan Broenner</Company>
     <Product>RVTools Excel Merger</Product>
     <Description>A tool to merge multiple RVTools Excel files into a single consolidated file.</Description>
-    <Copyright>Copyright © 2025 Stefan Brönner</Copyright>
+    <Copyright>Copyright © 2025 Stefan Broenner</Copyright>
     <RepositoryUrl>https://github.com/sbroenne/RVToolsMerge</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageProjectUrl>https://github.com/sbroenne/RVToolsMerge</PackageProjectUrl>

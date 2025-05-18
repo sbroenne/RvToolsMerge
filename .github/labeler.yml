@@ -1,23 +1,36 @@
-documentation:
-  - 'README*.md'
+
+# Code changes
+'functionality':
+  - 'src/**/**.cs'
+
+# Tests and test infrastructure
+'tests':
+  - 'src/Tests/**/*'
+  - '**/*.Test.cs'
+  - '**/*.Tests.cs'
+  - '**/*Test*.cs'
+
+# Documentation updates
+'documentation':
+  - '**/*.md'
   - 'docs/**/*'
+  - '**/*.txt'
+  - '**/README.*'
 
-dependencies:
-  - 'RVToolsMerge.csproj'
-  - 'global.json'
-  - 'Directory.Build.props'
-  - any: ['.github/dependabot.yml']
+# Configuration changes
+'config':
+  - '**/*.json'
+  - '**/*.yml'
+  - '**/*.yaml'
+  - '**/*.config'
+  - '.github/**/*'
 
-ci-cd:
-  - '.github/workflows/**'
+# Build system and dependencies
+'build':
+  - '**/*.csproj'
+  - '**/*.sln'
+  - '**/Directory.Build.props'
+  - '**/Directory.Build.targets'
+  - '**/nuget.config'
+  - '**/global.json'
 
-tests:
-  - 'tests/**/*'
-
-configuration:
-  - 'Properties/**/*'
-  - '.vscode/**'
-  - '.editorconfig'
-  
-core:
-  - 'Program.cs'

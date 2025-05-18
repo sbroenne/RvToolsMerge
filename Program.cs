@@ -1,7 +1,7 @@
 //-----------------------------------------------------------------------
 // <copyright file="Program.cs" company="RVTools">
 //     Copyright © RVTools Team 2025
-//     Created by Stephan Brönnecke (github.com/sbroenne) and contributors
+//     Created by Stefan Broenner (github.com/sbroenne) and contributors
 //     Licensed under the MIT License
 // </copyright>
 //-----------------------------------------------------------------------

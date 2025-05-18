@@ -20,7 +20,6 @@ RVToolsMerge uses the following security features and practices:
 
 - **Additional Security Measures**:
   - Regular vulnerability scanning of NuGet packages
-  - SBOM (Software Bill of Materials) generation
   - License compliance monitoring
   - Regular security patches via Dependabot
 
@@ -38,7 +37,7 @@ If you believe you've found a security vulnerability in RVToolsMerge, please fol
 1. **Do not disclose the vulnerability publicly**
 2. **Submit the report through one of these channels**:
    - Submit a [security advisory](https://github.com/sbroenne/RVToolsMerge/security/advisories/new) on GitHub
-   - Email us at [replace-with-your-security-email@example.com](mailto:replace-with-your-security-email@example.com)
+   - Email us at [security@rvtoolsmerge.com](mailto:security@rvtoolsmerge.com)
 
 ### When reporting, please include:
 
