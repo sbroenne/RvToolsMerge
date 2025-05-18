@@ -1,38 +1,52 @@
-name: .NET Build and Test
+name: .NET CI - Builds only windows-latest
 
 on:
   push:
-    branches: [ "main" ]
     paths:
-      - '**/*.cs'
-      - '**/*.csproj'
-      - '**/*.sln'
-      - '.editorconfig'
-      - 'global.json'
-      - 'Directory.Build.props'
-      - '.github/workflows/build.yml'
-      - '.github/workflows/dotnet.yml'
+      - '**.cs'
+      - '**.csproj'
+      - '**.sln'
+      - '**/nuget.config'
+      - '**/Directory.Build.props'
+      - '**/Directory.Build.targets'
+      - '**/global.json'
   pull_request:
-    branches: [ "main" ]
     paths:
-      - '**/*.cs'
-      - '**/*.csproj'
-      - '**/*.sln'
-      - '.editorconfig'
-      - 'global.json'
-      - 'Directory.Build.props'
-      - '.github/workflows/build.yml'
-      - '.github/workflows/dotnet.yml'
-  workflow_dispatch:  # Allow manual triggering regardless of file changes
+      - '**.cs'
+      - '**.csproj'
+      - '**.sln'
+      - '**/nuget.config'
+      - '**/Directory.Build.props'
+      - '**/Directory.Build.targets'
+      - '**/global.json'
 
 jobs:
-  build-debug:
-    uses: ./.github/workflows/build.yml
-    with:
-      configuration: 'Debug'
+  build:
+    name: Build and Test
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v4
 
-  build-release:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    uses: ./.github/workflows/build.yml
-    with:
-      configuration: 'Release'
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 9.0.x
+
+    - name: Cache NuGet packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.nuget/packages
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/RVToolsMerge.csproj') }}
+        restore-keys: |
+          ${{ runner.os }}-nuget-
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Build
+      run: dotnet build --configuration Debug --no-restore
+
+    - name: Test
+      run: dotnet test --configuration Debug --no-build --verbosity normal --collect:"XPlat Code Coverage"
+
+

@@ -6,7 +6,6 @@
     "editorconfig.editorconfig",
     "streetsidesoftware.code-spell-checker",
     "ryanluker.vscode-coverage-gutters",
-    "github.vscode-github-actions",    
-    "ms-sarifvscode.sarif-viewer"
+    "github.vscode-github-actions"
   ]
 }

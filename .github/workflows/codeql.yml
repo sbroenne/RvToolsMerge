@@ -3,8 +3,24 @@ name: "CodeQL"
 on:
   push:
     branches: [ "main" ]
+    paths:
+      - '**.cs'
+      - '**.csproj'
+      - '**.sln'
+      - '**/nuget.config'
+      - '**/Directory.Build.props'
+      - '**/Directory.Build.targets'
+      - '**/global.json'
   pull_request:
     branches: [ "main" ]
+    paths:
+      - '**.cs'
+      - '**.csproj'
+      - '**.sln'
+      - '**/nuget.config'
+      - '**/Directory.Build.props'
+      - '**/Directory.Build.targets'
+      - '**/global.json'
   schedule:
     - cron: '20 13 * * 5'
 
@@ -40,10 +56,10 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 9.0.x
-        
+
     - name: Restore dependencies
       run: dotnet restore
-      
+
     - name: Build
       run: dotnet build --no-restore
 

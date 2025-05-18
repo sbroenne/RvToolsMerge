@@ -1,23 +1,28 @@
-documentation:
-  - 'README*.md'
-  - 'docs/**/*'
 
-dependencies:
-  - 'RVToolsMerge.csproj'
-  - 'global.json'
-  - 'Directory.Build.props'
-  - any: ['.github/dependabot.yml']
+# GitHub PR Labeler Configuration
+# Code changes
+Functionality:
+- changed-files:
+  - any-glob-to-any-file: ['**/*.cs']
+  - all-globs-to-any-file: ['!**/*Test*.cs', '!**/*.Test.cs', '!**/*.Tests.cs']
 
-ci-cd:
-  - '.github/workflows/**'
+# Tests and test infrastructure
+Tests:
+- changed-files:
+  - any-glob-to-any-file: ['**/*Test*.cs', '**/*.Test.cs', '**/*.Tests.cs']
 
-tests:
-  - 'tests/**/*'
+# Documentation updates
+Documentation:
+- changed-files:
+  - any-glob-to-any-file: ['**/*.md', 'docs/**/*', '**/*.txt', '**/README.*']
 
-configuration:
-  - 'Properties/**/*'
-  - '.vscode/**'
-  - '.editorconfig'
-  
-core:
-  - 'Program.cs'
+# Configuration changes
+Config:
+- changed-files:
+  - any-glob-to-any-file: ['**/*.json', '**/*.yml', '**/*.yaml', '**/*.config', '.github/**/*']
+
+# Build system and dependencies
+Build:
+- changed-files:
+  - any-glob-to-any-file: ['**/*.csproj', '**/*.sln', '**/Directory.Build.props', '**/Directory.Build.targets', '**/nuget.config', '**/global.json']
+

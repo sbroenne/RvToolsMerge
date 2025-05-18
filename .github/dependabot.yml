@@ -3,39 +3,86 @@ updates:
   # Maintain dependencies for GitHub Actions
   - package-ecosystem: "github-actions"
     directory: "/"
+    # Check for updates once a week on Monday mornings
     schedule:
       interval: "weekly"
+      day: "monday"
+      time: "07:00"
+      timezone: Etc/UTC
+    # Limit the number of open PRs to avoid overwhelming the repository
     open-pull-requests-limit: 10
+    # Apply standard labels to GitHub Actions PRs for filtering
     labels:
       - "dependencies"
       - "ci-cd"
+    # Use conventional commit format for better changelog generation
     commit-message:
       prefix: "ci"
       include: "scope"
-    # Apply security fixes automatically
+    # Group all GitHub Actions updates together for easier management
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
+          - major
+    # Auto-merge all GitHub Actions updates regardless of version type
+    # This is safe for workflow files that are fully tested in the PR
     auto-merge: true
+    # Enable security alerts for GitHub Actions
     vulnerability-alerts: true
 
   # Maintain dependencies for NuGet
   - package-ecosystem: "nuget"
     directory: "/"
+    # Check for updates once a week on Monday mornings
     schedule:
       interval: "weekly"
+      day: "monday"
+      time: "07:00"
+      timezone: "Etc/UTC"
+    # Limit the number of open PRs to avoid overwhelming code reviewers
     open-pull-requests-limit: 10
+    # Apply appropriate labels to NuGet dependency PRs
     labels:
       - "dependencies"
       - "security"
+    # Use conventional commit format for better changelog generation
     commit-message:
       prefix: "deps"
       include: "scope"
-    # Apply security updates with higher priority
+    # Group updates by type for more granular control over what gets merged
     groups:
-      security-updates:
+      # Group all minor and patch updates for simpler management
+      patch-updates:
         patterns:
           - "*"
-        dependency-type: development
         update-types:
-          - "patch"
-    # Apply security fixes automatically
-    auto-merge: true
+          - patch
+      minor-updates:
+        patterns:
+          - "*"
+        update-types:
+          - minor
+      # Create separate PRs for major version updates
+      major-updates:
+        patterns:
+          - "*"
+        update-types:
+          - major
+        dependency-type: "production"
+
+    # Configure version update behavior
+    versioning-strategy: "auto"
+
+    # Auto-merge settings
+    auto-merge: "patch"  # Only auto-merge patch updates
+
+    # Apply security alerts to all PRs
     vulnerability-alerts: true
+
+    # Assign reviewers for major version PRs
+    reviewers:
+      - "project-maintainers"

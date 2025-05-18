@@ -1,18 +1,59 @@
+# CodeQL configuration for RVToolsMerge
+# This file configures the CodeQL static analysis to focus on security vulnerabilities
+# and code quality issues that are relevant to the RVToolsMerge application.
+
 name: "RVToolsMerge CodeQL Config"
 
+# Query suites to run
 queries:
+  # Extended security queries go beyond the default security queries
   - uses: security-extended
+  # Security and quality queries focus on both security vulnerabilities and code quality issues
   - uses: security-and-quality
+  # Add C# specific queries to address .NET specific concerns
+  - uses: security-and-quality/csharp/all
 
+# Query filtering configuration
 query-filters:
+  # Exclude low-severity issues to focus on what matters most
   - exclude:
       problem.severity:
         - note
         - recommendation
+  # Focus on high-confidence results
+  - exclude:
+      precision:
+        - low
+
+# Resource and analysis limits
+paths:
+  # Prioritize scanning core application code
+  - src/**/*.cs
+  - src/**/*.razor
+  - src/**/*.cshtml
 
 paths-ignore:
+  # Generated code
   - '**/obj/**'
   - '**/bin/**'
+  # Test code (we still scan test utilities that might be used in production)
   - '**/*.Test/**'
   - '**/*.Tests/**'
   - '**/testdata/**'
+  # Third-party libraries
+  - '**/lib/**'
+  - '**/vendor/**'
+  - '**/node_modules/**'
+  # Build artifacts
+  - '**/dist/**'
+  - '**/publish/**'
+
+# Language-specific configuration
+extraction:
+  csharp:
+    # Use .NET 9.0 for analysis since RVToolsMerge targets .NET 9
+    buildless: true
+    dotnet:
+      version: 9.0.100
+
+

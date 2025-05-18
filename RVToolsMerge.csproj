@@ -1,5 +1,4 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net9.0</TargetFramework>
@@ -9,11 +8,29 @@
     <SelfContained>true</SelfContained>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <PublishReadyToRun>true</PublishReadyToRun>
+    <PublishTrimmed>true</PublishTrimmed>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
     <DebugType>embedded</DebugType>
+    <Version>0.0.1</Version>
+    <AssemblyVersion>0.0.1</AssemblyVersion>
+    <FileVersion>0.0.1</FileVersion>
+    <Authors>Stefan Broenner</Authors>
+    <Company>Stefan Broenner</Company>
+    <Product>RVTools Excel Merger</Product>
+    <Description>A tool to merge multiple RVTools Excel files into a single consolidated file.</Description>
+    <Copyright>Copyright © 2025 Stefan Broenner</Copyright>
+    <RepositoryUrl>https://github.com/sbroenne/RVToolsMerge</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageProjectUrl>https://github.com/sbroenne/RVToolsMerge</PackageProjectUrl>
+    <NeutralLanguage>en-US</NeutralLanguage>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="ClosedXML" Version="0.102.1" />
+    <PackageReference Include="Spectre.Console" Version="0.50.0" />
   </ItemGroup>
 
 </Project>
