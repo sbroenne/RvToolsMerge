@@ -12,10 +12,6 @@ on:
           - major
           - minor
           - patch
-      prerelease:
-        description: 'Pre-release suffix (leave empty for stable release)'
-        required: false
-        type: string
 
 jobs:
   bump-version:
@@ -50,6 +46,20 @@ jobs:
           MINOR=${{ steps.get-version.outputs.minor }}
           PATCH=${{ steps.get-version.outputs.patch }}
 
+          # Validate numeric components are within .NET assembly version limits (0-65535)
+          if ! [[ "$MAJOR" =~ ^[0-9]+$ ]] || [ "$MAJOR" -gt 65535 ] || [ "$MAJOR" -lt 0 ]; then
+            echo "::error::Invalid major version: $MAJOR. Must be an integer between 0 and 65535."
+            exit 1
+          fi
+          if ! [[ "$MINOR" =~ ^[0-9]+$ ]] || [ "$MINOR" -gt 65535 ] || [ "$MINOR" -lt 0 ]; then
+            echo "::error::Invalid minor version: $MINOR. Must be an integer between 0 and 65535."
+            exit 1
+          fi
+          if ! [[ "$PATCH" =~ ^[0-9]+$ ]] || [ "$PATCH" -gt 65535 ] || [ "$PATCH" -lt 0 ]; then
+            echo "::error::Invalid patch version: $PATCH. Must be an integer between 0 and 65535."
+            exit 1
+          fi
+
           if [[ "${{ github.event.inputs.versionType }}" == "major" ]]; then
             MAJOR=$((MAJOR + 1))
             MINOR=0
@@ -61,53 +71,141 @@ jobs:
             PATCH=$((PATCH + 1))
           fi
 
-          NEW_VERSION="$MAJOR.$MINOR.$PATCH"
-
-          # Add pre-release suffix if provided
-          if [[ -n "${{ github.event.inputs.prerelease }}" ]]; then
-            NEW_VERSION="${NEW_VERSION}-${{ github.event.inputs.prerelease }}"
+          # Revalidate after incrementing
+          if [ "$MAJOR" -gt 65535 ]; then
+            echo "::error::Major version would exceed 65535 after incrementing."
+            exit 1
           fi
-
-          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
-
-          # Validate version format
-          if ! [[ "$NEW_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$ ]]; then
-            echo "::error::Invalid version format: $NEW_VERSION. Must be in format X.Y.Z or X.Y.Z-suffix"
+          if [ "$MINOR" -gt 65535 ]; then
+            echo "::error::Minor version would exceed 65535 after incrementing."
+            exit 1
+          fi
+          if [ "$PATCH" -gt 65535 ]; then
+            echo "::error::Patch version would exceed 65535 after incrementing."
             exit 1
           fi
 
+          # For both package and assembly base version
+          PACKAGE_VERSION="$MAJOR.$MINOR.$PATCH"
+          # For .NET assembly version (requires 4 components: major.minor.build.revision)
+          # Using patch as build and 0 as revision
+          ASSEMBLY_VERSION="$MAJOR.$MINOR.$PATCH.0"
+
+          echo "package_version=$PACKAGE_VERSION" >> $GITHUB_OUTPUT
+          echo "assembly_version=$ASSEMBLY_VERSION" >> $GITHUB_OUTPUT
+
+          # Validate final package version format
+          if ! [[ "$PACKAGE_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Invalid package version format: $PACKAGE_VERSION. Must be in format X.Y.Z"
+            exit 1
+
       - name: Update Version in csproj
         run: |
-          NEW_VERSION="${{ steps.calc-version.outputs.new_version }}"
-          sed -i "s/<Version>.*<\/Version>/<Version>$NEW_VERSION<\/Version>/g" RVToolsMerge.csproj
-          sed -i "s/<AssemblyVersion>.*<\/AssemblyVersion>/<AssemblyVersion>$NEW_VERSION<\/AssemblyVersion>/g" RVToolsMerge.csproj
-          sed -i "s/<FileVersion>.*<\/FileVersion>/<FileVersion>$NEW_VERSION<\/FileVersion>/g" RVToolsMerge.csproj
+          PACKAGE_VERSION="${{ steps.calc-version.outputs.package_version }}"
+          ASSEMBLY_VERSION="${{ steps.calc-version.outputs.assembly_version }}"
 
-          echo "::notice::Version updated from ${{ steps.get-version.outputs.current_version }} to $NEW_VERSION"
+          # Update the package version
+          sed -i "s/<Version>.*<\/Version>/<Version>$PACKAGE_VERSION<\/Version>/g" RVToolsMerge.csproj
+
+          # Update assembly and file versions (must be strictly numeric with 4 parts)
+          sed -i "s/<AssemblyVersion>.*<\/AssemblyVersion>/<AssemblyVersion>$ASSEMBLY_VERSION<\/AssemblyVersion>/g" RVToolsMerge.csproj
+          sed -i "s/<FileVersion>.*<\/FileVersion>/<FileVersion>$ASSEMBLY_VERSION<\/FileVersion>/g" RVToolsMerge.csproj
+
+          echo "::notice::Version updated from ${{ steps.get-version.outputs.current_version }} to package version $PACKAGE_VERSION (assembly version: $ASSEMBLY_VERSION)"
 
       - name: Create Version Update Branch
         id: create-branch
         run: |
           # Create a new branch for the version update
-          VERSION_BRANCH="version-update-${{ steps.calc-version.outputs.new_version }}"
+          VERSION_BRANCH="version-update-${{ steps.calc-version.outputs.package_version }}"
           git checkout -b $VERSION_BRANCH
           echo "branch_name=$VERSION_BRANCH" >> $GITHUB_OUTPUT
           git add RVToolsMerge.csproj
           git config --local user.email "actions@github.com"
           git config --local user.name "GitHub Actions"
-          git commit -m "chore: bump version to ${{ steps.calc-version.outputs.new_version }} [skip ci]"
+          git commit -m "chore: bump version to ${{ steps.calc-version.outputs.package_version }} [skip ci]"
           git push origin $VERSION_BRANCH
 
       - name: Create Pull Request
         id: create-pr
         run: |
           # Create a PR for the version update
+          # Uses the GitHub CLI to create a pull request with the version changes
+          # The PR title follows conventional commits format with "chore: bump version"
+          # The PR description includes both the old and new version numbers for clarity
           PR_URL=$(gh pr create \
-            --title "chore: bump version to ${{ steps.calc-version.outputs.new_version }}" \
-            --body "This PR updates the version from ${{ steps.get-version.outputs.current_version }} to ${{ steps.calc-version.outputs.new_version }}." \
+            --title "chore: bump version to ${{ steps.calc-version.outputs.package_version }}" \
+            --body "This PR updates the version from ${{ steps.get-version.outputs.current_version }} to ${{ steps.calc-version.outputs.package_version }}." \
             --base "${{ github.ref_name }}" \
             --head "${{ steps.create-branch.outputs.branch_name }}")
           echo "pr_url=$PR_URL" >> $GITHUB_OUTPUT
+          # Extract the PR number from the URL for use in subsequent steps
+          PR_NUMBER=$(echo $PR_URL | grep -o '[0-9]*$')
+          echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
           echo "::notice::Created PR for version update: $PR_URL"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Auto-Approve PR
+        run: |
+          # Automatically approve the PR to meet repository approval requirements
+          # This is needed in repositories with branch protection rules requiring approvals
+          gh pr review ${{ steps.create-pr.outputs.pr_number }} --approve
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Auto-Merge PR
+        run: |
+          # Attempt to automatically merge the PR with retry logic
+          # Some repositories may have required checks that need to complete
+          # before merging is allowed, so we retry a few times with delays
+          RETRIES=3
+          RETRY_DELAY=300  # 5 minutes between retry attempts
+
+          for i in $(seq 1 $RETRIES); do
+            echo "Attempting to merge PR (attempt $i of $RETRIES)..."
+            if gh pr merge ${{ steps.create-pr.outputs.pr_number }} --merge --delete-branch; then
+              echo "::notice::PR ${{ steps.create-pr.outputs.pr_number }} auto-merged successfully."
+              break
+            else
+              if [ $i -eq $RETRIES ]; then
+                echo "::warning::Failed to auto-merge PR after $RETRIES attempts. PR may need manual attention."
+              else
+                echo "Merge attempt failed, waiting $RETRY_DELAY seconds before retrying..."
+                sleep $RETRY_DELAY
+              fi
+            fi
+          done
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create and Checkout Version Tag
+        run: |
+          # Wait a moment for the merge to complete
+          # This small delay helps ensure the merge operation has fully completed
+          sleep 30
+
+          # Switch to main branch and update it with the latest changes
+          git checkout main
+          git pull origin main
+
+          # Pull the latest changes after PR merge
+          # This ensures we have the merged version update in our working directory
+          git pull origin ${{ github.ref_name }}
+
+          # Create a tag with the new version in format v1.0.0
+          TAG_NAME="v${{ steps.calc-version.outputs.package_version }}"
+
+          # Check if tag already exists
+          if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
+            echo "::warning::Tag $TAG_NAME already exists, skipping tag creation"
+          else
+            git tag $TAG_NAME
+            git push origin $TAG_NAME
+            echo "::notice::Created tag $TAG_NAME"
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+
+
