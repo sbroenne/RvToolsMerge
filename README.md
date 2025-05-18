@@ -1,5 +1,9 @@
 ﻿# RVTools Excel Merger
 
+[![.NET Build and Test](https://github.com/sbroenne/RVToolsMerge/actions/workflows/dotnet.yml/badge.svg)](https://github.com/sbroenne/RVToolsMerge/actions/workflows/dotnet.yml)
+[![CodeQL](https://github.com/sbroenne/RVToolsMerge/actions/workflows/codeql.yml/badge.svg)](https://github.com/sbroenne/RVToolsMerge/actions/workflows/codeql.yml)
+[![GitHub Advanced Security](https://img.shields.io/badge/GitHub%20Advanced%20Security-enabled-brightgreen)](SECURITY.md)
+
 A cross-platform utility to merge multiple RVTools Excel export files into a single consolidated file.
 
 ## Overview
@@ -191,6 +195,140 @@ RVToolsMerge -a -M -s C:\RVTools\Data C:\Reports\Complete_Analysis.xlsx
 - If some files are causing errors, use the `-i` flag to skip invalid files
 - For permission issues, ensure you have write access to the output folder
 
+# Github Project
+
+## Building from Source
+
+Prerequisites:
+- .NET 9.0 SDK or later
+
+```bash
+git clone https://github.com/sbroenne/RVToolsMerge.git
+cd RVToolsMerge
+dotnet build -c Release
+```
+
+### Building for Specific Platforms
+
+By default, `dotnet build` creates a framework-dependent build for your current platform. To create deployable packages:
+
+```bash
+# Default build - creates Window x64 executable
+dotnet publish -c Release
+```
+
+The default build output will be located in the `bin/Release/net9.0/publish` directory and requires the .NET runtime to be installed on the target machine.
+
+For distributable, self-contained applications that don't require the .NET runtime to be pre-installed:
+
+```bash
+# For Windows x64
+dotnet publish -c Release -r win-x64
+
+# For Windows ARM64
+dotnet publish -c Release -r win-arm64
+
+# For Linux x64
+dotnet publish -c Release -r linux-x64
+
+# For macOS ARM64 (Apple Silicon)
+dotnet publish -c Release -r osx-arm64
+```
+
+These commands will create self-contained single-file applications for each platform, which can be found in the `bin/Release/net9.0/{RID}/publish` directory, where `{RID}` is the runtime identifier (e.g., `win-x64`, `linux-x64`).
+
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+### Continuous Integration
+
+This project uses GitHub Actions for CI/CD:
+
+| Workflow | Description |
+|----------|-------------|
+| [dotnet.yml](/.github/workflows/dotnet.yml) | Builds and tests the application on every push and pull request |
+| [build.yml](/.github/workflows/build.yml) | Reusable workflow for building the application across multiple platforms (Windows x64/ARM64, Linux, macOS ARM64) |
+| [release.yml](/.github/workflows/release.yml) | Creates releases when tags are pushed |
+| [codeql.yml](/.github/workflows/codeql.yml) | Security scanning with CodeQL |
+| [pr-validation.yml](/.github/workflows/pr-validation.yml) | Additional validation for pull requests |
+| [vulnerability-scan.yml](/.github/workflows/vulnerability-scan.yml) | Weekly security scanning with CodeQL |
+| [dependency-review.yml](/.github/workflows/dependency-review.yml) | Reviews dependency changes in pull requests |
+| [secret-scanning.yml](/.github/workflows/secret-scanning.yml) | Identifies committed secrets and credentials |
+| [nuget-vulnerability-scan.yml](/.github/workflows/nuget-vulnerability-scan.yml) | Checks for vulnerable NuGet packages |
+| [generate-sbom.yml](/.github/workflows/generate-sbom.yml) | Creates Software Bill of Materials for releases |
+| [labeler.yml](/.github/workflows/labeler.yml) | Automatic labeling of PRs based on files changed |
+| [stale.yml](/.github/workflows/stale.yml) | Marks and closes stale issues and PRs |
+
+### Development Environment
+
+- [EditorConfig](/.editorconfig) is used to maintain consistent coding styles
+- GitHub issue and pull request templates are available
+- Dependabot keeps dependencies up to date
+
+## Development
+
+### Running from Source with Parameters
+
+When running the application with `dotnet run`, you need to use a double-dash (`--`) to separate the `dotnet run` command from the application parameters:
+
+```bash
+# Basic syntax
+dotnet run -- [options] [inputPath] [outputFile]
+
+# Examples
+dotnet run -- C:\RVTools\Data
+dotnet run -- -m -i C:\RVTools\Data C:\Output\Merged.xlsx
+dotnet run -- --anonymize --include-source C:\RVTools\Data
+dotnet run -- -h
+```
+
+The double-dash tells the `dotnet run` command that any arguments that follow are for the application being run, not for the `dotnet run` command itself.
+
+### Passing Configuration During Development
+
+You can also set configuration values when running in development:
+
+```bash
+# Run with specific configuration
+dotnet run --configuration Release -- -a C:\RVTools\Data
+
+# Run with specific framework
+dotnet run --framework net9.0 -- C:\RVTools\Data
+```
+
+## Security
+
+### Security Overview
+
+| Feature | Status |
+|---------|--------|
+| CodeQL Analysis | ✅ Enabled |
+| Dependency Review | ✅ Enabled |
+| Secret Scanning | ✅ Enabled |
+| Dependabot Alerts | ✅ Enabled |
+| SBOM Generation | ✅ Enabled |
+| Security Policy | ✅ [View Policy](SECURITY.md) |
+
+### Security Features
+
+This repository is configured with GitHub Advanced Security features:
+
+- **CodeQL Analysis**: Automatically scans code for vulnerabilities
+- **Dependency Review****: Reviews dependencies for known vulnerabilities
+- **Secret Scanning**: Prevents accidental commit of secrets
+- **Dependabot Security Updates**: Automatically creates pull requests for security vulnerabilities
+- **Software Bill of Materials (SBOM)**: Generated for each release to track components
+- **NuGet Vulnerability Scanning**: Regularly checks for vulnerable packages
+
+To report a security vulnerability, please see our [Security Policy](SECURITY.md).
 
 ## License
 
@@ -201,3 +339,4 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - [RVTools](https://www.robware.net/rvtools/) by Robware for the amazing virtualization documentation tool
 - [ClosedXML](https://github.com/ClosedXML/ClosedXML) for Excel file handling
 - [Spectre.Console](https://spectreconsole.net/) for beautiful console output
+
