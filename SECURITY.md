@@ -37,7 +37,7 @@ If you believe you've found a security vulnerability in RVToolsMerge, please fol
 1. **Do not disclose the vulnerability publicly**
 2. **Submit the report through one of these channels**:
    - Submit a [security advisory](https://github.com/sbroenne/RVToolsMerge/security/advisories/new) on GitHub
-   - Email us at [security@rvtoolsmerge.com](mailto:security@rvtoolsmerge.com)
+   - Email us at [stefan_broenner@yahoo.com](mailto:stefan_broenner@yahoo.com)
 
 ### When reporting, please include:
 
