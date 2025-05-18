@@ -36,11 +36,6 @@ jobs:
             exit 1
           fi
 
-      - name: Install GitHub CLI
-        uses: actions/setup-gh@v3
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Check if branch is protected
         id: check-branch-protection
         run: |
