@@ -67,7 +67,7 @@ Each sheet has specific required columns that must be present for proper process
 - CPUs
 - Memory
 - In Use MiB
-- OS according to the VMware Tools
+- OS according to the configuration file
 
 #### vHost Sheet (Optional)
 - Host

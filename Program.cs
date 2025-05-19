@@ -87,7 +87,7 @@ class Program
     /// </summary>
     private static readonly FrozenDictionary<string, string[]> MandatoryColumns = new Dictionary<string, string[]>
     {
-        { "vInfo", ["Template", "SRM Placeholder", "Powerstate", "VM", "CPUs", "Memory", "In Use MiB", "OS according to the VMware Tools"] },
+        { "vInfo", ["Template", "SRM Placeholder", "Powerstate", "VM", "CPUs", "Memory", "In Use MiB", "OS according to the configuration file"] },
         { "vHost", ["Host", "Datacenter", "Cluster", "CPU Model", "Speed", "# CPU", "Cores per CPU", "# Cores", "CPU usage %", "# Memory", "Memory usage %"] },
         { "vPartition", ["VM", "Disk", "Capacity MiB", "Consumed MiB"] },
         { "vMemory", ["VM", "Size MiB", "Reservation"] }
@@ -922,24 +922,20 @@ class Program
     /// </summary>
     static void ShowHelp()
     {
+        // Get version and product info
         var assembly = Assembly.GetExecutingAssembly();
         var version = assembly.GetName().Version;
         string versionString = version is not null ? $"{version.Major}.{version.Minor}.{version.Build}" : "1.0.0";
-
-        // Get product name from assembly attributes
         var productAttribute = Attribute.GetCustomAttribute(assembly, typeof(AssemblyProductAttribute)) as AssemblyProductAttribute;
         string productName = productAttribute?.Product ?? "RVTools Excel Merger";
 
-        // Enhanced header display with Spectre.Console
         AnsiConsole.MarkupLineInterpolated($"[bold green]{productName}[/] - Merges multiple RVTools Excel files into a single file");
         AnsiConsole.MarkupLineInterpolated($"[yellow]Version {versionString}[/]");
         AnsiConsole.Write(new Rule().RuleStyle("grey"));
         AnsiConsole.WriteLine();
-        AnsiConsole.WriteLine();
 
         AnsiConsole.MarkupLine("[bold]USAGE:[/]");
         AnsiConsole.MarkupLineInterpolated($"  [cyan]{Assembly.GetExecutingAssembly().GetName().Name}[/] [grey][[options]] inputPath [[outputFile]][/]");
-        AnsiConsole.WriteLine();
         AnsiConsole.WriteLine();
 
         AnsiConsole.MarkupLine("[bold]ARGUMENTS:[/]");
@@ -948,56 +944,30 @@ class Program
         AnsiConsole.MarkupLine("  [green]outputFile[/]    Path where the merged file will be saved.");
         AnsiConsole.MarkupLine("                Defaults to \"RVTools_Merged.xlsx\" in the current directory.");
         AnsiConsole.WriteLine();
-        AnsiConsole.WriteLine();
 
         AnsiConsole.MarkupLine("[bold]OPTIONS:[/]");
         AnsiConsole.MarkupLine("  [yellow]-h, --help, /?[/]            Show this help message and exit.");
         AnsiConsole.MarkupLine("  [yellow]-m, --ignore-missing-sheets[/]");
         AnsiConsole.MarkupLine("                            Ignore missing optional sheets (vHost, vPartition & vMemory).");
-        AnsiConsole.MarkupLine("                            Will still validate vInfo sheet exists.");
-        AnsiConsole.MarkupLine("  [yellow]-i, --skip-invalid-files[/]  Skip files that don't meet validation requirements (no vInfo sheet or");
-        AnsiConsole.MarkupLine("                            mandatory columns are missing) instead of failing with an error.");
-        AnsiConsole.MarkupLine("                            Can be used with -m to skip files with missing vInfo sheet while");
-        AnsiConsole.MarkupLine("                            processing others that may have missing optional sheets.");
-        AnsiConsole.MarkupLine("  [yellow]-a, --anonymize[/]           Anonymize VM, DNS Name, Cluster, Host, and Datacenter");
-        AnsiConsole.MarkupLine("                            columns with generic names (vm1, host1, etc.).");
+        AnsiConsole.MarkupLine("  [yellow]-i, --skip-invalid-files[/]  Skip files that don't meet validation requirements.");
+        AnsiConsole.MarkupLine("  [yellow]-a, --anonymize[/]           Anonymize VM, DNS Name, Cluster, Host, and Datacenter names.");
         AnsiConsole.MarkupLine("  [yellow]-M, --only-mandatory-columns[/]");
-        AnsiConsole.MarkupLine("                            Include only the mandatory columns for each sheet in the");
-        AnsiConsole.MarkupLine("                            output file instead of all common columns.");
-        AnsiConsole.MarkupLine("  [yellow]-s, --include-source[/]      Include a 'Source File' column in each sheet showing");
-        AnsiConsole.MarkupLine("                            the name of the source file for each record.");
-        AnsiConsole.MarkupLine("  [yellow]-d, --debug[/]               Show detailed error information including stack traces");
-        AnsiConsole.MarkupLine("                            when errors occur.");
-        AnsiConsole.WriteLine();
+        AnsiConsole.MarkupLine("                            Include only mandatory columns in output.");
+        AnsiConsole.MarkupLine("  [yellow]-s, --include-source[/]      Include source file name in output.");
+        AnsiConsole.MarkupLine("  [yellow]-d, --debug[/]               Show detailed error information.");
         AnsiConsole.WriteLine();
 
-        AnsiConsole.MarkupLine("[bold]DESCRIPTION:[/]");
-        AnsiConsole.MarkupLine("  This tool merges all RVTools Excel files (XLSX format) from the specified");
-        AnsiConsole.MarkupLine("  folder into one consolidated file. It extracts data from the following sheets:");
-        AnsiConsole.MarkupLine("    - [green]vInfo[/] ([bold]required[/]): Virtual machine information (CPUs, memory, OS)");
-        AnsiConsole.MarkupLine("    - [cyan]vHost[/] (optional): Host information (CPU, memory, cluster details)");
-        AnsiConsole.MarkupLine("    - [cyan]vPartition[/] (optional): Virtual machine disk partition information");
-        AnsiConsole.MarkupLine("    - [cyan]vMemory[/] (optional): Virtual machine memory configuration information");
-        AnsiConsole.WriteLine();
-        AnsiConsole.WriteLine();
-
-        AnsiConsole.MarkupLine("[bold]Features:[/]");
-        AnsiConsole.Markup("  - ");
-        AnsiConsole.MarkupLine("Validates mandatory columns in each sheet");
-        AnsiConsole.Markup("  - ");
-        AnsiConsole.MarkupLine("Only includes columns that exist in all files for each respective sheet");
-        AnsiConsole.Markup("  - ");
-        AnsiConsole.MarkupLine("Anonymizes sensitive data when requested (VMs, DNS, Clusters, Hosts, Datacenters)");
-        AnsiConsole.Markup("  - ");
-        AnsiConsole.MarkupLine("Allows filtering to include only mandatory columns");
-        AnsiConsole.Markup("  - ");
-        AnsiConsole.MarkupLine("Works on multiple platforms (Windows, Linux, macOS)");
-        AnsiConsole.Markup("  - ");
-        AnsiConsole.MarkupLine("Minimal memory footprint with efficient processing");
-        AnsiConsole.WriteLine();
+        AnsiConsole.MarkupLine("[bold]EXAMPLES:[/]");
+        string appName = Assembly.GetExecutingAssembly().GetName().Name ?? "RVToolsMerge";
+        AnsiConsole.MarkupLine($"  [cyan]{appName}[/] C:\\RVTools\\Data");
+        AnsiConsole.MarkupLine($"  [cyan]{appName}[/] C:\\RVTools\\Data\\SingleFile.xlsx");
+        AnsiConsole.MarkupLine($"  [cyan]{appName}[/] [yellow]-m[/] C:\\RVTools\\Data C:\\Reports\\Merged_RVTools.xlsx");
+        AnsiConsole.MarkupLine($"  [cyan]{appName}[/] [yellow]-a[/] C:\\RVTools\\Data\\RVTools.xlsx C:\\Reports\\Anonymized_RVTools.xlsx");
+        AnsiConsole.MarkupLine($"  [cyan]{appName}[/] [yellow]-M[/] C:\\RVTools\\Data C:\\Reports\\Mandatory_Columns.xlsx");
+        AnsiConsole.MarkupLine($"  [cyan]{appName}[/] [yellow]-a -M -s[/] C:\\RVTools\\Data C:\\Reports\\Complete_Analysis.xlsx");
         AnsiConsole.WriteLine();
 
-        AnsiConsole.MarkupLine("[bold]Mandatory columns by sheet:[/]");
+        AnsiConsole.MarkupLine("[bold]REQUIRED SHEETS AND COLUMNS:[/]");
         var table = new Table();
         table.AddColumn(new TableColumn("Sheet").LeftAligned());
         table.AddColumn(new TableColumn("Status").Centered());
@@ -1005,7 +975,7 @@ class Program
         table.AddRow(
             "[green]vInfo[/]",
             "[bold green]Required[/]",
-            "Template, SRM Placeholder, Powerstate, [bold]VM[/], [bold]CPUs[/], [bold]Memory[/], [bold]In Use MiB[/], [bold]OS according to the VMware Tools[/]"
+            "Template, SRM Placeholder, Powerstate, [bold]VM[/], [bold]CPUs[/], [bold]Memory[/], [bold]In Use MiB[/], [bold]OS according to the configuration file[/]"
         );
         table.AddRow(
             "[cyan]vHost[/]",
@@ -1025,49 +995,14 @@ class Program
         table.Border(TableBorder.Rounded);
         AnsiConsole.Write(table);
         AnsiConsole.WriteLine();
-        AnsiConsole.MarkupLine("[grey]Note: Bold column names indicate the most critical columns for analysis.[/]");
-        AnsiConsole.WriteLine();
-
-        AnsiConsole.MarkupLine("[bold]Validation behavior:[/]");
-        AnsiConsole.MarkupLine("  - By default, all sheets must exist in all files");
-        AnsiConsole.MarkupLine("  - When using [yellow]--ignore-missing-sheets[/], optional sheets (vHost, vPartition, vMemory)");
-        AnsiConsole.MarkupLine("    can be missing with warnings shown. The vInfo sheet is always required.");
-        AnsiConsole.MarkupLine("  - When using [yellow]--skip-invalid-files[/], files without required sheets or missing mandatory");
-        AnsiConsole.MarkupLine("    columns will be skipped and reported, but processing will continue with valid files.");
-        AnsiConsole.MarkupLine("  - Both [yellow]--ignore-missing-sheets[/] and [yellow]--skip-invalid-files[/] can be used");
-        AnsiConsole.MarkupLine("    together to skip files with missing vInfo sheet while processing others with potentially");
-        AnsiConsole.MarkupLine("    missing optional sheets.");
-        AnsiConsole.MarkupLine("  - When using [yellow]--anonymize[/], sensitive names are replaced with generic identifiers");
-        AnsiConsole.MarkupLine("    (vm1, dns1, host1, etc.) to protect sensitive information.");
-        AnsiConsole.MarkupLine("  - When using [yellow]--only-mandatory-columns[/], only the mandatory columns for each sheet");
-        AnsiConsole.MarkupLine("    are included in the output, regardless of what other columns might be common");
-        AnsiConsole.MarkupLine("    across all files.");
-        AnsiConsole.MarkupLine("  - When using [yellow]--include-source[/], a 'Source File' column is added to each");
-        AnsiConsole.MarkupLine("    sheet to show which source file each record came from, helping with data traceability.");
-        AnsiConsole.WriteLine();
-        AnsiConsole.WriteLine();
-
-        AnsiConsole.MarkupLine("[bold]EXAMPLES:[/]");
-        string appName = Assembly.GetExecutingAssembly().GetName().Name ?? "RVToolsMerge";
-        AnsiConsole.MarkupLine($"  [cyan]{appName}[/] C:\\RVTools\\Data");
-        AnsiConsole.MarkupLine($"  [cyan]{appName}[/] C:\\RVTools\\Data\\SingleFile.xlsx");
-        AnsiConsole.MarkupLine($"  [cyan]{appName}[/] [yellow]-m[/] C:\\RVTools\\Data C:\\Reports\\Merged_RVTools.xlsx");
-        AnsiConsole.MarkupLine($"  [cyan]{appName}[/] [yellow]--ignore-missing-sheets[/] C:\\RVTools\\Data");
-        AnsiConsole.MarkupLine($"  [cyan]{appName}[/] [yellow]-i[/] C:\\RVTools\\Data");
-        AnsiConsole.MarkupLine($"  [cyan]{appName}[/] [yellow]-a[/] C:\\RVTools\\Data\\RVTools.xlsx C:\\Reports\\Anonymized_RVTools.xlsx");
-        AnsiConsole.MarkupLine($"  [cyan]{appName}[/] [yellow]-M[/] C:\\RVTools\\Data C:\\Reports\\Mandatory_Columns.xlsx");
-        AnsiConsole.MarkupLine($"  [cyan]{appName}[/] [yellow]-s[/] C:\\RVTools\\Data C:\\Reports\\With_Source_Files.xlsx");
-        AnsiConsole.MarkupLine($"  [cyan]{appName}[/] [yellow]-a -M -s[/] C:\\RVTools\\Data C:\\Reports\\Complete_Analysis.xlsx");
-        AnsiConsole.WriteLine();
 
         AnsiConsole.MarkupLine("[bold]DOWNLOADS:[/]");
-        AnsiConsole.MarkupLine("  Latest releases for all supported platforms are available at:");
+        AnsiConsole.MarkupLine("  Latest releases are available at:");
         AnsiConsole.MarkupLine("  [link]https://github.com/sbroenne/RVToolsMerge/releases[/]");
-        string applicationName = Assembly.GetExecutingAssembly().GetName().Name ?? "RVToolsMerge";
-        AnsiConsole.MarkupLine($"  - [cyan]{applicationName}-windows-Release.zip[/]       (Windows x64)");
-        AnsiConsole.MarkupLine($"  - [cyan]{applicationName}-windows-arm64-Release.zip[/] (Windows ARM64)");
-        AnsiConsole.MarkupLine($"  - [cyan]{applicationName}-linux-Release.zip[/]         (Linux x64)");
-        AnsiConsole.MarkupLine($"  - [cyan]{applicationName}-macos-arm64-Release.zip[/]   (macOS ARM64)");
+        AnsiConsole.MarkupLine($"  - [cyan]{appName}-windows-Release.zip[/]       (Windows x64)");
+        AnsiConsole.MarkupLine($"  - [cyan]{appName}-windows-arm64-Release.zip[/] (Windows ARM64)");
+        AnsiConsole.MarkupLine($"  - [cyan]{appName}-linux-Release.zip[/]         (Linux x64)");
+        AnsiConsole.MarkupLine($"  - [cyan]{appName}-macos-arm64-Release.zip[/]   (macOS ARM64)");
     }
 
     /// <summary>
