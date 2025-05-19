@@ -65,7 +65,6 @@ class Program
         { "vHostOverallMemoryUsage", "Memory usage %" },
         { "vHostvCPUs", "# vCPUs" },
         { "vHostVCPUsPerCore", "vCPUs per Core" },
-        { "vHostFullName", "ESX Version" },
 
         // vPartition sheet mappings
         { "vPartitionVMName", "VM" },
