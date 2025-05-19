@@ -111,10 +111,15 @@ class Program
             }
         }
 
-        // Get input path (default to "input" if not specified)
-        string inputPath = processedArgs.Count > 0
-            ? processedArgs[0]
-            : Path.Combine(Directory.GetCurrentDirectory(), "input");
+        // Get input path (required)
+        if (processedArgs.Count == 0)
+        {
+            AnsiConsole.MarkupLine("[red]Error:[/] Input path is required.");
+            AnsiConsole.MarkupLine("Use --help to see usage information.");
+            return;
+        }
+
+        string inputPath = processedArgs[0];
 
         // Determine if the input path is a file or directory
         bool isInputFile = File.Exists(inputPath);
@@ -568,14 +573,22 @@ class Program
 
                     foreach (var filePath in validFilePaths)
                     {
-                        using (var workbook = new XLWorkbook(filePath))
+                        try
                         {
-                            if (SheetExists(workbook, sheetName))
+                            using (var workbook = new XLWorkbook(filePath))
                             {
-                                var worksheet = workbook.Worksheet(sheetName);
-                                var columnNames = GetColumnNames(worksheet);
-                                allFileColumns.Add(columnNames);
+                                if (SheetExists(workbook, sheetName))
+                                {
+                                    var worksheet = workbook.Worksheet(sheetName);
+                                    var columnNames = GetColumnNames(worksheet);
+                                    allFileColumns.Add(columnNames);
+                                }
                             }
+                        }
+                        catch (IOException ioEx) when (debugMode)
+                        {
+                            // On Linux, provide more verbose error information for filesystem issues
+                            AnsiConsole.MarkupLineInterpolated($"[yellow]Warning:[/] IO issue with file '{Path.GetFileName(filePath)}': {ioEx.Message}");
                         }
                         readingColumnsTask.Increment(1);
                         processingColumnsTask.Increment(1);
@@ -651,7 +664,6 @@ class Program
             ])
             .Start(ctx =>
             {
-                var extractionTask = ctx.AddTask("[green]Extracting data[/]", maxValue: availableSheets.Count);
                 foreach (var sheetName in availableSheets)
                 {
                     mergedData[sheetName] = [
@@ -659,8 +671,6 @@ class Program
                     ];
 
                     var sheetTask = ctx.AddTask($"[cyan]Processing '{sheetName}'[/]", maxValue: validFilePaths.Count);
-
-                    // Add subtasks for data extraction phases
                     var openingFilesTask = ctx.AddTask($"[grey]Opening files[/]", maxValue: validFilePaths.Count);
                     var readingDataTask = ctx.AddTask($"[grey]Reading data[/]", maxValue: validFilePaths.Count);
                     var processingDataTask = ctx.AddTask($"[grey]Processing {(anonymizeData ? "and anonymizing " : "")}data[/]", maxValue: validFilePaths.Count);
@@ -681,11 +691,10 @@ class Program
 
                         var worksheet = workbook.Worksheet(sheetName);
                         var columnMapping = GetColumnMapping(worksheet, commonColumns[sheetName]);
+                        readingDataTask.Increment(1);
 
                         // Find the last row with data
                         int lastRow = worksheet.LastRowUsed().RowNumber();
-
-                        readingDataTask.Increment(1);
 
                         // Find columns to anonymize in this sheet
                         var anonymizeColumnIndices = new Dictionary<string, int>();
@@ -754,7 +763,6 @@ class Program
                     openingFilesTask.StopTask();
                     readingDataTask.StopTask();
                     processingDataTask.StopTask();
-                    extractionTask.Increment(1);
                 }
             });
 
@@ -771,8 +779,6 @@ class Program
             .StartAsync(async ctx =>
             {
                 var outputTask = ctx.AddTask("[green]Creating output file[/]", maxValue: availableSheets.Count + 1);
-
-                // Add subtasks for file creation phases
                 var preparingWorkbookTask = ctx.AddTask("[grey]Preparing workbook[/]", maxValue: 1);
                 var writingDataTask = ctx.AddTask("[grey]Writing data[/]", maxValue: availableSheets.Count);
                 var formattingTask = ctx.AddTask("[grey]Formatting and saving[/]", maxValue: availableSheets.Count + 1);
@@ -804,7 +810,6 @@ class Program
 
                         // Auto-fit columns
                         worksheet.Columns().AdjustToContents();
-
                         formattingTask.Increment(1);
                         rowTask.StopTask();
                         outputTask.Increment(1);
@@ -813,7 +818,6 @@ class Program
                     // Save the output file
                     AnsiConsole.MarkupLine("[cyan]Saving file to disk...[/]");
                     await Task.Run(() => workbook.SaveAs(outputPath));
-
                     formattingTask.Increment(1);
                     outputTask.Increment(1);
                 }
@@ -865,7 +869,8 @@ class Program
     /// Checks if a sheet exists in a workbook.
     /// </summary>
     /// <param name="workbook">The workbook to check.</param>
-    /// <param name="sheetName">The name of the sheet to check for.</returns>
+    /// <param name="sheetName">The name of the sheet to check for.</param>
+    /// <returns>True if the sheet exists; otherwise, false.</returns>
     static bool SheetExists(XLWorkbook workbook, string sheetName) =>
         workbook.Worksheets.Any(sheet => sheet.Name.Equals(sheetName, StringComparison.OrdinalIgnoreCase));
 
@@ -890,12 +895,13 @@ class Program
         AnsiConsole.WriteLine();
 
         AnsiConsole.MarkupLine("[bold]USAGE:[/]");
-        AnsiConsole.MarkupLineInterpolated($"  [cyan]{Assembly.GetExecutingAssembly().GetName().Name}[/] [grey][[options]] [[inputFolder]] [[outputFile]][/]");
+        AnsiConsole.MarkupLineInterpolated($"  [cyan]{Assembly.GetExecutingAssembly().GetName().Name}[/] [grey][[options]] inputPath [[outputFile]][/]");
+        AnsiConsole.WriteLine();
         AnsiConsole.WriteLine();
 
         AnsiConsole.MarkupLine("[bold]ARGUMENTS:[/]");
         AnsiConsole.MarkupLine("  [green]inputPath[/]     Path to an Excel file or a folder containing RVTools Excel files.");
-        AnsiConsole.MarkupLine("                Defaults to \"input\" subfolder in the current directory.");
+        AnsiConsole.MarkupLine("                [bold]Required[/]. Must be a valid file path or directory path.");
         AnsiConsole.MarkupLine("  [green]outputFile[/]    Path where the merged file will be saved.");
         AnsiConsole.MarkupLine("                Defaults to \"RVTools_Merged.xlsx\" in the current directory.");
         AnsiConsole.WriteLine();
@@ -1048,11 +1054,16 @@ class Program
     }
 
     /// <summary>
-    /// Creates a mapping between file column indices and common column indices.
+    /// Creates a mapping between column indices in the source worksheet and corresponding indices in the common columns collection.
     /// </summary>
-    /// <param name="worksheet">The worksheet to map.</param>
-    /// <param name="commonColumns">The list of common columns.</param>
-    /// <returns>A list of column mappings.</returns>
+    /// <param name="worksheet">The Excel worksheet to analyze for column mappings.</param>
+    /// <param name="commonColumns">The list of common column names that should be included in the output.</param>
+    /// <returns>A list of column mappings where each mapping connects a source file column index to its corresponding common column index.</returns>
+    /// <remarks>
+    /// This method is essential for the data extraction process as it allows us to locate data from source worksheets
+    /// and place it in the correct position in the merged output. Only columns that exist in the commonColumns list
+    /// will be included in the mappings.
+    /// </remarks>
     static List<ColumnMapping> GetColumnMapping(IXLWorksheet worksheet, List<string> commonColumns)
     {
         var mapping = new List<ColumnMapping>();
@@ -1080,17 +1091,27 @@ class Program
     }
 
     /// <summary>
-    /// Anonymizes a cell value based on its column type.
+    /// Anonymizes a cell value based on its column type during the data merging process.
     /// </summary>
-    /// <param name="value">The original cell value.</param>
-    /// <param name="currentColumnIndex">The current column index.</param>
-    /// <param name="anonymizeColumnIndices">Dictionary mapping column names to indices.</param>
-    /// <param name="vmNameMap">Dictionary for VM name mapping.</param>
-    /// <param name="dnsNameMap">Dictionary for DNS name mapping.</param>
-    /// <param name="clusterNameMap">Dictionary for cluster name mapping.</param>
-    /// <param name="hostNameMap">Dictionary for host name mapping.</param>
-    /// <param name="datacenterNameMap">Dictionary for datacenter name mapping.</param>
-    /// <returns>The anonymized cell value.</returns>
+    /// <param name="value">The original cell value to potentially anonymize.</param>
+    /// <param name="currentColumnIndex">The index of the current column in the common columns collection.</param>
+    /// <param name="anonymizeColumnIndices">Dictionary mapping column names to their indices for columns that require anonymization.</param>
+    /// <param name="vmNameMap">Dictionary that maps original VM names to their anonymized versions.</param>
+    /// <param name="dnsNameMap">Dictionary that maps original DNS names to their anonymized versions.</param>
+    /// <param name="clusterNameMap">Dictionary that maps original cluster names to their anonymized versions.</param>
+    /// <param name="hostNameMap">Dictionary that maps original host names to their anonymized versions.</param>
+    /// <param name="datacenterNameMap">Dictionary that maps original datacenter names to their anonymized versions.</param>
+    /// <returns>The anonymized cell value if the column requires anonymization; otherwise, the original value.</returns>
+    /// <remarks>
+    /// This method maintains consistent anonymization across all sheets by using the mapping dictionaries.
+    /// The same original name will always be anonymized to the same value throughout the entire workbook.
+    /// The method handles the following column types for anonymization:
+    /// - VM names (e.g., "vm1", "vm2")
+    /// - DNS names (e.g., "dns1", "dns2")
+    /// - Cluster names (e.g., "cluster1", "cluster2")
+    /// - Host names (e.g., "host1", "host2")
+    /// - Datacenter names (e.g., "datacenter1", "datacenter2")
+    /// </remarks>
     private static XLCellValue AnonymizeValue(
         XLCellValue value,
         int currentColumnIndex,
@@ -1159,6 +1180,16 @@ class Program
             nameMap[lookupValue] = value;
         }
         return value;
+    }
+
+    /// <summary>
+    /// Creates a platform-agnostic file path by combining path segments.
+    /// </summary>
+    /// <param name="paths">The path segments to combine.</param>
+    /// <returns>A platform-appropriate file path.</returns>
+    private static string CreatePlatformPath(params string[] paths)
+    {
+        return Path.Combine(paths);
     }
 }
 

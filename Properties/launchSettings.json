@@ -1,79 +1,40 @@
 {
   "profiles": {
-    "RVToolsMerge": {
+    "RVToolsMerge (Default)": {
       "commandName": "Project",
-      "commandLineArgs": "\"input\" \"RVTools_merged.xlsx\"",
-      "workingDirectory": "$(ProjectDir)"
+      "commandLineArgs": "$(ProjectDir)\\input"
     },
-    "RVToolsMerge (Ignore Missing Optional Sheets)": {
+    "RVToolsMerge (Ignore Missing Sheets)": {
       "commandName": "Project",
-      "commandLineArgs": "--ignore-missing-optional-sheets \"input\" \"RVTools_merged.xlsx\"",
-      "workingDirectory": "$(ProjectDir)"
+      "commandLineArgs": "-m $(ProjectDir)\\input"
     },
     "RVToolsMerge (Skip Invalid Files)": {
       "commandName": "Project",
-      "commandLineArgs": "--skip-invalid-files \"input\" \"RVTools_merged.xlsx\"",
-      "workingDirectory": "$(ProjectDir)"
+      "commandLineArgs": "-i $(ProjectDir)\\input"
     },
-    "RVToolsMerge (Anonymize All)": {
+    "RVToolsMerge (Anonymize)": {
       "commandName": "Project",
-      "commandLineArgs": "-a \"input\" \"RVTools_anonymized.xlsx\"",
-      "workingDirectory": "$(ProjectDir)"
+      "commandLineArgs": "-a $(ProjectDir)\\input"
     },
-    "RVToolsMerge (Only Mandatory Columns)": {
+    "RVToolsMerge (Mandatory Columns Only)": {
       "commandName": "Project",
-      "commandLineArgs": "-o \"input\" \"RVTools_mandatory.xlsx\"",
-      "workingDirectory": "$(ProjectDir)"
+      "commandLineArgs": "-M $(ProjectDir)\\input"
     },
-    "RVToolsMerge (Anonymize & Mandatory Columns)": {
+    "RVToolsMerge (Include Source)": {
       "commandName": "Project",
-      "commandLineArgs": "-a -o \"input\" \"RVTools_anonymized_mandatory.xlsx\"",
-      "workingDirectory": "$(ProjectDir)"
+      "commandLineArgs": "-s $(ProjectDir)\\input"
     },
-    "Basic (No Options)": {
+    "RVToolsMerge (Debug Mode)": {
       "commandName": "Project",
-      "commandLineArgs": "\"$(ProjectDir)test/input/valid_complete\" \"$(ProjectDir)test/output/basic_test.xlsx\"",
-      "workingDirectory": "$(ProjectDir)"
+      "commandLineArgs": "-d $(ProjectDir)\\input"
     },
-    "Skip Invalid Files (-i)": {
+    "RVToolsMerge (Most Permissive)": {
       "commandName": "Project",
-      "commandLineArgs": "-i \"$(ProjectDir)test/input\" \"$(ProjectDir)test/output/skip_invalid.xlsx\"",
-      "workingDirectory": "$(ProjectDir)"
+      "commandLineArgs": "-s -i -m $(ProjectDir)\\input $(ProjectDir)\\output\\MostPermissive.xlsx"
     },
-    "Ignore Missing Sheets (-m)": {
+    "RVToolsMerge (Help)": {
       "commandName": "Project",
-      "commandLineArgs": "-m \"$(ProjectDir)test/input/valid_missing_optional\" \"$(ProjectDir)test/output/ignore_missing.xlsx\"",
-      "workingDirectory": "$(ProjectDir)"
-    },
-    "Most Permissive (-i -m)": {
-      "commandName": "Project",
-      "commandLineArgs": "-i -m \"$(ProjectDir)test/input\" \"$(ProjectDir)test/output/permissive_mode.xlsx\"",
-      "workingDirectory": "$(ProjectDir)"
-    },
-    "Anonymize Data (-a)": {
-      "commandName": "Project",
-      "commandLineArgs": "-a \"$(ProjectDir)test/input/valid_complete\" \"$(ProjectDir)test/output/anonymized.xlsx\"",
-      "workingDirectory": "$(ProjectDir)"
-    },
-    "Include Source Files (-s)": {
-      "commandName": "Project",
-      "commandLineArgs": "-s \"$(ProjectDir)test/input/valid_complete\" \"$(ProjectDir)test/output/with_source_files.xlsx\"",
-      "workingDirectory": "$(ProjectDir)"
-    },
-    "Mandatory Columns Only (-M)": {
-      "commandName": "Project",
-      "commandLineArgs": "-M \"$(ProjectDir)test/input/valid_complete\" \"$(ProjectDir)test/output/mandatory_only.xlsx\"",
-      "workingDirectory": "$(ProjectDir)"
-    },
-    "All Features (-i -m -a -s -M)": {
-      "commandName": "Project",
-      "commandLineArgs": "-i -m -a -s -M \"$(ProjectDir)test/input\" \"$(ProjectDir)test/output/all_features.xlsx\"",
-      "workingDirectory": "$(ProjectDir)"
-    },
-    "Debug Mode (-d -i -m)": {
-      "commandName": "Project",
-      "commandLineArgs": "-d -i -m \"$(ProjectDir)test/input\" \"$(ProjectDir)test/output/debug_mode.xlsx\"",
-      "workingDirectory": "$(ProjectDir)"
+      "commandLineArgs": "--help"
     }
   }
 }

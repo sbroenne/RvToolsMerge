@@ -1,19 +1,9 @@
 {
     "version": "0.2.0",
     "configurations": [
+
         {
-            "name": "Launch RVToolsMerge (Default)",
-            "type": "coreclr",
-            "request": "launch",
-            "preLaunchTask": "build",
-            "program": "${workspaceFolder}/bin/Debug/net9.0/win-x64/RVToolsMerge.exe",
-            "args": [],
-            "cwd": "${workspaceFolder}",
-            "console": "internalConsole",
-            "stopAtEntry": false
-        },
-        {
-            "name": "Launch with Folder Input",
+            "name": "Launch with Folder Input (Default)",
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",

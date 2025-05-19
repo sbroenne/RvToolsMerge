@@ -111,22 +111,22 @@ Download the latest release for your platform from the [Releases page](https://g
 ## Usage
 
 ```
-RVToolsMerge [options] [inputPath] [outputFile]
+RVToolsMerge [options] inputPath [outputFile]
 ```
 
 ### Arguments
 
 | Argument | Description | Default |
 |----------|-------------|---------|
-| `inputPath` | Path to an Excel file or folder containing RVTools exports | `./input` subfolder |
-| `outputFile` | Path where the merged file will be saved | `./RVTools_Merged.xlsx` |
+| `inputPath` | Path to an Excel file or folder containing RVTools exports | **Required** |
+| `outputFile` | Path where the merged file will be saved | `./RVTools_Merged.xlsx` in current directory |
 
 ### Options
 
 | Option | Description |
 |--------|-------------|
 | `-h, --help, /?` | Show the help message and exit |
-| `-m, --ignore-missing-optional-sheets` | Process files even when optional sheets are missing |
+| `-m, --ignore-missing-sheets` | Process files even when optional sheets are missing |
 | `-i, --skip-invalid-files` | Skip files that don't meet validation requirements |
 | `-a, --anonymize` | Anonymize VM, DNS, Cluster, Host, and Datacenter names |
 | `-M, --only-mandatory-columns` | Include only mandatory columns in the output |
@@ -140,7 +140,7 @@ RVToolsMerge [options] [inputPath] [outputFile]
 ### Basic Usage
 
 ```cmd
-:: Process all Excel files in a folder 
+:: Process all Excel files in a folder (required parameter)
 RVToolsMerge.exe C:\RVTools\Exports
 
 :: Process a single file
@@ -182,7 +182,7 @@ RVToolsMerge implements robust validation to ensure data integrity:
 ### Validation Rules
 
 - **By default**: All required sheets with all mandatory columns must exist in all files
-- **With `-m` (ignore-missing-optional-sheets)**: 
+- **With `-m` (ignore-missing-sheets)**: 
   - The vInfo sheet remains required in all files
   - Optional sheets (vHost, vPartition, vMemory) can be missing
   - Missing mandatory columns in optional sheets will cause errors unless handled by other options
