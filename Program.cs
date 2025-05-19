@@ -30,6 +30,49 @@ class Program
     private static readonly string[] MinimumRequiredSheets = ["vInfo"];
 
     /// <summary>
+    /// Maps original RVTools column headers to their standardized names.
+    /// This mapping is used to normalize column names across different RVTools exports.
+    /// </summary>
+    private static readonly FrozenDictionary<string, string> ColumnHeaderMapping = new Dictionary<string, string>
+    {
+        // vInfo sheet mappings
+        { "vInfoVMName", "VM" },
+        { "vInfoPowerstate", "Powerstate" },
+        { "vInfoTemplate", "Template" },
+        { "vInfoCPUs", "CPUs" },
+        { "vInfoMemory", "Memory" },
+        { "vInfoProvisioned", "Provisioned MiB" },
+        { "vInfoInUse", "In Use MiB" },
+        { "vInfoOS", "OS according to the configuration file" },
+        { "vInfoDataCenter", "Datacenter" },
+        { "vInfoCluster", "Cluster" },
+        { "vInfoHost", "Host" },
+        { "vInfoSRMPlaceHolder", "SRM Placeholder" },
+        { "vInfoOSTools", "OS according to the VMware Tools" },
+
+        // vHost sheet mappings
+        { "vHostName", "Host" },
+        { "vHostDatacenter", "Datacenter" },
+        { "vHostCluster", "Cluster" },
+        { "vHostvSANFaultDomainName", "vSAN Fault Domain Name" },
+        { "vHostCpuModel", "CPU Model" },
+        { "vHostCpuMhz", "Speed" },
+        { "vHostNumCPU", "# CPU" },
+        { "vHostCoresPerCPU", "Cores per CPU" },
+        { "vHostNumCpuCores", "# Cores" },
+        { "vHostOverallCpuUsage", "CPU usage %" },
+        { "vHostMemorySize", "# Memory" },
+        { "vHostOverallMemoryUsage", "Memory usage %" },
+        { "vHostvCPUs", "# vCPUs" },
+        { "vHostVCPUsPerCore", "vCPUs per Core" },
+        { "vHostFullName", "ESX Version" },
+
+        // vPartition sheet mappings
+        { "vPartitionVMName", "VM" },
+        { "vPartitionConsumedMiB", "Consumed MiB" }
+    }.ToFrozenDictionary();
+
+    /// <summary>
     /// Record to store information about validation issues.
     /// </summary>
     private record ValidationIssue(string FileName, bool Skipped, string ValidationError);
@@ -1028,25 +1071,25 @@ class Program
     }
 
     /// <summary>
-    /// Gets the column names from a worksheet.
+    /// Gets the column names from a worksheet, normalizing them using the ColumnHeaderMapping.
     /// </summary>
     /// <param name="worksheet">The worksheet to extract column names from.</param>
-    /// <returns>A list of column names.</returns>
-    static List<string> GetColumnNames(IXLWorksheet worksheet)
+    /// <returns>A list of normalized column names.</returns>
+    private static List<string> GetColumnNames(IXLWorksheet worksheet)
     {
         var columnNames = new List<string>();
-        // Get the first row
         var headerRow = worksheet.Row(1);
-        // Find the last column with data
         int lastColumn = worksheet.LastColumnUsed().ColumnNumber();
 
         for (int col = 1; col <= lastColumn; col++)
         {
             var cell = headerRow.Cell(col);
-            var cellValue = cell.Value;
-            if (!string.IsNullOrWhiteSpace(cellValue.ToString()))
+            var cellValue = cell.Value.ToString();
+            if (!string.IsNullOrWhiteSpace(cellValue))
             {
-                columnNames.Add(cellValue.ToString()!);
+                // Use the mapping if available, otherwise keep the original name
+                var normalizedName = ColumnHeaderMapping.GetValueOrDefault(cellValue, cellValue);
+                columnNames.Add(normalizedName);
             }
         }
 
