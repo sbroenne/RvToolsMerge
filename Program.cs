@@ -684,7 +684,7 @@ class Program
                 commonColumns[sheetName] = columnsInAllFiles;
             }
 
-            AnsiConsole.MarkupLineInterpolated($"Sheet '[green]{sheetName}[/]' has [yellow]{commonColumns[sheetName].Count}[/] {(onlyMandatoryColumns ? "mandatory" : "common")} columns across all files.");
+            AnsiConsole.MarkupLineInterpolated($"Sheet '[green]{sheetName}[/]' mapping applied successfully.");
         }
 
         AnsiConsole.MarkupLine("[bold]Extracting data from files...[/]");

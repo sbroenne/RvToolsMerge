@@ -93,6 +93,57 @@ Each sheet has specific required columns that must be present for proper process
 - Size MiB
 - Reservation
 
+## Column Name Mappings
+
+The application standardizes column names across different RVTools exports. Below is a reference of the mappings applied during processing:
+
+### vInfo Sheet Mappings
+
+| Original Column Name | Standardized Name |
+|---------------------|-------------------|
+| vInfoVMName | VM |
+| vInfoPowerstate | Powerstate |
+| vInfoTemplate | Template |
+| vInfoCPUs | CPUs |
+| vInfoMemory | Memory |
+| vInfoProvisioned | Provisioned MiB |
+| vInfoInUse | In Use MiB |
+| vInfoOS | OS according to the configuration file |
+| vInfoDataCenter | Datacenter |
+| vInfoCluster | Cluster |
+| vInfoHost | Host |
+| vInfoSRMPlaceHolder | SRM Placeholder |
+| vInfoOSTools | OS according to the VMware Tools |
+
+### vHost Sheet Mappings
+
+| Original Column Name | Standardized Name |
+|---------------------|-------------------|
+| vHostName | Host |
+| vHostDatacenter | Datacenter |
+| vHostCluster | Cluster |
+| vHostvSANFaultDomainName | vSAN Fault Domain Name |
+| vHostCpuModel | CPU Model |
+| vHostCpuMhz | Speed |
+| vHostNumCPU | # CPU |
+| vHostCoresPerCPU | Cores per CPU |
+| vHostNumCpuCores | # Cores |
+| vHostOverallCpuUsage | CPU usage % |
+| vHostMemorySize | # Memory |
+| vHostOverallMemoryUsage | Memory usage % |
+| vHostvCPUs | # vCPUs |
+| vHostVCPUsPerCore | vCPUs per Core |
+| vHostFullName | ESX Version |
+
+### vPartition Sheet Mappings
+
+| Original Column Name | Standardized Name |
+|---------------------|-------------------|
+| vPartitionVMName | VM |
+| vPartitionConsumedMiB | Consumed MiB |
+
+> **Note:** These mappings help normalize column names between different versions of RVTools exports or exports with customized column names.
+
 ## Installation
 
 Download the latest release for your platform from the [Releases page](https://github.com/sbroenne/RVToolsMerge/releases):
@@ -105,7 +156,7 @@ Download the latest release for your platform from the [Releases page](https://g
 ### Prerequisites
 
 - No additional prerequisites required! The application is published as a self-contained executable with all dependencies included.
-- Minimum disk space: ~60MB
+- Minimum disk space: ~30MB
 
 
 ## Usage
