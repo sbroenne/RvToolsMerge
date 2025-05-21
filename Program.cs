@@ -252,7 +252,7 @@ class Program
     }
 
     /// <summary>
-    /// Displays validation issues in a formatted table.
+    /// Displays validation issues in a formatted table, grouped by file name.
     /// </summary>
     /// <param name="issues">The list of validation issues to display.</param>
     private static void DisplayValidationIssues(List<ValidationIssue> issues)
@@ -260,17 +260,39 @@ class Program
         AnsiConsole.WriteLine();
         AnsiConsole.Write(new Rule("[yellow]Validation Issues[/]").RuleStyle("grey"));
 
+        // Group issues by filename
+        var groupedIssues = issues
+            .GroupBy(issue => issue.FileName)
+            .OrderBy(group => group.Key)
+            .ToList();
+
         var table = new Table();
         table.AddColumn(new TableColumn("File Name").LeftAligned());
         table.AddColumn(new TableColumn("Status").Centered());
         table.AddColumn(new TableColumn("Details").LeftAligned());
 
-        foreach (var issue in issues)
+        foreach (var group in groupedIssues)
         {
+            var filename = group.Key;
+            var fileIssues = group.ToList();
+
+            // Determine the overall status for this file
+            bool anySkipped = fileIssues.Any(issue => issue.Skipped);
+            string status = anySkipped ? "[yellow]Skipped[/]" : "[green]Processed with warning[/]";
+
+            // Combine all validation errors for this file
+            var errorDetails = fileIssues
+                .Select(issue => issue.ValidationError)
+                .Distinct()
+                .Select(error => $"• {error}")
+                .ToList();
+
+            string details = string.Join("\n", errorDetails);
+
             table.AddRow(
-                $"[cyan]{issue.FileName}[/]",
-                issue.Skipped ? "[yellow]Skipped[/]" : "[green]Processed with warning[/]",
-                $"[grey]{issue.ValidationError}[/]"
+                $"[cyan]{filename}[/]",
+                status,
+                $"[grey]{details}[/]"
             );
         }
 
@@ -278,7 +300,9 @@ class Program
         AnsiConsole.Write(table);
         AnsiConsole.WriteLine();
 
-        AnsiConsole.MarkupLineInterpolated($"[yellow]Total of {issues.Count} validation issues detected.[/]");
+        int totalFiles = groupedIssues.Count;
+        int totalIssues = issues.Count;
+        AnsiConsole.MarkupLineInterpolated($"[yellow]Total of {totalIssues} validation issues across {totalFiles} files.[/]");
         AnsiConsole.WriteLine();
     }
 
@@ -364,11 +388,7 @@ class Program
                 // Create a validation task
                 var validationTask = ctx.AddTask("[green]Validating files[/]", maxValue: validFilePaths.Count);
 
-                // Add subtasks for each validation step
-                var basicValidationTask = ctx.AddTask("[cyan]Basic validation[/]", maxValue: validFilePaths.Count);
-                var requiredSheetTask = ctx.AddTask("[cyan]Checking required sheets[/]", maxValue: validFilePaths.Count);
-                var columnValidationTask = ctx.AddTask("[cyan]Validating columns[/]", maxValue: validFilePaths.Count);
-
+                // Remove subtask progress bars
                 for (int i = validFilePaths.Count - 1; i >= 0; i--)
                 {
                     string filePath = validFilePaths[i];
@@ -379,8 +399,6 @@ class Program
                     {
                         using (var workbook = new XLWorkbook(filePath))
                         {
-                            basicValidationTask.Increment(1);
-
                             // Step 1: Validate vInfo sheet (always required)
                             if (!SheetExists(workbook, "vInfo"))
                             {
@@ -407,8 +425,6 @@ class Program
                                 // vInfo exists, check its mandatory columns
                                 var worksheet = workbook.Worksheet("vInfo");
                                 var columnNames = GetColumnNames(worksheet);
-
-                                requiredSheetTask.Increment(1);
 
                                 if (MandatoryColumns.TryGetValue("vInfo", out var mandatoryColumns))
                                 {
@@ -514,18 +530,10 @@ class Program
                                         validationIssues.Add(new ValidationIssue(
                                             fileName,
                                             false,
-                                            $"Missing optional sheet '{sheetName}'. This sheet will be excluded from processing."
+                                            $"Missing optional sheet '{sheetName}'."
                                         ));
                                     }
                                 }
-
-                                columnValidationTask.Increment(1);
-                            }
-                            else
-                            {
-                                // If not valid after required sheet check, still increment the column validation task
-                                // to keep progress consistent
-                                columnValidationTask.Increment(1);
                             }
                         }
                     }
@@ -540,14 +548,6 @@ class Program
                         ));
                         fileIsValid = false;
                         skippedFiles.Add(fileName);
-
-                        // Ensure we increment all tasks even if we hit an exception
-                        if (basicValidationTask.MaxValue > basicValidationTask.Value)
-                            basicValidationTask.Increment(1);
-                        if (requiredSheetTask.MaxValue > requiredSheetTask.Value)
-                            requiredSheetTask.Increment(1);
-                        if (columnValidationTask.MaxValue > columnValidationTask.Value)
-                            columnValidationTask.Increment(1);
                     }
 
                     if (!fileIsValid && skipInvalidFiles)
@@ -556,21 +556,6 @@ class Program
                     }
 
                     validationTask.Increment(1);
-                }
-
-                // Complete any tasks that might not have reached 100% due to skipping files
-                basicValidationTask.StopTask();
-                requiredSheetTask.StopTask();
-                columnValidationTask.StopTask();
-
-                if (skippedFiles.Count > 0)
-                {
-                    AnsiConsole.MarkupLineInterpolated($"[yellow]Warning:[/] Skipped [green]{skippedFiles.Count}[/] invalid files out of [green]{filePaths.Length}[/]. See validation issues for details.");
-                }
-
-                if (validFilePaths.Count == 0)
-                {
-                    throw new InvalidDataException("No valid files to process. Please check that your input folder contains valid RVTools Excel files with the required sheets.");
                 }
             });
 
@@ -614,12 +599,8 @@ class Program
                 ])
                 .Start(ctx =>
                 {
-                    // Create main task for analysis
+                    // Create main task for analysis - removing subtasks
                     var fileAnalysisTask = ctx.AddTask($"[cyan]Analyzing '{sheetName}' sheet[/]", maxValue: validFilePaths.Count);
-
-                    // Add subtasks for different aspects of column analysis
-                    var readingColumnsTask = ctx.AddTask($"[grey]Reading column headers[/]", maxValue: validFilePaths.Count);
-                    var processingColumnsTask = ctx.AddTask($"[grey]Processing columns[/]", maxValue: validFilePaths.Count);
 
                     foreach (var filePath in validFilePaths)
                     {
@@ -640,14 +621,8 @@ class Program
                             // On Linux, provide more verbose error information for filesystem issues
                             AnsiConsole.MarkupLineInterpolated($"[yellow]Warning:[/] IO issue with file '{Path.GetFileName(filePath)}': {ioEx.Message}");
                         }
-                        readingColumnsTask.Increment(1);
-                        processingColumnsTask.Increment(1);
                         fileAnalysisTask.Increment(1);
                     }
-
-                    // Make sure all tasks complete
-                    readingColumnsTask.StopTask();
-                    processingColumnsTask.StopTask();
                 });
 
             // If only mandatory columns are requested, filter the common columns
@@ -721,27 +696,20 @@ class Program
                     ];
 
                     var sheetTask = ctx.AddTask($"[cyan]Processing '{sheetName}'[/]", maxValue: validFilePaths.Count);
-                    var openingFilesTask = ctx.AddTask($"[grey]Opening files[/]", maxValue: validFilePaths.Count);
-                    var readingDataTask = ctx.AddTask($"[grey]Reading data[/]", maxValue: validFilePaths.Count);
-                    var processingDataTask = ctx.AddTask($"[grey]Processing {(anonymizeData ? "and anonymizing " : "")}data[/]", maxValue: validFilePaths.Count);
 
                     foreach (var filePath in validFilePaths)
                     {
                         var fileName = Path.GetFileName(filePath);
                         using var workbook = new XLWorkbook(filePath);
-                        openingFilesTask.Increment(1);
 
                         if (!SheetExists(workbook, sheetName))
                         {
-                            readingDataTask.Increment(1);
-                            processingDataTask.Increment(1);
                             sheetTask.Increment(1);
                             continue;
                         }
 
                         var worksheet = workbook.Worksheet(sheetName);
                         var columnMapping = GetColumnMapping(worksheet, commonColumns[sheetName]);
-                        readingDataTask.Increment(1);
 
                         // Find the last row with data
                         int lastRow = worksheet.LastRowUsed().RowNumber();
@@ -805,14 +773,8 @@ class Program
                             mergedData[sheetName].Add(rowData);
                         }
 
-                        processingDataTask.Increment(1);
                         sheetTask.Increment(1);
                     }
-
-                    // Complete all subtasks for this sheet
-                    openingFilesTask.StopTask();
-                    readingDataTask.StopTask();
-                    processingDataTask.StopTask();
                 }
             });
 
@@ -829,18 +791,12 @@ class Program
             .StartAsync(async ctx =>
             {
                 var outputTask = ctx.AddTask("[green]Creating output file[/]", maxValue: availableSheets.Count + 1);
-                var preparingWorkbookTask = ctx.AddTask("[grey]Preparing workbook[/]", maxValue: 1);
-                var writingDataTask = ctx.AddTask("[grey]Writing data[/]", maxValue: availableSheets.Count);
-                var formattingTask = ctx.AddTask("[grey]Formatting and saving[/]", maxValue: availableSheets.Count + 1);
 
                 using (var workbook = new XLWorkbook())
                 {
-                    preparingWorkbookTask.Increment(1);
-
                     foreach (var sheetName in availableSheets)
                     {
                         var worksheet = workbook.Worksheets.Add(sheetName);
-                        var rowTask = ctx.AddTask($"[cyan]Writing '{sheetName}' sheet[/]", maxValue: mergedData[sheetName].Count);
 
                         // Write data to sheet
                         for (int row = 0; row < mergedData[sheetName].Count; row++)
@@ -853,29 +809,18 @@ class Program
                                 // Use SetValue which handles the type conversion properly
                                 cell.SetValue(value);
                             }
-                            rowTask.Increment(1);
                         }
-
-                        writingDataTask.Increment(1);
 
                         // Auto-fit columns
                         worksheet.Columns().AdjustToContents();
-                        formattingTask.Increment(1);
-                        rowTask.StopTask();
                         outputTask.Increment(1);
                     }
 
                     // Save the output file
                     AnsiConsole.MarkupLine("[cyan]Saving file to disk...[/]");
                     await Task.Run(() => workbook.SaveAs(outputPath));
-                    formattingTask.Increment(1);
                     outputTask.Increment(1);
                 }
-
-                // Complete all tasks
-                preparingWorkbookTask.StopTask();
-                writingDataTask.StopTask();
-                formattingTask.StopTask();
             });
 
         AnsiConsole.Write(new Rule("[yellow]File Summary[/]").RuleStyle("grey"));
