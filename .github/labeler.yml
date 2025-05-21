@@ -1,28 +1,38 @@
-
 # GitHub PR Labeler Configuration
-# Code changes
+
+# Core functionality changes
 Functionality:
 - changed-files:
-  - any-glob-to-any-file: ['**/*.cs']
-  - all-globs-to-any-file: ['!**/*Test*.cs', '!**/*.Test.cs', '!**/*.Tests.cs']
+  - any-glob-to-any-file: ['src/**/*.cs']
+  - all-globs-to-any-file: ['!src/**/*Test*.cs', '!tests/**/*.cs', '!**/*.Test.cs', '!**/*.Tests.cs']
 
-# Tests and test infrastructure
+# Test-related changes
 Tests:
 - changed-files:
-  - any-glob-to-any-file: ['**/*Test*.cs', '**/*.Test.cs', '**/*.Tests.cs']
+  - any-glob-to-any-file: ['tests/**/*.cs', 'src/**/*Test*.cs', '**/*.Test.cs', '**/*.Tests.cs']
 
 # Documentation updates
 Documentation:
 - changed-files:
-  - any-glob-to-any-file: ['**/*.md', 'docs/**/*', '**/*.txt', '**/README.*']
+  - any-glob-to-any-file: ['**/*.md', 'docs/**/*', '**/*.txt', '**/README.*', 'LICENSE']
 
 # Configuration changes
 Config:
 - changed-files:
-  - any-glob-to-any-file: ['**/*.json', '**/*.yml', '**/*.yaml', '**/*.config', '.github/**/*']
+  - any-glob-to-any-file: ['**/*.json', '**/*.yml', '**/*.yaml', '**/*.config', '.github/**/*', '**/appsettings*.json']
 
 # Build system and dependencies
 Build:
 - changed-files:
-  - any-glob-to-any-file: ['**/*.csproj', '**/*.sln', '**/Directory.Build.props', '**/Directory.Build.targets', '**/nuget.config', '**/global.json']
+  - any-glob-to-any-file: ['**/*.csproj', '**/*.sln', '**/Directory.Build.props', '**/Directory.Build.targets', '**/nuget.config', '**/global.json', '.github/workflows/**/*']
+
+# Dependencies updates
+Dependencies:
+- changed-files:
+  - any-glob-to-any-file: ['**/packages.lock.json', '**/package.json', '**/package-lock.json', '**/yarn.lock', '**/Directory.Packages.props']
+
+# Infrastructure changes
+Infrastructure:
+- changed-files:
+  - any-glob-to-any-file: ['.editorconfig', '.gitignore', '.gitattributes', 'azure-pipelines.yml', '.github/dependabot.yml']
 

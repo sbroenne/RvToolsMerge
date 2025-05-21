@@ -67,7 +67,7 @@ Each sheet has specific required columns that must be present for proper process
 - CPUs
 - Memory
 - In Use MiB
-- OS according to the VMware Tools
+- OS according to the configuration file
 
 #### vHost Sheet (Optional)
 - Host
@@ -93,6 +93,67 @@ Each sheet has specific required columns that must be present for proper process
 - Size MiB
 - Reservation
 
+## Column Name Mappings
+
+The application standardizes column names across different RVTools exports. Below is a reference of the mappings applied during processing:
+
+### vInfo Sheet Mappings
+
+| Original Column Name | Standardized Name |
+|---------------------|-------------------|
+| vInfoVMName | VM |
+| vInfoPowerstate | Powerstate |
+| vInfoTemplate | Template |
+| vInfoCPUs | CPUs |
+| vInfoMemory | Memory |
+| vInfoProvisioned | Provisioned MiB |
+| vInfoInUse | In Use MiB |
+| vInfoOS | OS according to the configuration file |
+| vInfoDataCenter | Datacenter |
+| vInfoCluster | Cluster |
+| vInfoHost | Host |
+| vInfoSRMPlaceHolder | SRM Placeholder |
+| vInfoOSTools | OS according to the VMware Tools |
+
+### vHost Sheet Mappings
+
+| Original Column Name | Standardized Name |
+|---------------------|-------------------|
+| vHostName | Host |
+| vHostDatacenter | Datacenter |
+| vHostCluster | Cluster |
+| vHostvSANFaultDomainName | vSAN Fault Domain Name |
+| vHostCpuModel | CPU Model |
+| vHostCpuMhz | Speed |
+| vHostNumCPU | # CPU |
+| vHostNumCpu | # CPU |
+| vHostCoresPerCPU | Cores per CPU |
+| vHostNumCpuCores | # Cores |
+| vHostOverallCpuUsage | CPU usage % |
+| vHostMemorySize | # Memory |
+| vHostOverallMemoryUsage | Memory usage % |
+| vHostvCPUs | # vCPUs |
+| vHostVCPUsPerCore | vCPUs per Core |
+
+### vPartition Sheet Mappings
+
+| Original Column Name | Standardized Name |
+|---------------------|-------------------|
+| vPartitionDisk | Disk |
+| vPartitionVMName | VM |
+| vPartitionConsumedMiB | Consumed MiB |
+| vPartitionCapacityMiB | Capacity MiB |
+
+### vMemory Sheet Mappings
+
+| Original Column Name | Standardized Name |
+|---------------------|-------------------|
+| vMemoryVMName | VM |
+| vMemorySizeMiB | Size MiB |
+| vMemoryReservation | Reservation |
+
+> **Note:** These mappings help normalize column names between different versions of RVTools exports.
+
 ## Installation
 
 Download the latest release for your platform from the [Releases page](https://github.com/sbroenne/RVToolsMerge/releases):
@@ -105,7 +166,7 @@ Download the latest release for your platform from the [Releases page](https://g
 ### Prerequisites
 
 - No additional prerequisites required! The application is published as a self-contained executable with all dependencies included.
-- Minimum disk space: ~60MB
+- Minimum disk space: ~30MB
 
 
 ## Usage
@@ -355,4 +416,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [RVTools](https://www.robware.net/rvtools/) by Robware for the virtualization documentation tool that this project enhances
 - [ClosedXML](https://github.com/ClosedXML/ClosedXML) for excellent Excel file handling capabilities
 - [Spectre.Console](https://spectreconsole.net/) for beautiful console output and UX
+- [GitHub Copilot](https://github.com/features/copilot) and [Claude 3.7 Sonnet](https://www.anthropic.com/) for AI assistance in code generation and development
 

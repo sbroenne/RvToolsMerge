@@ -31,12 +31,6 @@ RVToolsMerge is a tool for combining and processing multiple RVTools exports fro
 - Prefer string interpolation over concatenation
 - Use `var` when the type is obvious from the right side of assignment
 
-## Architecture Guidelines
-- Maintain separation between data processing logic and UI components
-- Use dependency injection where appropriate
-- Create interfaces for key components to allow for mocking in tests
-- Implement logging throughout the application using a consistent logging framework
-
 ## CSV/Excel Processing
 - Assume RVTools exports are in Excel format
 - Use ClosedXML for Excel file manipulation

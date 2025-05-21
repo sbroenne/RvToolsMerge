@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------
-// <copyright file="Program.cs" company="RVTools">
-//     Copyright © RVTools Team 2025
+// <copyright file="Program.cs" company="Stefan Broenner"> ">
+//     Copyright © Stefan Broenner 2025
 //     Created by Stefan Broenner (github.com/sbroenne) and contributors
 //     Licensed under the MIT License
 // </copyright>
@@ -8,9 +8,7 @@
 using ClosedXML.Excel;
 using Spectre.Console;
 using System.Collections.Frozen;
-using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
-using System.Text.RegularExpressions;
 
 namespace RVToolsMerge;
 
@@ -30,6 +28,57 @@ class Program
     private static readonly string[] MinimumRequiredSheets = ["vInfo"];
 
     /// <summary>
+    /// Maps original RVTools column headers to their standardized names.
+    /// This mapping is used to normalize column names across different RVTools exports.
+    /// </summary>
+    private static readonly FrozenDictionary<string, string> ColumnHeaderMapping = new Dictionary<string, string>
+    {
+        // vInfo sheet mappings
+        { "vInfoVMName", "VM" },
+        { "vInfoPowerstate", "Powerstate" },
+        { "vInfoTemplate", "Template" },
+        { "vInfoCPUs", "CPUs" },
+        { "vInfoMemory", "Memory" },
+        { "vInfoProvisioned", "Provisioned MiB" },
+        { "vInfoInUse", "In Use MiB" },
+        { "vInfoDataCenter", "Datacenter" },
+        { "vInfoCluster", "Cluster" },
+        { "vInfoHost", "Host" },
+        { "vInfoSRMPlaceHolder", "SRM Placeholder" },
+        { "vInfoOSTools", "OS according to the VMware Tools" },
+        { "vInfoOS", "OS according to the configuration file" },
+
+
+        // vHost sheet mappings
+        { "vHostName", "Host" },
+        { "vHostDatacenter", "Datacenter" },
+        { "vHostCluster", "Cluster" },
+        { "vHostvSANFaultDomainName", "vSAN Fault Domain Name" },
+        { "vHostCpuModel", "CPU Model" },
+        { "vHostCpuMhz", "Speed" },
+        { "vHostNumCPU", "# CPU" },
+        { "vHostNumCpu", "# CPU" },
+        { "vHostCoresPerCPU", "Cores per CPU" },
+        { "vHostNumCpuCores", "# Cores" },
+        { "vHostOverallCpuUsage", "CPU usage %" },
+        { "vHostMemorySize", "# Memory" },
+        { "vHostOverallMemoryUsage", "Memory usage %" },
+        { "vHostvCPUs", "# vCPUs" },
+        { "vHostVCPUsPerCore", "vCPUs per Core" },
+
+        // vPartition sheet mappings
+        { "vPartitionDisk", "Disk" },
+        { "vPartitionVMName", "VM" },
+        { "vPartitionConsumedMiB", "Consumed MiB" },
+        { "vPartitionCapacityMiB", "Capacity MiB" },
+
+        // vMemory sheet mappings
+        { "vMemoryVMName", "VM" },
+        { "vMemorySizeMiB", "Size MiB" },
+        { "vMemoryReservation", "Reservation" }
+    }.ToFrozenDictionary();
+
+    /// <summary>
     /// Record to store information about validation issues.
     /// </summary>
     private record ValidationIssue(string FileName, bool Skipped, string ValidationError);
@@ -44,7 +93,7 @@ class Program
     /// </summary>
     private static readonly FrozenDictionary<string, string[]> MandatoryColumns = new Dictionary<string, string[]>
     {
-        { "vInfo", ["Template", "SRM Placeholder", "Powerstate", "VM", "CPUs", "Memory", "In Use MiB", "OS according to the VMware Tools"] },
+        { "vInfo", ["Template", "SRM Placeholder", "Powerstate", "VM", "CPUs", "Memory", "In Use MiB", "OS according to the configuration file"] },
         { "vHost", ["Host", "Datacenter", "Cluster", "CPU Model", "Speed", "# CPU", "Cores per CPU", "# Cores", "CPU usage %", "# Memory", "Memory usage %"] },
         { "vPartition", ["VM", "Disk", "Capacity MiB", "Consumed MiB"] },
         { "vMemory", ["VM", "Size MiB", "Reservation"] }
@@ -202,7 +251,7 @@ class Program
     }
 
     /// <summary>
-    /// Displays validation issues in a formatted table.
+    /// Displays validation issues in a formatted table, grouped by file name.
     /// </summary>
     /// <param name="issues">The list of validation issues to display.</param>
     private static void DisplayValidationIssues(List<ValidationIssue> issues)
@@ -210,17 +259,39 @@ class Program
         AnsiConsole.WriteLine();
         AnsiConsole.Write(new Rule("[yellow]Validation Issues[/]").RuleStyle("grey"));
 
+        // Group issues by filename
+        var groupedIssues = issues
+            .GroupBy(issue => issue.FileName)
+            .OrderBy(group => group.Key)
+            .ToList();
+
         var table = new Table();
         table.AddColumn(new TableColumn("File Name").LeftAligned());
         table.AddColumn(new TableColumn("Status").Centered());
         table.AddColumn(new TableColumn("Details").LeftAligned());
 
-        foreach (var issue in issues)
+        foreach (var group in groupedIssues)
         {
+            var filename = group.Key;
+            var fileIssues = group.ToList();
+
+            // Determine the overall status for this file
+            bool anySkipped = fileIssues.Any(issue => issue.Skipped);
+            string status = anySkipped ? "[yellow]Skipped[/]" : "[green]Processed with warning[/]";
+
+            // Combine all validation errors for this file
+            var errorDetails = fileIssues
+                .Select(issue => issue.ValidationError)
+                .Distinct()
+                .Select(error => $"• {error}")
+                .ToList();
+
+            string details = string.Join("\n", errorDetails);
+
             table.AddRow(
-                $"[cyan]{issue.FileName}[/]",
-                issue.Skipped ? "[yellow]Skipped[/]" : "[green]Processed with warning[/]",
-                $"[grey]{issue.ValidationError}[/]"
+                $"[cyan]{filename}[/]",
+                status,
+                $"[grey]{details}[/]"
             );
         }
 
@@ -228,7 +299,9 @@ class Program
         AnsiConsole.Write(table);
         AnsiConsole.WriteLine();
 
-        AnsiConsole.MarkupLineInterpolated($"[yellow]Total of {issues.Count} validation issues detected.[/]");
+        int totalFiles = groupedIssues.Count;
+        int totalIssues = issues.Count;
+        AnsiConsole.MarkupLineInterpolated($"[yellow]Total of {totalIssues} validation issues across {totalFiles} files.[/]");
         AnsiConsole.WriteLine();
     }
 
@@ -314,11 +387,7 @@ class Program
                 // Create a validation task
                 var validationTask = ctx.AddTask("[green]Validating files[/]", maxValue: validFilePaths.Count);
 
-                // Add subtasks for each validation step
-                var basicValidationTask = ctx.AddTask("[cyan]Basic validation[/]", maxValue: validFilePaths.Count);
-                var requiredSheetTask = ctx.AddTask("[cyan]Checking required sheets[/]", maxValue: validFilePaths.Count);
-                var columnValidationTask = ctx.AddTask("[cyan]Validating columns[/]", maxValue: validFilePaths.Count);
-
+                // Remove subtask progress bars
                 for (int i = validFilePaths.Count - 1; i >= 0; i--)
                 {
                     string filePath = validFilePaths[i];
@@ -329,8 +398,6 @@ class Program
                     {
                         using (var workbook = new XLWorkbook(filePath))
                         {
-                            basicValidationTask.Increment(1);
-
                             // Step 1: Validate vInfo sheet (always required)
                             if (!SheetExists(workbook, "vInfo"))
                             {
@@ -357,8 +424,6 @@ class Program
                                 // vInfo exists, check its mandatory columns
                                 var worksheet = workbook.Worksheet("vInfo");
                                 var columnNames = GetColumnNames(worksheet);
-
-                                requiredSheetTask.Increment(1);
 
                                 if (MandatoryColumns.TryGetValue("vInfo", out var mandatoryColumns))
                                 {
@@ -464,18 +529,10 @@ class Program
                                         validationIssues.Add(new ValidationIssue(
                                             fileName,
                                             false,
-                                            $"Missing optional sheet '{sheetName}'. This sheet will be excluded from processing."
+                                            $"Missing optional sheet '{sheetName}'."
                                         ));
                                     }
                                 }
-
-                                columnValidationTask.Increment(1);
-                            }
-                            else
-                            {
-                                // If not valid after required sheet check, still increment the column validation task
-                                // to keep progress consistent
-                                columnValidationTask.Increment(1);
                             }
                         }
                     }
@@ -490,14 +547,6 @@ class Program
                         ));
                         fileIsValid = false;
                         skippedFiles.Add(fileName);
-
-                        // Ensure we increment all tasks even if we hit an exception
-                        if (basicValidationTask.MaxValue > basicValidationTask.Value)
-                            basicValidationTask.Increment(1);
-                        if (requiredSheetTask.MaxValue > requiredSheetTask.Value)
-                            requiredSheetTask.Increment(1);
-                        if (columnValidationTask.MaxValue > columnValidationTask.Value)
-                            columnValidationTask.Increment(1);
                     }
 
                     if (!fileIsValid && skipInvalidFiles)
@@ -506,21 +555,6 @@ class Program
                     }
 
                     validationTask.Increment(1);
-                }
-
-                // Complete any tasks that might not have reached 100% due to skipping files
-                basicValidationTask.StopTask();
-                requiredSheetTask.StopTask();
-                columnValidationTask.StopTask();
-
-                if (skippedFiles.Count > 0)
-                {
-                    AnsiConsole.MarkupLineInterpolated($"[yellow]Warning:[/] Skipped [green]{skippedFiles.Count}[/] invalid files out of [green]{filePaths.Length}[/]. See validation issues for details.");
-                }
-
-                if (validFilePaths.Count == 0)
-                {
-                    throw new InvalidDataException("No valid files to process. Please check that your input folder contains valid RVTools Excel files with the required sheets.");
                 }
             });
 
@@ -564,12 +598,8 @@ class Program
                 ])
                 .Start(ctx =>
                 {
-                    // Create main task for analysis
+                    // Create main task for analysis - removing subtasks
                     var fileAnalysisTask = ctx.AddTask($"[cyan]Analyzing '{sheetName}' sheet[/]", maxValue: validFilePaths.Count);
-
-                    // Add subtasks for different aspects of column analysis
-                    var readingColumnsTask = ctx.AddTask($"[grey]Reading column headers[/]", maxValue: validFilePaths.Count);
-                    var processingColumnsTask = ctx.AddTask($"[grey]Processing columns[/]", maxValue: validFilePaths.Count);
 
                     foreach (var filePath in validFilePaths)
                     {
@@ -590,14 +620,8 @@ class Program
                             // On Linux, provide more verbose error information for filesystem issues
                             AnsiConsole.MarkupLineInterpolated($"[yellow]Warning:[/] IO issue with file '{Path.GetFileName(filePath)}': {ioEx.Message}");
                         }
-                        readingColumnsTask.Increment(1);
-                        processingColumnsTask.Increment(1);
                         fileAnalysisTask.Increment(1);
                     }
-
-                    // Make sure all tasks complete
-                    readingColumnsTask.StopTask();
-                    processingColumnsTask.StopTask();
                 });
 
             // If only mandatory columns are requested, filter the common columns
@@ -642,7 +666,7 @@ class Program
                 commonColumns[sheetName] = columnsInAllFiles;
             }
 
-            AnsiConsole.MarkupLineInterpolated($"Sheet '[green]{sheetName}[/]' has [yellow]{commonColumns[sheetName].Count}[/] {(onlyMandatoryColumns ? "mandatory" : "common")} columns across all files.");
+            AnsiConsole.MarkupLineInterpolated($"Sheet '[green]{sheetName}[/]' mapping applied successfully.");
         }
 
         AnsiConsole.MarkupLine("[bold]Extracting data from files...[/]");
@@ -671,27 +695,20 @@ class Program
                     ];
 
                     var sheetTask = ctx.AddTask($"[cyan]Processing '{sheetName}'[/]", maxValue: validFilePaths.Count);
-                    var openingFilesTask = ctx.AddTask($"[grey]Opening files[/]", maxValue: validFilePaths.Count);
-                    var readingDataTask = ctx.AddTask($"[grey]Reading data[/]", maxValue: validFilePaths.Count);
-                    var processingDataTask = ctx.AddTask($"[grey]Processing {(anonymizeData ? "and anonymizing " : "")}data[/]", maxValue: validFilePaths.Count);
 
                     foreach (var filePath in validFilePaths)
                     {
                         var fileName = Path.GetFileName(filePath);
                         using var workbook = new XLWorkbook(filePath);
-                        openingFilesTask.Increment(1);
 
                         if (!SheetExists(workbook, sheetName))
                         {
-                            readingDataTask.Increment(1);
-                            processingDataTask.Increment(1);
                             sheetTask.Increment(1);
                             continue;
                         }
 
                         var worksheet = workbook.Worksheet(sheetName);
                         var columnMapping = GetColumnMapping(worksheet, commonColumns[sheetName]);
-                        readingDataTask.Increment(1);
 
                         // Find the last row with data
                         int lastRow = worksheet.LastRowUsed().RowNumber();
@@ -755,14 +772,8 @@ class Program
                             mergedData[sheetName].Add(rowData);
                         }
 
-                        processingDataTask.Increment(1);
                         sheetTask.Increment(1);
                     }
-
-                    // Complete all subtasks for this sheet
-                    openingFilesTask.StopTask();
-                    readingDataTask.StopTask();
-                    processingDataTask.StopTask();
                 }
             });
 
@@ -779,18 +790,12 @@ class Program
             .StartAsync(async ctx =>
             {
                 var outputTask = ctx.AddTask("[green]Creating output file[/]", maxValue: availableSheets.Count + 1);
-                var preparingWorkbookTask = ctx.AddTask("[grey]Preparing workbook[/]", maxValue: 1);
-                var writingDataTask = ctx.AddTask("[grey]Writing data[/]", maxValue: availableSheets.Count);
-                var formattingTask = ctx.AddTask("[grey]Formatting and saving[/]", maxValue: availableSheets.Count + 1);
 
                 using (var workbook = new XLWorkbook())
                 {
-                    preparingWorkbookTask.Increment(1);
-
                     foreach (var sheetName in availableSheets)
                     {
                         var worksheet = workbook.Worksheets.Add(sheetName);
-                        var rowTask = ctx.AddTask($"[cyan]Writing '{sheetName}' sheet[/]", maxValue: mergedData[sheetName].Count);
 
                         // Write data to sheet
                         for (int row = 0; row < mergedData[sheetName].Count; row++)
@@ -803,29 +808,18 @@ class Program
                                 // Use SetValue which handles the type conversion properly
                                 cell.SetValue(value);
                             }
-                            rowTask.Increment(1);
                         }
-
-                        writingDataTask.Increment(1);
 
                         // Auto-fit columns
                         worksheet.Columns().AdjustToContents();
-                        formattingTask.Increment(1);
-                        rowTask.StopTask();
                         outputTask.Increment(1);
                     }
 
                     // Save the output file
                     AnsiConsole.MarkupLine("[cyan]Saving file to disk...[/]");
                     await Task.Run(() => workbook.SaveAs(outputPath));
-                    formattingTask.Increment(1);
                     outputTask.Increment(1);
                 }
-
-                // Complete all tasks
-                preparingWorkbookTask.StopTask();
-                writingDataTask.StopTask();
-                formattingTask.StopTask();
             });
 
         AnsiConsole.Write(new Rule("[yellow]File Summary[/]").RuleStyle("grey"));
@@ -879,24 +873,20 @@ class Program
     /// </summary>
     static void ShowHelp()
     {
+        // Get version and product info
         var assembly = Assembly.GetExecutingAssembly();
         var version = assembly.GetName().Version;
         string versionString = version is not null ? $"{version.Major}.{version.Minor}.{version.Build}" : "1.0.0";
-
-        // Get product name from assembly attributes
         var productAttribute = Attribute.GetCustomAttribute(assembly, typeof(AssemblyProductAttribute)) as AssemblyProductAttribute;
         string productName = productAttribute?.Product ?? "RVTools Excel Merger";
 
-        // Enhanced header display with Spectre.Console
         AnsiConsole.MarkupLineInterpolated($"[bold green]{productName}[/] - Merges multiple RVTools Excel files into a single file");
         AnsiConsole.MarkupLineInterpolated($"[yellow]Version {versionString}[/]");
         AnsiConsole.Write(new Rule().RuleStyle("grey"));
         AnsiConsole.WriteLine();
-        AnsiConsole.WriteLine();
 
         AnsiConsole.MarkupLine("[bold]USAGE:[/]");
         AnsiConsole.MarkupLineInterpolated($"  [cyan]{Assembly.GetExecutingAssembly().GetName().Name}[/] [grey][[options]] inputPath [[outputFile]][/]");
-        AnsiConsole.WriteLine();
         AnsiConsole.WriteLine();
 
         AnsiConsole.MarkupLine("[bold]ARGUMENTS:[/]");
@@ -905,56 +895,30 @@ class Program
         AnsiConsole.MarkupLine("  [green]outputFile[/]    Path where the merged file will be saved.");
         AnsiConsole.MarkupLine("                Defaults to \"RVTools_Merged.xlsx\" in the current directory.");
         AnsiConsole.WriteLine();
-        AnsiConsole.WriteLine();
 
         AnsiConsole.MarkupLine("[bold]OPTIONS:[/]");
         AnsiConsole.MarkupLine("  [yellow]-h, --help, /?[/]            Show this help message and exit.");
         AnsiConsole.MarkupLine("  [yellow]-m, --ignore-missing-sheets[/]");
         AnsiConsole.MarkupLine("                            Ignore missing optional sheets (vHost, vPartition & vMemory).");
-        AnsiConsole.MarkupLine("                            Will still validate vInfo sheet exists.");
-        AnsiConsole.MarkupLine("  [yellow]-i, --skip-invalid-files[/]  Skip files that don't meet validation requirements (no vInfo sheet or");
-        AnsiConsole.MarkupLine("                            mandatory columns are missing) instead of failing with an error.");
-        AnsiConsole.MarkupLine("                            Can be used with -m to skip files with missing vInfo sheet while");
-        AnsiConsole.MarkupLine("                            processing others that may have missing optional sheets.");
-        AnsiConsole.MarkupLine("  [yellow]-a, --anonymize[/]           Anonymize VM, DNS Name, Cluster, Host, and Datacenter");
-        AnsiConsole.MarkupLine("                            columns with generic names (vm1, host1, etc.).");
+        AnsiConsole.MarkupLine("  [yellow]-i, --skip-invalid-files[/]  Skip files that don't meet validation requirements.");
+        AnsiConsole.MarkupLine("  [yellow]-a, --anonymize[/]           Anonymize VM, DNS Name, Cluster, Host, and Datacenter names.");
         AnsiConsole.MarkupLine("  [yellow]-M, --only-mandatory-columns[/]");
-        AnsiConsole.MarkupLine("                            Include only the mandatory columns for each sheet in the");
-        AnsiConsole.MarkupLine("                            output file instead of all common columns.");
-        AnsiConsole.MarkupLine("  [yellow]-s, --include-source[/]      Include a 'Source File' column in each sheet showing");
-        AnsiConsole.MarkupLine("                            the name of the source file for each record.");
-        AnsiConsole.MarkupLine("  [yellow]-d, --debug[/]               Show detailed error information including stack traces");
-        AnsiConsole.MarkupLine("                            when errors occur.");
-        AnsiConsole.WriteLine();
+        AnsiConsole.MarkupLine("                            Include only mandatory columns in output.");
+        AnsiConsole.MarkupLine("  [yellow]-s, --include-source[/]      Include source file name in output.");
+        AnsiConsole.MarkupLine("  [yellow]-d, --debug[/]               Show detailed error information.");
         AnsiConsole.WriteLine();
 
-        AnsiConsole.MarkupLine("[bold]DESCRIPTION:[/]");
-        AnsiConsole.MarkupLine("  This tool merges all RVTools Excel files (XLSX format) from the specified");
-        AnsiConsole.MarkupLine("  folder into one consolidated file. It extracts data from the following sheets:");
-        AnsiConsole.MarkupLine("    - [green]vInfo[/] ([bold]required[/]): Virtual machine information (CPUs, memory, OS)");
-        AnsiConsole.MarkupLine("    - [cyan]vHost[/] (optional): Host information (CPU, memory, cluster details)");
-        AnsiConsole.MarkupLine("    - [cyan]vPartition[/] (optional): Virtual machine disk partition information");
-        AnsiConsole.MarkupLine("    - [cyan]vMemory[/] (optional): Virtual machine memory configuration information");
-        AnsiConsole.WriteLine();
-        AnsiConsole.WriteLine();
-
-        AnsiConsole.MarkupLine("[bold]Features:[/]");
-        AnsiConsole.Markup("  - ");
-        AnsiConsole.MarkupLine("Validates mandatory columns in each sheet");
-        AnsiConsole.Markup("  - ");
-        AnsiConsole.MarkupLine("Only includes columns that exist in all files for each respective sheet");
-        AnsiConsole.Markup("  - ");
-        AnsiConsole.MarkupLine("Anonymizes sensitive data when requested (VMs, DNS, Clusters, Hosts, Datacenters)");
-        AnsiConsole.Markup("  - ");
-        AnsiConsole.MarkupLine("Allows filtering to include only mandatory columns");
-        AnsiConsole.Markup("  - ");
-        AnsiConsole.MarkupLine("Works on multiple platforms (Windows, Linux, macOS)");
-        AnsiConsole.Markup("  - ");
-        AnsiConsole.MarkupLine("Minimal memory footprint with efficient processing");
-        AnsiConsole.WriteLine();
+        AnsiConsole.MarkupLine("[bold]EXAMPLES:[/]");
+        string appName = Assembly.GetExecutingAssembly().GetName().Name ?? "RVToolsMerge";
+        AnsiConsole.MarkupLine($"  [cyan]{appName}[/] C:\\RVTools\\Data");
+        AnsiConsole.MarkupLine($"  [cyan]{appName}[/] C:\\RVTools\\Data\\SingleFile.xlsx");
+        AnsiConsole.MarkupLine($"  [cyan]{appName}[/] [yellow]-m[/] C:\\RVTools\\Data C:\\Reports\\Merged_RVTools.xlsx");
+        AnsiConsole.MarkupLine($"  [cyan]{appName}[/] [yellow]-a[/] C:\\RVTools\\Data\\RVTools.xlsx C:\\Reports\\Anonymized_RVTools.xlsx");
+        AnsiConsole.MarkupLine($"  [cyan]{appName}[/] [yellow]-M[/] C:\\RVTools\\Data C:\\Reports\\Mandatory_Columns.xlsx");
+        AnsiConsole.MarkupLine($"  [cyan]{appName}[/] [yellow]-a -M -s[/] C:\\RVTools\\Data C:\\Reports\\Complete_Analysis.xlsx");
         AnsiConsole.WriteLine();
 
-        AnsiConsole.MarkupLine("[bold]Mandatory columns by sheet:[/]");
+        AnsiConsole.MarkupLine("[bold]REQUIRED SHEETS AND COLUMNS:[/]");
         var table = new Table();
         table.AddColumn(new TableColumn("Sheet").LeftAligned());
         table.AddColumn(new TableColumn("Status").Centered());
@@ -962,7 +926,7 @@ class Program
         table.AddRow(
             "[green]vInfo[/]",
             "[bold green]Required[/]",
-            "Template, SRM Placeholder, Powerstate, [bold]VM[/], [bold]CPUs[/], [bold]Memory[/], [bold]In Use MiB[/], [bold]OS according to the VMware Tools[/]"
+            "Template, SRM Placeholder, Powerstate, [bold]VM[/], [bold]CPUs[/], [bold]Memory[/], [bold]In Use MiB[/], [bold]OS according to the configuration file[/]"
         );
         table.AddRow(
             "[cyan]vHost[/]",
@@ -982,71 +946,36 @@ class Program
         table.Border(TableBorder.Rounded);
         AnsiConsole.Write(table);
         AnsiConsole.WriteLine();
-        AnsiConsole.MarkupLine("[grey]Note: Bold column names indicate the most critical columns for analysis.[/]");
-        AnsiConsole.WriteLine();
-
-        AnsiConsole.MarkupLine("[bold]Validation behavior:[/]");
-        AnsiConsole.MarkupLine("  - By default, all sheets must exist in all files");
-        AnsiConsole.MarkupLine("  - When using [yellow]--ignore-missing-sheets[/], optional sheets (vHost, vPartition, vMemory)");
-        AnsiConsole.MarkupLine("    can be missing with warnings shown. The vInfo sheet is always required.");
-        AnsiConsole.MarkupLine("  - When using [yellow]--skip-invalid-files[/], files without required sheets or missing mandatory");
-        AnsiConsole.MarkupLine("    columns will be skipped and reported, but processing will continue with valid files.");
-        AnsiConsole.MarkupLine("  - Both [yellow]--ignore-missing-sheets[/] and [yellow]--skip-invalid-files[/] can be used");
-        AnsiConsole.MarkupLine("    together to skip files with missing vInfo sheet while processing others with potentially");
-        AnsiConsole.MarkupLine("    missing optional sheets.");
-        AnsiConsole.MarkupLine("  - When using [yellow]--anonymize[/], sensitive names are replaced with generic identifiers");
-        AnsiConsole.MarkupLine("    (vm1, dns1, host1, etc.) to protect sensitive information.");
-        AnsiConsole.MarkupLine("  - When using [yellow]--only-mandatory-columns[/], only the mandatory columns for each sheet");
-        AnsiConsole.MarkupLine("    are included in the output, regardless of what other columns might be common");
-        AnsiConsole.MarkupLine("    across all files.");
-        AnsiConsole.MarkupLine("  - When using [yellow]--include-source[/], a 'Source File' column is added to each");
-        AnsiConsole.MarkupLine("    sheet to show which source file each record came from, helping with data traceability.");
-        AnsiConsole.WriteLine();
-        AnsiConsole.WriteLine();
-
-        AnsiConsole.MarkupLine("[bold]EXAMPLES:[/]");
-        string appName = Assembly.GetExecutingAssembly().GetName().Name ?? "RVToolsMerge";
-        AnsiConsole.MarkupLine($"  [cyan]{appName}[/] C:\\RVTools\\Data");
-        AnsiConsole.MarkupLine($"  [cyan]{appName}[/] C:\\RVTools\\Data\\SingleFile.xlsx");
-        AnsiConsole.MarkupLine($"  [cyan]{appName}[/] [yellow]-m[/] C:\\RVTools\\Data C:\\Reports\\Merged_RVTools.xlsx");
-        AnsiConsole.MarkupLine($"  [cyan]{appName}[/] [yellow]--ignore-missing-sheets[/] C:\\RVTools\\Data");
-        AnsiConsole.MarkupLine($"  [cyan]{appName}[/] [yellow]-i[/] C:\\RVTools\\Data");
-        AnsiConsole.MarkupLine($"  [cyan]{appName}[/] [yellow]-a[/] C:\\RVTools\\Data\\RVTools.xlsx C:\\Reports\\Anonymized_RVTools.xlsx");
-        AnsiConsole.MarkupLine($"  [cyan]{appName}[/] [yellow]-M[/] C:\\RVTools\\Data C:\\Reports\\Mandatory_Columns.xlsx");
-        AnsiConsole.MarkupLine($"  [cyan]{appName}[/] [yellow]-s[/] C:\\RVTools\\Data C:\\Reports\\With_Source_Files.xlsx");
-        AnsiConsole.MarkupLine($"  [cyan]{appName}[/] [yellow]-a -M -s[/] C:\\RVTools\\Data C:\\Reports\\Complete_Analysis.xlsx");
-        AnsiConsole.WriteLine();
 
         AnsiConsole.MarkupLine("[bold]DOWNLOADS:[/]");
-        AnsiConsole.MarkupLine("  Latest releases for all supported platforms are available at:");
+        AnsiConsole.MarkupLine("  Latest releases are available at:");
         AnsiConsole.MarkupLine("  [link]https://github.com/sbroenne/RVToolsMerge/releases[/]");
-        string applicationName = Assembly.GetExecutingAssembly().GetName().Name ?? "RVToolsMerge";
-        AnsiConsole.MarkupLine($"  - [cyan]{applicationName}-windows-Release.zip[/]       (Windows x64)");
-        AnsiConsole.MarkupLine($"  - [cyan]{applicationName}-windows-arm64-Release.zip[/] (Windows ARM64)");
-        AnsiConsole.MarkupLine($"  - [cyan]{applicationName}-linux-Release.zip[/]         (Linux x64)");
-        AnsiConsole.MarkupLine($"  - [cyan]{applicationName}-macos-arm64-Release.zip[/]   (macOS ARM64)");
+        AnsiConsole.MarkupLine($"  - [cyan]{appName}-windows-Release.zip[/]       (Windows x64)");
+        AnsiConsole.MarkupLine($"  - [cyan]{appName}-windows-arm64-Release.zip[/] (Windows ARM64)");
+        AnsiConsole.MarkupLine($"  - [cyan]{appName}-linux-Release.zip[/]         (Linux x64)");
+        AnsiConsole.MarkupLine($"  - [cyan]{appName}-macos-arm64-Release.zip[/]   (macOS ARM64)");
     }
 
     /// <summary>
-    /// Gets the column names from a worksheet.
+    /// Gets the column names from a worksheet, normalizing them using the ColumnHeaderMapping.
     /// </summary>
     /// <param name="worksheet">The worksheet to extract column names from.</param>
-    /// <returns>A list of column names.</returns>
-    static List<string> GetColumnNames(IXLWorksheet worksheet)
+    /// <returns>A list of normalized column names.</returns>
+    private static List<string> GetColumnNames(IXLWorksheet worksheet)
     {
         var columnNames = new List<string>();
-        // Get the first row
         var headerRow = worksheet.Row(1);
-        // Find the last column with data
         int lastColumn = worksheet.LastColumnUsed().ColumnNumber();
 
         for (int col = 1; col <= lastColumn; col++)
         {
             var cell = headerRow.Cell(col);
-            var cellValue = cell.Value;
-            if (!string.IsNullOrWhiteSpace(cellValue.ToString()))
+            var cellValue = cell.Value.ToString();
+            if (!string.IsNullOrWhiteSpace(cellValue))
             {
-                columnNames.Add(cellValue.ToString()!);
+                // Use the mapping if available, otherwise keep the original name
+                var normalizedName = ColumnHeaderMapping.GetValueOrDefault(cellValue, cellValue);
+                columnNames.Add(normalizedName);
             }
         }
 
