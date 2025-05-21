@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------
-// <copyright file="Program.cs" company="RVTools">
-//     Copyright © RVTools Team 2025
+// <copyright file="Program.cs" company="Stefan Broenner"> ">
+//     Copyright © Stefan Broenner 2025
 //     Created by Stefan Broenner (github.com/sbroenne) and contributors
 //     Licensed under the MIT License
 // </copyright>
@@ -8,9 +8,7 @@
 using ClosedXML.Excel;
 using Spectre.Console;
 using System.Collections.Frozen;
-using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
-using System.Text.RegularExpressions;
 
 namespace RVToolsMerge;
 
@@ -43,12 +41,13 @@ class Program
         { "vInfoMemory", "Memory" },
         { "vInfoProvisioned", "Provisioned MiB" },
         { "vInfoInUse", "In Use MiB" },
-        { "vInfoOS", "OS according to the configuration file" },
         { "vInfoDataCenter", "Datacenter" },
         { "vInfoCluster", "Cluster" },
         { "vInfoHost", "Host" },
         { "vInfoSRMPlaceHolder", "SRM Placeholder" },
         { "vInfoOSTools", "OS according to the VMware Tools" },
+        { "vInfoOS", "OS according to the configuration file" },
+
 
         // vHost sheet mappings
         { "vHostName", "Host" },

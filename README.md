@@ -126,6 +126,7 @@ The application standardizes column names across different RVTools exports. Belo
 | vHostCpuModel | CPU Model |
 | vHostCpuMhz | Speed |
 | vHostNumCPU | # CPU |
+| vHostNumCpu | # CPU |
 | vHostCoresPerCPU | Cores per CPU |
 | vHostNumCpuCores | # Cores |
 | vHostOverallCpuUsage | CPU usage % |
@@ -133,16 +134,25 @@ The application standardizes column names across different RVTools exports. Belo
 | vHostOverallMemoryUsage | Memory usage % |
 | vHostvCPUs | # vCPUs |
 | vHostVCPUsPerCore | vCPUs per Core |
-| vHostFullName | ESX Version |
 
 ### vPartition Sheet Mappings
 
 | Original Column Name | Standardized Name |
 |---------------------|-------------------|
+| vPartitionDisk | Disk |
 | vPartitionVMName | VM |
 | vPartitionConsumedMiB | Consumed MiB |
+| vPartitionCapacityMiB | Capacity MiB |
 
-> **Note:** These mappings help normalize column names between different versions of RVTools exports or exports with customized column names.
+### vMemory Sheet Mappings
+
+| Original Column Name | Standardized Name |
+|---------------------|-------------------|
+| vMemoryVMName | VM |
+| vMemorySizeMiB | Size MiB |
+| vMemoryReservation | Reservation |
+
+> **Note:** These mappings help normalize column names between different versions of RVTools exports.
 
 ## Installation
 
@@ -406,4 +416,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [RVTools](https://www.robware.net/rvtools/) by Robware for the virtualization documentation tool that this project enhances
 - [ClosedXML](https://github.com/ClosedXML/ClosedXML) for excellent Excel file handling capabilities
 - [Spectre.Console](https://spectreconsole.net/) for beautiful console output and UX
+- [GitHub Copilot](https://github.com/features/copilot) and [Claude 3.7 Sonnet](https://www.anthropic.com/) for AI assistance in code generation and development
 
