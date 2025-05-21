@@ -58,6 +58,7 @@ class Program
         { "vHostCpuModel", "CPU Model" },
         { "vHostCpuMhz", "Speed" },
         { "vHostNumCPU", "# CPU" },
+        { "vHostNumCpu", "# CPU" },
         { "vHostCoresPerCPU", "Cores per CPU" },
         { "vHostNumCpuCores", "# Cores" },
         { "vHostOverallCpuUsage", "CPU usage %" },
@@ -67,8 +68,15 @@ class Program
         { "vHostVCPUsPerCore", "vCPUs per Core" },
 
         // vPartition sheet mappings
+        { "vPartitionDisk", "Disk" },
         { "vPartitionVMName", "VM" },
-        { "vPartitionConsumedMiB", "Consumed MiB" }
+        { "vPartitionConsumedMiB", "Consumed MiB" },
+        { "vPartitionCapacityMiB", "Capacity MiB" },
+
+        // vMemory sheet mappings
+        { "vMemoryVMName", "VM" },
+        { "vMemorySizeMiB", "Size MiB" },
+        { "vMemoryReservation", "Reservation" }
     }.ToFrozenDictionary();
 
     /// <summary>
