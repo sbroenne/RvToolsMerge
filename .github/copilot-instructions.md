@@ -108,7 +108,6 @@ RVToolsMerge is a tool for combining and processing multiple RVTools exports fro
 
 ### Console Application Best Practices
 - Use .NET 9 features and capabilities throughout the application
-- Use System.CommandLine (GA in .NET 9) for robust command-line argument parsing
 - Take advantage of .NET 9's performance improvements for Excel processing
 - Utilize .NET 9's improved JSON serialization for configuration files
 - Always use Spectre.Console for all console output, following official best practices:

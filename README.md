@@ -129,7 +129,6 @@ Download the latest release for your platform from the [Releases page](https://g
 - No additional prerequisites required! The application is published as a self-contained executable with all dependencies included.
 - Minimum disk space: ~30MB
 
-
 ## Usage
 
 ```
@@ -401,6 +400,27 @@ For details on reporting security vulnerabilities, please see our [Security Poli
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Project Structure
+
+The project follows standard GitHub repository best practices:
+
+```
+RVToolsMerge/
+├── .github/           # GitHub-specific files (workflows)
+├── docs/              # Documentation files
+├── src/               # Source code
+│   └── RVToolsMerge/  # .NET project
+├── CHANGELOG.md       # Version history
+├── CONTRIBUTING.md    # Guidelines for contributors
+├── LICENSE            # MIT License file
+├── README.md          # This file
+└── SECURITY.md        # Security policy
+```
+
+## Contributing
+
+Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines on how to contribute to this project.
 
 ## Acknowledgments
 

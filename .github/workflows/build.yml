@@ -27,24 +27,24 @@ jobs:
           ${{ runner.os }}-nuget-
 
     - name: Restore dependencies
-      run: dotnet restore
+      run: dotnet restore src/RVToolsMerge/RVToolsMerge.csproj
 
     - name: Build
-      run: dotnet build --configuration ${{ inputs.configuration }} --no-restore
+      run: dotnet build src/RVToolsMerge/RVToolsMerge.csproj --configuration ${{ inputs.configuration }} --no-restore
 
     - name: Test
-      run: dotnet test --configuration ${{ inputs.configuration }} --no-build --verbosity normal --collect:"XPlat Code Coverage"
+      run: dotnet test src/RVToolsMerge/RVToolsMerge.csproj --configuration ${{ inputs.configuration }} --no-build --verbosity normal --collect:"XPlat Code Coverage"
 
     - name: Publish
       if: ${{ inputs.configuration == 'Release' }}
-      run: dotnet publish -c ${{ inputs.configuration }} -r win-x64 --self-contained true -p:PublishSingleFile=true -p:PublishTrimmed=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true
+      run: dotnet publish src/RVToolsMerge/RVToolsMerge.csproj -c ${{ inputs.configuration }} -r win-x64 --self-contained true -p:PublishSingleFile=true -p:PublishTrimmed=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true
 
     - name: Upload build artifacts
       if: ${{ inputs.configuration == 'Release' }}
       uses: actions/upload-artifact@v4
       with:
         name: RVToolsMerge-windows-${{ inputs.configuration }}
-        path: bin/${{ inputs.configuration }}/net9.0/win-x64/publish/
+        path: src/RVToolsMerge/bin/${{ inputs.configuration }}/net9.0/win-x64/publish/
   build-linux:
     runs-on: ubuntu-latest
     steps:
@@ -64,24 +64,24 @@ jobs:
           ${{ runner.os }}-nuget-
 
     - name: Restore dependencies
-      run: dotnet restore
+      run: dotnet restore src/RVToolsMerge/RVToolsMerge.csproj
 
     - name: Build
-      run: dotnet build --configuration ${{ inputs.configuration }} --no-restore
+      run: dotnet build src/RVToolsMerge/RVToolsMerge.csproj --configuration ${{ inputs.configuration }} --no-restore
 
     - name: Test
-      run: dotnet test --configuration ${{ inputs.configuration }} --no-build --verbosity normal --collect:"XPlat Code Coverage"
+      run: dotnet test src/RVToolsMerge/RVToolsMerge.csproj --configuration ${{ inputs.configuration }} --no-build --verbosity normal --collect:"XPlat Code Coverage"
 
     - name: Publish
       if: ${{ inputs.configuration == 'Release' }}
-      run: dotnet publish -c ${{ inputs.configuration }} -r linux-x64 --self-contained true -p:PublishSingleFile=true -p:PublishTrimmed=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true
+      run: dotnet publish src/RVToolsMerge/RVToolsMerge.csproj -c ${{ inputs.configuration }} -r linux-x64 --self-contained true -p:PublishSingleFile=true -p:PublishTrimmed=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true
 
     - name: Upload build artifacts
       if: ${{ inputs.configuration == 'Release' }}
       uses: actions/upload-artifact@v4
       with:
         name: RVToolsMerge-linux-${{ inputs.configuration }}
-        path: bin/${{ inputs.configuration }}/net9.0/linux-x64/publish/
+        path: src/RVToolsMerge/bin/${{ inputs.configuration }}/net9.0/linux-x64/publish/
   build-windows-arm:
     runs-on: windows-latest
     steps:
@@ -101,24 +101,24 @@ jobs:
           ${{ runner.os }}-arm-nuget-
 
     - name: Restore dependencies
-      run: dotnet restore
+      run: dotnet restore src/RVToolsMerge/RVToolsMerge.csproj
 
     - name: Build
-      run: dotnet build --configuration ${{ inputs.configuration }} --no-restore
+      run: dotnet build src/RVToolsMerge/RVToolsMerge.csproj --configuration ${{ inputs.configuration }} --no-restore
 
     - name: Test
-      run: dotnet test --configuration ${{ inputs.configuration }} --no-build --verbosity normal
+      run: dotnet test src/RVToolsMerge/RVToolsMerge.csproj --configuration ${{ inputs.configuration }} --no-build --verbosity normal
 
     - name: Publish
       if: ${{ inputs.configuration == 'Release' }}
-      run: dotnet publish -c ${{ inputs.configuration }} -r win-arm64 --self-contained true -p:PublishSingleFile=true -p:PublishTrimmed=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true
+      run: dotnet publish src/RVToolsMerge/RVToolsMerge.csproj -c ${{ inputs.configuration }} -r win-arm64 --self-contained true -p:PublishSingleFile=true -p:PublishTrimmed=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true
 
     - name: Upload build artifacts
       if: ${{ inputs.configuration == 'Release' }}
       uses: actions/upload-artifact@v4
       with:
         name: RVToolsMerge-windows-arm64-${{ inputs.configuration }}
-        path: bin/${{ inputs.configuration }}/net9.0/win-arm64/publish/
+        path: src/RVToolsMerge/bin/${{ inputs.configuration }}/net9.0/win-arm64/publish/
   build-macos-arm:
     runs-on: macos-latest
     steps:
@@ -138,21 +138,21 @@ jobs:
           ${{ runner.os }}-nuget-
 
     - name: Restore dependencies
-      run: dotnet restore
+      run: dotnet restore src/RVToolsMerge/RVToolsMerge.csproj
 
     - name: Build
-      run: dotnet build --configuration ${{ inputs.configuration }} --no-restore
+      run: dotnet build src/RVToolsMerge/RVToolsMerge.csproj --configuration ${{ inputs.configuration }} --no-restore
 
     - name: Test
-      run: dotnet test --configuration ${{ inputs.configuration }} --no-build --verbosity normal --collect:"XPlat Code Coverage"
+      run: dotnet test src/RVToolsMerge/RVToolsMerge.csproj --configuration ${{ inputs.configuration }} --no-build --verbosity normal --collect:"XPlat Code Coverage"
 
     - name: Publish
       if: ${{ inputs.configuration == 'Release' }}
-      run: dotnet publish -c ${{ inputs.configuration }} -r osx-arm64 --self-contained true -p:PublishSingleFile=true -p:PublishTrimmed=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true
+      run: dotnet publish src/RVToolsMerge/RVToolsMerge.csproj -c ${{ inputs.configuration }} -r osx-arm64 --self-contained true -p:PublishSingleFile=true -p:PublishTrimmed=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true
 
     - name: Upload build artifacts
       if: ${{ inputs.configuration == 'Release' }}
       uses: actions/upload-artifact@v4
       with:
         name: RVToolsMerge-macos-arm64-${{ inputs.configuration }}
-        path: bin/${{ inputs.configuration }}/net9.0/osx-arm64/publish/
+        path: src/RVToolsMerge/bin/${{ inputs.configuration }}/net9.0/osx-arm64/publish/

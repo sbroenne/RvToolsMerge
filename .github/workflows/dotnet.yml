@@ -41,12 +41,12 @@ jobs:
           ${{ runner.os }}-nuget-
 
     - name: Restore dependencies
-      run: dotnet restore
+      run: dotnet restore src/RVToolsMerge/RVToolsMerge.csproj
 
     - name: Build
-      run: dotnet build --configuration Debug --no-restore
+      run: dotnet build src/RVToolsMerge/RVToolsMerge.csproj --configuration Debug --no-restore
 
     - name: Test
-      run: dotnet test --configuration Debug --no-build --verbosity normal --collect:"XPlat Code Coverage"
+      run: dotnet test src/RVToolsMerge/RVToolsMerge.csproj --configuration Debug --no-build --verbosity normal --collect:"XPlat Code Coverage"
 
 

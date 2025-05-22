@@ -1,35 +1,31 @@
 {
     "version": "0.2.0",
-    "configurations": [
-
-        {
+    "configurations": [        {
             "name": "Launch with Folder Input (Default)",
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
-            "program": "${workspaceFolder}/bin/Debug/net9.0/win-x64/RVToolsMerge.exe",
+            "program": "${workspaceFolder}/src/RVToolsMerge/bin/Debug/net9.0/win-x64/RVToolsMerge.exe",
             "args": ["${workspaceFolder}/input"],
             "cwd": "${workspaceFolder}",
             "console": "internalConsole",
             "stopAtEntry": false
-        },
-        {
+        },        {
             "name": "Launch with Single File",
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
-            "program": "${workspaceFolder}/bin/Debug/net9.0/win-x64/RVToolsMerge.exe",
+            "program": "${workspaceFolder}/src/RVToolsMerge/bin/Debug/net9.0/win-x64/RVToolsMerge.exe",
             "args": ["${input:singleFilePath}"],
             "cwd": "${workspaceFolder}",
             "console": "internalConsole",
             "stopAtEntry": false
         },
-        {
-            "name": "Launch with Ignore Missing Sheets",
+        {            "name": "Launch with Ignore Missing Sheets",
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
-            "program": "${workspaceFolder}/bin/Debug/net9.0/win-x64/RVToolsMerge.exe",
+            "program": "${workspaceFolder}/src/RVToolsMerge/bin/Debug/net9.0/win-x64/RVToolsMerge.exe",
             "args": ["-m", "${workspaceFolder}/input"],
             "cwd": "${workspaceFolder}",
             "console": "internalConsole",
@@ -62,40 +58,37 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
-            "program": "${workspaceFolder}/bin/Debug/net9.0/win-x64/RVToolsMerge.exe",
+            "program": "${workspaceFolder}/src/RVToolsMerge/bin/Debug/net9.0/win-x64/RVToolsMerge.exe",
             "args": ["-M", "${workspaceFolder}/input"],
             "cwd": "${workspaceFolder}",
             "console": "internalConsole",
             "stopAtEntry": false
         },
-        {
-            "name": "Launch with Include Source",
+        {            "name": "Launch with Include Source",
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
-            "program": "${workspaceFolder}/bin/Debug/net9.0/win-x64/RVToolsMerge.exe",
+            "program": "${workspaceFolder}/src/RVToolsMerge/bin/Debug/net9.0/win-x64/RVToolsMerge.exe",
             "args": ["-s", "${workspaceFolder}/input"],
             "cwd": "${workspaceFolder}",
             "console": "internalConsole",
             "stopAtEntry": false
         },
-        {
-            "name": "Launch with Debug",
+        {            "name": "Launch with Debug",
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
-            "program": "${workspaceFolder}/bin/Debug/net9.0/win-x64/RVToolsMerge.exe",
+            "program": "${workspaceFolder}/src/RVToolsMerge/bin/Debug/net9.0/win-x64/RVToolsMerge.exe",
             "args": ["-d", "${workspaceFolder}/input"],
             "cwd": "${workspaceFolder}",
             "console": "internalConsole",
             "stopAtEntry": false
         },
-        {
-            "name": "Launch with -s -i (Most Permissive)",
+        {            "name": "Launch with -s -i (Most Permissive)",
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
-            "program": "${workspaceFolder}/bin/Debug/net9.0/win-x64/RVToolsMerge.exe",
+            "program": "${workspaceFolder}/src/RVToolsMerge/bin/Debug/net9.0/win-x64/RVToolsMerge.exe",
             "args": ["-s", "-i", "${workspaceFolder}/input", "${workspaceFolder}/output/MostPermissive.xlsx"],
             "cwd": "${workspaceFolder}",
             "console": "internalConsole",
@@ -106,7 +99,7 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
-            "program": "${workspaceFolder}/bin/Debug/net9.0/win-x64/RVToolsMerge.exe",
+            "program": "${workspaceFolder}/src/RVToolsMerge/bin/Debug/net9.0/win-x64/RVToolsMerge.exe",
             "args": ["-s", "-i", "${workspaceFolder}/input", "${workspaceFolder}/output/MostPermissive.xlsx"],
             "cwd": "${workspaceFolder}",
             "console": "internalConsole",

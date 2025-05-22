@@ -4,10 +4,9 @@
         {
             "label": "build",
             "command": "dotnet",
-            "type": "process",
-            "args": [
+            "type": "process",            "args": [
                 "build",
-                "${workspaceFolder}/RVToolsMerge.csproj",
+                "${workspaceFolder}/src/RVToolsMerge/RVToolsMerge.csproj",
                 "/property:GenerateFullPaths=true",
                 "/consoleloggerparameters:NoSummary"
             ],
