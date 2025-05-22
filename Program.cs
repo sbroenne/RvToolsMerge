@@ -5,10 +5,10 @@
 //     Licensed under the MIT License
 // </copyright>
 //-----------------------------------------------------------------------
-using ClosedXML.Excel;
-using Spectre.Console;
 using System.Collections.Frozen;
 using System.Reflection;
+using ClosedXML.Excel;
+using Spectre.Console;
 
 namespace RVToolsMerge;
 
@@ -144,6 +144,7 @@ class Program
         bool onlyMandatoryColumns = false;
         bool debugMode = false;
         bool includeSourceFileName = false;
+        bool skipRowsWithEmptyMandatoryValues = false; // Default is now false (include empty values)
 
         // Process options
         var processedArgs = new List<string>();
@@ -171,6 +172,9 @@ class Program
                     break;
                 case "-s" or "--include-source":
                     includeSourceFileName = true;
+                    break;
+                case "-e" or "--skip-empty-values":
+                    skipRowsWithEmptyMandatoryValues = true; // Now flag enables skipping
                     break;
                 default:
                     processedArgs.Add(args[i]);
@@ -203,6 +207,24 @@ class Program
         string outputFile = processedArgs.Count > 1
             ? processedArgs[1]
             : Path.Combine(Directory.GetCurrentDirectory(), "RVTools_Merged.xlsx");
+
+        // Display selected options
+        AnsiConsole.WriteLine();
+        AnsiConsole.MarkupLine("[bold]Selected Options:[/]");
+        var optionsTable = new Table().BorderColor(Color.Grey);
+        optionsTable.AddColumn(new TableColumn("Option").Centered());
+        optionsTable.AddColumn(new TableColumn("Status").Centered());
+
+        optionsTable.AddRow("[yellow]--ignore-missing-sheets[/]", ignoreMissingOptionalSheets ? "[green]Enabled[/]" : "[grey]Disabled[/]");
+        optionsTable.AddRow("[yellow]--skip-invalid-files[/]", skipInvalidFiles ? "[green]Enabled[/]" : "[grey]Disabled[/]");
+        optionsTable.AddRow("[yellow]--anonymize[/]", anonymizeData ? "[green]Enabled[/]" : "[grey]Disabled[/]");
+        optionsTable.AddRow("[yellow]--only-mandatory-columns[/]", onlyMandatoryColumns ? "[green]Enabled[/]" : "[grey]Disabled[/]");
+        optionsTable.AddRow("[yellow]--include-source[/]", includeSourceFileName ? "[green]Enabled[/]" : "[grey]Disabled[/]");
+        optionsTable.AddRow("[yellow]--skip-empty-values[/]", skipRowsWithEmptyMandatoryValues ? "[green]Enabled[/]" : "[grey]Disabled[/]");
+        optionsTable.AddRow("[yellow]--debug[/]", debugMode ? "[green]Enabled[/]" : "[grey]Disabled[/]");
+
+        AnsiConsole.Write(optionsTable);
+        AnsiConsole.WriteLine();
 
         try
         {
@@ -241,7 +263,8 @@ class Program
                 onlyMandatoryColumns,
                 includeSourceFileName,
                 validationIssues,
-                debugMode
+                debugMode,
+                skipRowsWithEmptyMandatoryValues
             );
 
             AnsiConsole.MarkupLineInterpolated($"[green]Successfully merged files.[/] Output saved to: [blue]{outputFile}[/]");
@@ -351,6 +374,7 @@ class Program
     /// <param name="includeSourceFileName">Whether to include source file name in output.</param>
     /// <param name="validationIssues">List to store validation issues.</param>
     /// <param name="debugMode">Whether debug mode is enabled.</param>
+    /// <param name="skipRowsWithEmptyMandatoryValues">Whether to include rows with empty mandatory values.</param>
     /// <returns>A task representing the asynchronous operation.</returns>
     static async Task MergeRVToolsFilesAsync(
         string[] filePaths,
@@ -361,7 +385,8 @@ class Program
         bool onlyMandatoryColumns = false,
         bool includeSourceFileName = false,
         List<ValidationIssue>? validationIssues = null,
-        bool debugMode = false)
+        bool debugMode = false,
+        bool skipRowsWithEmptyMandatoryValues = false)
     {
         // Create validation issues list if not provided
         validationIssues ??= [];
@@ -603,7 +628,6 @@ class Program
             var allFileColumns = new List<List<string>>();
 
             // First analyze all files to collect column information
-            AnsiConsole.MarkupLineInterpolated($"Analyzing columns for sheet '[cyan]{sheetName}[/]'...");
 
             AnsiConsole.Progress()
                 .AutoClear(false)
@@ -684,7 +708,6 @@ class Program
                 commonColumns[sheetName] = columnsInAllFiles;
             }
 
-            AnsiConsole.MarkupLineInterpolated($"Sheet '[green]{sheetName}[/]' mapping applied successfully.");
         }
 
         AnsiConsole.MarkupLine("[bold]Extracting data from files...[/]");
@@ -728,8 +751,9 @@ class Program
                         var worksheet = workbook.Worksheet(sheetName);
                         var columnMapping = GetColumnMapping(worksheet, commonColumns[sheetName]);
 
-                        // Find the last row with data
-                        int lastRow = worksheet.LastRowUsed().RowNumber();
+                        // Find the last row with data, handle null in case the worksheet is empty
+                        var lastRowUsed = worksheet.LastRowUsed();
+                        int lastRow = lastRowUsed is not null ? lastRowUsed.RowNumber() : 1;
 
                         // Find columns to anonymize in this sheet
                         var anonymizeColumnIndices = new Dictionary<string, int>();
@@ -803,7 +827,10 @@ class Program
                                     false,
                                     $"Row {row} in sheet '{sheetName}' has empty value(s) in mandatory column(s) (excluding 'OS according to the configuration file')."
                                 ));
-                                continue; // skip this row
+                                // INVERTED: Now we only skip if flag is enabled
+                                if (skipRowsWithEmptyMandatoryValues) {
+                                    continue; // skip this row
+                                }
                             }
 
                             // Add source file name if the option is enabled
@@ -825,6 +852,8 @@ class Program
         {
             var expectedRowCount = mergedData[sheetName].Count;
 
+            // Calculate the actual row count, but subtract rows that would be skipped due to validation
+            int skippedRows = 0;
             var actualRowCount = validFilePaths.Sum(filePath =>
             {
                 using var workbook = new XLWorkbook(filePath);
@@ -832,14 +861,64 @@ class Program
                     return 0;
 
                 var worksheet = workbook.Worksheet(sheetName);
-                return worksheet.LastRowUsed().RowNumber() - 1; // subtract header row
+                var lastRowUsed = worksheet.LastRowUsed();
+
+                if (lastRowUsed is null)
+                    return 0;
+
+                int rowCount = lastRowUsed.RowNumber() - 1; // subtract header row
+
+                // Count rows that would be skipped due to validation
+                if (MandatoryColumns.TryGetValue(sheetName, out var mcols))
+                {
+                    var mandatoryCols = mcols.Where(c => c != "OS according to the configuration file").ToList();
+                    var columnMapping = GetColumnMapping(worksheet, commonColumns[sheetName]);
+
+                    // Map mandatory column names to column indices in the worksheet
+                    var mandatoryColIndices = new List<int>();
+                    foreach (var colName in mandatoryCols)
+                    {
+                        int commonIndex = commonColumns[sheetName].IndexOf(colName);
+                        if (commonIndex >= 0)
+                        {
+                            // Find the corresponding file column index
+                            var fileColMapping = columnMapping.FirstOrDefault(m => m.CommonColumnIndex == commonIndex);
+                            if (fileColMapping != null)
+                            {
+                                mandatoryColIndices.Add(fileColMapping.FileColumnIndex);
+                            }
+                        }
+                    }
+
+                    // Count rows with empty mandatory values
+                    for (int row = 2; row <= lastRowUsed.RowNumber(); row++)
+                    {
+                        bool hasEmptyMandatory = mandatoryColIndices.Any(colIndex =>
+                        {
+                            var cell = worksheet.Cell(row, colIndex);
+                            return EqualityComparer<XLCellValue>.Default.Equals(cell.Value, default) ||
+                                   string.IsNullOrWhiteSpace(cell.Value.ToString());
+                        });
+
+                        if (hasEmptyMandatory)
+                        {
+                            skippedRows++;
+                        }
+                    }
+                }
+
+                return rowCount;
             }) + 1; // add header row back
 
+            // Subtract the number of skipped rows from the actual count
+            actualRowCount -= skippedRows;
+
+            // Add a verbose warning about skipped rows instead of throwing an exception
             if (expectedRowCount != actualRowCount)
             {
-                throw new InvalidOperationException(
-                    $"Row count mismatch detected for sheet '{sheetName}'. " +
-                    $"Expected {actualRowCount} rows, but found {expectedRowCount} rows in merged data.");
+                AnsiConsole.MarkupLineInterpolated(
+                    $"[yellow]Warning:[/] Row count mismatch detected for sheet '{sheetName}'. Expected {actualRowCount} rows, but found {expectedRowCount} rows in merged data. {(skipRowsWithEmptyMandatoryValues ? $"This may be due to {skippedRows} rows being skipped because they had empty mandatory values." : "This may be due to other data inconsistencies in the source files.")}"
+                );
             }
         }
 
@@ -977,6 +1056,8 @@ class Program
         AnsiConsole.MarkupLine("  [yellow]-M, --only-mandatory-columns[/]");
         AnsiConsole.MarkupLine("                            Include only mandatory columns in output.");
         AnsiConsole.MarkupLine("  [yellow]-s, --include-source[/]      Include source file name in output.");
+        AnsiConsole.MarkupLine("  [yellow]-e, --skip-empty-values[/]   Skip rows with empty values in mandatory columns.");
+        AnsiConsole.MarkupLine("                            By default, all rows are included regardless of empty values.");
         AnsiConsole.MarkupLine("  [yellow]-d, --debug[/]               Show detailed error information.");
         AnsiConsole.WriteLine();
 
@@ -988,6 +1069,7 @@ class Program
         AnsiConsole.MarkupLine($"  [cyan]{appName}[/] [yellow]-a[/] C:\\RVTools\\Data\\RVTools.xlsx C:\\Reports\\Anonymized_RVTools.xlsx");
         AnsiConsole.MarkupLine($"  [cyan]{appName}[/] [yellow]-M[/] C:\\RVTools\\Data C:\\Reports\\Mandatory_Columns.xlsx");
         AnsiConsole.MarkupLine($"  [cyan]{appName}[/] [yellow]-a -M -s[/] C:\\RVTools\\Data C:\\Reports\\Complete_Analysis.xlsx");
+        AnsiConsole.MarkupLine($"  [cyan]{appName}[/] [yellow]-e[/] C:\\RVTools\\Data C:\\Reports\\Skip_Empty_Values.xlsx");
         AnsiConsole.WriteLine();
 
         AnsiConsole.MarkupLine("[bold]REQUIRED SHEETS AND COLUMNS:[/]");
@@ -1033,7 +1115,8 @@ class Program
     {
         var columnNames = new List<string>();
         var headerRow = worksheet.Row(1);
-        int lastColumn = worksheet.LastColumnUsed().ColumnNumber();
+        var lastColumnUsed = worksheet.LastColumnUsed();
+        int lastColumn = lastColumnUsed is not null ? lastColumnUsed.ColumnNumber() : 1;
 
         // Use only the mapping for the current sheet, if available
         var sheetName = worksheet.Name;
@@ -1071,7 +1154,8 @@ class Program
         // Get the first row
         var headerRow = worksheet.Row(1);
         // Find the last column with data
-        int lastColumn = worksheet.LastColumnUsed().ColumnNumber();
+        var lastColumnUsed = worksheet.LastColumnUsed();
+        int lastColumn = lastColumnUsed is not null ? lastColumnUsed.ColumnNumber() : 1;
 
         // Create a mapping between the file's column indices and the common column indices
         for (int fileColIndex = 1; fileColIndex <= lastColumn; fileColIndex++)

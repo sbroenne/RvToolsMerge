@@ -28,7 +28,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="ClosedXML" Version="0.102.1" />
+    <PackageReference Include="ClosedXML" Version="0.105.0" />
     <PackageReference Include="Spectre.Console" Version="0.50.0" />
   </ItemGroup>
 

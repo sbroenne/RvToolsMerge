@@ -95,64 +95,9 @@ Each sheet has specific required columns that must be present for proper process
 
 ## Column Name Mappings
 
-The application standardizes column names across different RVTools exports. Below is a reference of the mappings applied during processing:
+The application standardizes column names across different RVTools exports. This helps handle variations in column naming between different versions of RVTools.
 
-### vInfo Sheet Mappings
-
-| Original Column Name | Standardized Name |
-|---------------------|-------------------|
-| vInfoVMName | VM |
-| vInfoPowerstate | Powerstate |
-| vInfoTemplate | Template |
-| vInfoCPUs | CPUs |
-| vInfoMemory | Memory |
-| vInfoProvisioned | Provisioned MiB |
-| vInfoInUse | In Use MiB |
-| vInfoOS | OS according to the configuration file |
-| vInfoDataCenter | Datacenter |
-| vInfoCluster | Cluster |
-| vInfoHost | Host |
-| vInfoSRMPlaceHolder | SRM Placeholder |
-| vInfoOSTools | OS according to the VMware Tools |
-
-### vHost Sheet Mappings
-
-| Original Column Name | Standardized Name |
-|---------------------|-------------------|
-| vHostName | Host |
-| vHostDatacenter | Datacenter |
-| vHostCluster | Cluster |
-| vHostvSANFaultDomainName | vSAN Fault Domain Name |
-| vHostCpuModel | CPU Model |
-| vHostCpuMhz | Speed |
-| vHostNumCPU | # CPU |
-| vHostNumCpu | # CPU |
-| vHostCoresPerCPU | Cores per CPU |
-| vHostNumCpuCores | # Cores |
-| vHostOverallCpuUsage | CPU usage % |
-| vHostMemorySize | # Memory |
-| vHostOverallMemoryUsage | Memory usage % |
-| vHostvCPUs | # vCPUs |
-| vHostVCPUsPerCore | vCPUs per Core |
-
-### vPartition Sheet Mappings
-
-| Original Column Name | Standardized Name |
-|---------------------|-------------------|
-| vPartitionDisk | Disk |
-| vPartitionVMName | VM |
-| vPartitionConsumedMiB | Consumed MiB |
-| vPartitionCapacityMiB | Capacity MiB |
-
-### vMemory Sheet Mappings
-
-| Original Column Name | Standardized Name |
-|---------------------|-------------------|
-| vMemoryVMName | VM |
-| vMemorySizeMiB | Size MiB |
-| vMemoryReservation | Reservation |
-
-> **Note:** These mappings help normalize column names between different versions of RVTools exports.
+For a complete reference of all column mappings, see [Column Mappings Documentation](docs/ColumnMappings.md).
 
 ## Installation
 
@@ -192,24 +137,8 @@ RVToolsMerge [options] inputPath [outputFile]
 | `-a, --anonymize` | Anonymize VM, DNS, Cluster, Host, and Datacenter names |
 | `-M, --only-mandatory-columns` | Include only mandatory columns in the output |
 | `-s, --include-source` | Add a 'Source File' column to track data origin |
+| `-e, --include-empty-values` | Include rows with empty values in mandatory columns |
 | `-d, --debug` | Show detailed error information with stack traces |
-
-> **Note:** The `-i` and `-m` options can be used together. When combined, files with missing vInfo sheets will be skipped, and other files with missing optional sheets will be processed.
-
-## Examples
-
-### Basic Usage
-
-```cmd
-:: Process all Excel files in a folder (required parameter)
-RVToolsMerge.exe C:\RVTools\Exports
-
-:: Process a single file
-RVToolsMerge.exe C:\RVTools\Exports\SingleFile.xlsx
-
-:: Specify custom output file
-RVToolsMerge.exe C:\RVTools\Exports C:\Reports\Merged_RVTools.xlsx
-```
 
 ### Advanced Options
 
@@ -232,8 +161,11 @@ RVToolsMerge.exe -M C:\RVTools\Exports
 :: Include source file information
 RVToolsMerge.exe -s C:\RVTools\Exports
 
+:: Include rows with empty mandatory values
+RVToolsMerge.exe -e C:\RVTools\Exports
+
 :: Combine multiple options
-RVToolsMerge.exe -a -M -s C:\RVTools\Exports C:\Reports\Complete_Analysis.xlsx
+RVToolsMerge.exe -a -M -s -e C:\RVTools\Exports C:\Reports\Complete_Analysis.xlsx
 ```
 
 ## Validation Behavior and Error Handling
@@ -251,15 +183,15 @@ RVToolsMerge implements robust validation to ensure data integrity:
   - Files without the required vInfo sheet will be skipped
   - Files with vInfo sheet but missing mandatory vInfo columns will be skipped
   - Files with optional sheets having missing mandatory columns will be skipped
+- **With `-e` (include-empty-values)**:
+  - Rows with empty values in mandatory columns will be included in the output
+  - Without this option, rows with empty mandatory values are skipped
+  - Helps prevent row count mismatches in the final output
 - **With both `-i` and `-m` together**:
   - Files without vInfo sheet will be skipped
   - Files with vInfo sheet but missing mandatory vInfo columns will be skipped
   - Files with complete vInfo sheet but missing optional sheets will be processed
   - Files with optional sheets missing mandatory columns will be processed, but those sheets may be excluded
-
-### Error Messages
-
-Error messages are designed to be clear and actionable, with debug mode providing additional details when needed. The application uses Spectre.Console to provide rich, colorful output with proper formatting of errors and warnings.
 
 ## Sample Files
 
@@ -279,6 +211,7 @@ If you encounter issues while using RVToolsMerge:
 | General errors | Enable debug mode with `-d` to see detailed error information |
 | Missing sheets errors | Use `-m` to ignore missing optional sheets |
 | Files causing validation errors | Use `-i` to skip invalid files and continue processing others |
+| Row count mismatches | Use `-e` to include rows with empty mandatory values |
 | Low memory issues | Process smaller batches of files |
 | Permission errors | Ensure you have write access to the output folder |
 | Excel file locked | Close any applications that might have the file open |
