@@ -4,7 +4,13 @@
 [![CodeQL](https://github.com/sbroenne/RVToolsMerge/actions/workflows/codeql.yml/badge.svg)](https://github.com/sbroenne/RVToolsMerge/actions/workflows/codeql.yml)
 [![GitHub Advanced Security](https://img.shields.io/badge/GitHub%20Advanced%20Security-enabled-brightgreen)](SECURITY.md)
 
-A modern, high-performance .NET 9 console application for merging multiple RVTools Excel export files into a single consolidated file.
+## IMPORTANT DISCLAIMER
+
+**RVToolsMerge is NOT affiliated with, endorsed by, or connected to RVTools or its creator Rob de Veij (Robware).**
+
+This is an independent, community-created utility that processes data exported from RVTools. RVTools is a trademark of Robware and this project is not associated with the official RVTools product.
+
+A modern, cross-platform console application for merging one or multiple [RVTools](https://www.robware.net/rvtools/) export files into a single consolidated file. Supports anonymization of sensitive data.
 
 > Created by Stefan Broenner (github.com/sbroenne) and contributors
 
@@ -14,16 +20,33 @@ RVToolsMerge is a powerful command-line utility designed to consolidate multiple
 
 Built with .NET 9, this cross-platform tool efficiently processes individual RVTools Excel files or entire directories, intelligently merging data from key sheets while ensuring consistency across the consolidated output.
 
-### What is RVTools?
+As an independent, open-source project, RVToolsMerge is *not affiliated with* the official RVTools application but works with its export data to provide additional functionality.
 
-[RVTools](https://www.robware.net/rvtools/) is a popular VMware utility that exports detailed information about your virtual environment, including:
-- Virtual machines (vInfo)
-- ESXi hosts (vHost)
-- Storage configurations (vPartition)
-- Memory usage (vMemory)
-- And many other aspects of a VMware infrastructure
+## Data Protection & Security
 
-When managing multiple vCenter environments or collecting data over time, you may end up with numerous RVTools export files that need to be combined for comprehensive analysis. RVToolsMerge solves this challenge by providing an efficient way to consolidate these files.
+RVToolsMerge treats security and data protection as top priorities, especially when handling sensitive VMware infrastructure data:
+
+### Key Data Protection Features
+
+- **Complete Anonymization**: Automatically replace sensitive identifiers with generic equivalents:
+  - VM names → vm1, vm2, vm3...
+  - DNS names → dns1, dns2, dns3...
+  - IP addresses → ip1, ip2, ip3...
+  - Cluster names → cluster1, cluster2...
+  - Host names → host1, host2...
+  - Datacenter names → datacenter1, datacenter2...
+
+- **Minimal Data Exposure**: The `--only-mandatory-columns` option limits data to essential fields only, preventing unnecessary exposure of sensitive information
+
+- **Consistent Anonymization**: Maintains relationships between data points even after anonymization (same VM names are consistently replaced with the same anonymized values across all sheets)
+
+- **Source Tracking Control**: Optional inclusion of source file information gives you control over data lineage visibility
+
+These protection features make RVToolsMerge ideal for:
+- Creating sanitized reports for vendors and consultants
+- Sharing infrastructure data while maintaining confidentiality
+- Generating documentation that doesn't expose sensitive internal naming
+- Ensuring compliance with organization data-sharing policies
 
 ## Features
 
@@ -36,7 +59,6 @@ When managing multiple vCenter environments or collecting data over time, you ma
   - Optionally ignores missing optional sheets
   - Selectively includes only mandatory columns
   - Adds source file tracking for data lineage
-- **Data Protection**: Option to anonymize sensitive data (VMs, DNS names, Clusters, Hosts, Datacenters)
 - **Cross-Platform**: Runs on Windows, Linux, and macOS with native binaries for each platform
 - **Enterprise-Grade Error Handling**: Comprehensive validation with clear, actionable error messages
 
@@ -95,64 +117,9 @@ Each sheet has specific required columns that must be present for proper process
 
 ## Column Name Mappings
 
-The application standardizes column names across different RVTools exports. Below is a reference of the mappings applied during processing:
+The application standardizes column names across different RVTools exports. This helps handle variations in column naming between different versions of RVTools.
 
-### vInfo Sheet Mappings
-
-| Original Column Name | Standardized Name |
-|---------------------|-------------------|
-| vInfoVMName | VM |
-| vInfoPowerstate | Powerstate |
-| vInfoTemplate | Template |
-| vInfoCPUs | CPUs |
-| vInfoMemory | Memory |
-| vInfoProvisioned | Provisioned MiB |
-| vInfoInUse | In Use MiB |
-| vInfoOS | OS according to the configuration file |
-| vInfoDataCenter | Datacenter |
-| vInfoCluster | Cluster |
-| vInfoHost | Host |
-| vInfoSRMPlaceHolder | SRM Placeholder |
-| vInfoOSTools | OS according to the VMware Tools |
-
-### vHost Sheet Mappings
-
-| Original Column Name | Standardized Name |
-|---------------------|-------------------|
-| vHostName | Host |
-| vHostDatacenter | Datacenter |
-| vHostCluster | Cluster |
-| vHostvSANFaultDomainName | vSAN Fault Domain Name |
-| vHostCpuModel | CPU Model |
-| vHostCpuMhz | Speed |
-| vHostNumCPU | # CPU |
-| vHostNumCpu | # CPU |
-| vHostCoresPerCPU | Cores per CPU |
-| vHostNumCpuCores | # Cores |
-| vHostOverallCpuUsage | CPU usage % |
-| vHostMemorySize | # Memory |
-| vHostOverallMemoryUsage | Memory usage % |
-| vHostvCPUs | # vCPUs |
-| vHostVCPUsPerCore | vCPUs per Core |
-
-### vPartition Sheet Mappings
-
-| Original Column Name | Standardized Name |
-|---------------------|-------------------|
-| vPartitionDisk | Disk |
-| vPartitionVMName | VM |
-| vPartitionConsumedMiB | Consumed MiB |
-| vPartitionCapacityMiB | Capacity MiB |
-
-### vMemory Sheet Mappings
-
-| Original Column Name | Standardized Name |
-|---------------------|-------------------|
-| vMemoryVMName | VM |
-| vMemorySizeMiB | Size MiB |
-| vMemoryReservation | Reservation |
-
-> **Note:** These mappings help normalize column names between different versions of RVTools exports.
+For a complete reference of all column mappings, see [Column Mappings Documentation](docs/ColumnMappings.md).
 
 ## Installation
 
@@ -192,24 +159,8 @@ RVToolsMerge [options] inputPath [outputFile]
 | `-a, --anonymize` | Anonymize VM, DNS, Cluster, Host, and Datacenter names |
 | `-M, --only-mandatory-columns` | Include only mandatory columns in the output |
 | `-s, --include-source` | Add a 'Source File' column to track data origin |
+| `-e, --skip-empty-values` | Skip rows with empty values in mandatory columns |
 | `-d, --debug` | Show detailed error information with stack traces |
-
-> **Note:** The `-i` and `-m` options can be used together. When combined, files with missing vInfo sheets will be skipped, and other files with missing optional sheets will be processed.
-
-## Examples
-
-### Basic Usage
-
-```cmd
-:: Process all Excel files in a folder (required parameter)
-RVToolsMerge.exe C:\RVTools\Exports
-
-:: Process a single file
-RVToolsMerge.exe C:\RVTools\Exports\SingleFile.xlsx
-
-:: Specify custom output file
-RVToolsMerge.exe C:\RVTools\Exports C:\Reports\Merged_RVTools.xlsx
-```
 
 ### Advanced Options
 
@@ -232,9 +183,54 @@ RVToolsMerge.exe -M C:\RVTools\Exports
 :: Include source file information
 RVToolsMerge.exe -s C:\RVTools\Exports
 
+:: Skip rows with empty mandatory values
+RVToolsMerge.exe -e C:\RVTools\Exports
+
 :: Combine multiple options
-RVToolsMerge.exe -a -M -s C:\RVTools\Exports C:\Reports\Complete_Analysis.xlsx
+RVToolsMerge.exe -a -M -s -e C:\RVTools\Exports C:\Reports\Complete_Analysis.xlsx
 ```
+
+## Anonymization and Data Protection
+
+RVToolsMerge offers robust data protection features for handling sensitive infrastructure information:
+
+### Anonymization (-a, --anonymize)
+
+When using the anonymization option, the following data is consistently anonymized:
+
+- VM names → vm1, vm2, vm3, etc.
+- DNS names → dns1, dns2, dns3, etc.
+- IP addresses → ip1, ip2, ip3, etc.
+- Cluster names → cluster1, cluster2, cluster3, etc.
+- Host names → host1, host2, host3, etc.
+- Datacenter names → datacenter1, datacenter2, datacenter3, etc.
+
+Anonymization maintains internal data relationships, ensuring that the same original value always maps to the same anonymized value throughout all sheets, preserving data integrity while protecting sensitive information.
+
+### Mandatory Columns Only Mode (-M, --only-mandatory-columns)
+
+The mandatory columns only mode provides an additional layer of data protection by:
+
+- Including only essential columns required for analysis
+- Excluding potentially sensitive columns that might contain organization-specific information
+- Reducing the data footprint in the output file
+- Limiting exposure of non-essential infrastructure details
+
+This option is particularly useful when:
+- Sharing reports with external parties
+- Creating documentation for public consumption
+- Generating simplified reports focused on specific metrics
+- Ensuring compliance with data sharing policies
+
+### Combined Data Protection
+
+For maximum data protection, combine multiple options:
+
+```
+RVToolsMerge -a -M -s /path/to/inputs /path/to/output.xlsx
+```
+
+This produces a streamlined report with only essential columns containing fully anonymized data while preserving all analytical value and relationships between data points. The `-s` option adds source tracking for better data lineage.
 
 ## Validation Behavior and Error Handling
 
@@ -251,15 +247,15 @@ RVToolsMerge implements robust validation to ensure data integrity:
   - Files without the required vInfo sheet will be skipped
   - Files with vInfo sheet but missing mandatory vInfo columns will be skipped
   - Files with optional sheets having missing mandatory columns will be skipped
+- **With `-e` (skip-empty-values)**:
+  - Rows with empty values in mandatory columns will be skipped from the output
+  - Without this option, rows with empty mandatory values are included (default behavior)
+  - Useful when you want to only include complete data records
 - **With both `-i` and `-m` together**:
   - Files without vInfo sheet will be skipped
   - Files with vInfo sheet but missing mandatory vInfo columns will be skipped
   - Files with complete vInfo sheet but missing optional sheets will be processed
   - Files with optional sheets missing mandatory columns will be processed, but those sheets may be excluded
-
-### Error Messages
-
-Error messages are designed to be clear and actionable, with debug mode providing additional details when needed. The application uses Spectre.Console to provide rich, colorful output with proper formatting of errors and warnings.
 
 ## Sample Files
 
@@ -279,6 +275,7 @@ If you encounter issues while using RVToolsMerge:
 | General errors | Enable debug mode with `-d` to see detailed error information |
 | Missing sheets errors | Use `-m` to ignore missing optional sheets |
 | Files causing validation errors | Use `-i` to skip invalid files and continue processing others |
+| Row count mismatches | By default, rows with empty mandatory values are included; use `-e` to skip them |
 | Low memory issues | Process smaller batches of files |
 | Permission errors | Ensure you have write access to the output folder |
 | Excel file locked | Close any applications that might have the file open |
@@ -413,7 +410,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Acknowledgments
 
-- [RVTools](https://www.robware.net/rvtools/) by Robware for the virtualization documentation tool that this project enhances
+- [RVTools](https://www.robware.net/rvtools/) by Robware - This independent project works with data exported from RVTools but is not affiliated with, endorsed by, or connected to Robware or the official RVTools product
 - [ClosedXML](https://github.com/ClosedXML/ClosedXML) for excellent Excel file handling capabilities
 - [Spectre.Console](https://spectreconsole.net/) for beautiful console output and UX
 - [GitHub Copilot](https://github.com/features/copilot) and [Claude 3.7 Sonnet](https://www.anthropic.com/) for AI assistance in code generation and development

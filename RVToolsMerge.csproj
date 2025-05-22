@@ -12,12 +12,12 @@
     <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
     <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
     <DebugType>embedded</DebugType>
-    <Version>1.0.1</Version>
-    <AssemblyVersion>1.0.1.0</AssemblyVersion>
-    <FileVersion>1.0.1.0</FileVersion>
+    <Version>1.0.0</Version>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
     <Authors>Stefan Broenner</Authors>
     <Company>Stefan Broenner</Company>
-    <Product>RVTools Excel Merger</Product>
+    <Product>RVToolsMerge</Product>
     <Description>A tool to merge multiple RVTools Excel files into a single consolidated file.</Description>
     <Copyright>Copyright © 2025 Stefan Broenner</Copyright>
     <RepositoryUrl>https://github.com/sbroenne/RVToolsMerge</RepositoryUrl>
@@ -28,7 +28,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="ClosedXML" Version="0.102.1" />
+    <PackageReference Include="ClosedXML" Version="0.105.0" />
     <PackageReference Include="Spectre.Console" Version="0.50.0" />
   </ItemGroup>
 

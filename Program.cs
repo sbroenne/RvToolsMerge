@@ -5,10 +5,10 @@
 //     Licensed under the MIT License
 // </copyright>
 //-----------------------------------------------------------------------
-using ClosedXML.Excel;
-using Spectre.Console;
 using System.Collections.Frozen;
 using System.Reflection;
+using ClosedXML.Excel;
+using Spectre.Console;
 
 namespace RVToolsMerge;
 
@@ -28,55 +28,78 @@ class Program
     private static readonly string[] MinimumRequiredSheets = ["vInfo"];
 
     /// <summary>
-    /// Maps original RVTools column headers to their standardized names.
-    /// This mapping is used to normalize column names across different RVTools exports.
+    /// Maps original RVTools column headers to their standardized names for each sheet.
     /// </summary>
-    private static readonly FrozenDictionary<string, string> ColumnHeaderMapping = new Dictionary<string, string>
-    {
-        // vInfo sheet mappings
-        { "vInfoVMName", "VM" },
-        { "vInfoPowerstate", "Powerstate" },
-        { "vInfoTemplate", "Template" },
-        { "vInfoCPUs", "CPUs" },
-        { "vInfoMemory", "Memory" },
-        { "vInfoProvisioned", "Provisioned MiB" },
-        { "vInfoInUse", "In Use MiB" },
-        { "vInfoDataCenter", "Datacenter" },
-        { "vInfoCluster", "Cluster" },
-        { "vInfoHost", "Host" },
-        { "vInfoSRMPlaceHolder", "SRM Placeholder" },
-        { "vInfoOSTools", "OS according to the VMware Tools" },
-        { "vInfoOS", "OS according to the configuration file" },
+    private static readonly FrozenDictionary<string, FrozenDictionary<string, string>> SheetColumnHeaderMappings =
+        new Dictionary<string, FrozenDictionary<string, string>>
+        {
+            // vInfo sheet mappings
+            ["vInfo"] = new Dictionary<string, string>
+            {
+                { "vInfoVMName", "VM" },
+                { "vInfoPowerstate", "Powerstate" },
+                { "vInfoTemplate", "Template" },
+                { "vInfoGuestHostName", "DNS Name" },
+                { "vInfoCPUs", "CPUs" },
+                { "vInfoMemory", "Memory" },
+                { "vInfoProvisioned", "Provisioned MiB" },
+                { "vInfoInUse", "In Use MiB" },
+                { "vInfoDataCenter", "Datacenter" },
+                { "vInfoCluster", "Cluster" },
+                { "vInfoHost", "Host" },
+                { "vInfoSRMPlaceHolder", "SRM Placeholder" },
+                { "vInfoOSTools", "OS according to the VMware Tools" },
+                { "vInfoOS", "OS according to the configuration file" },
+                { "vInfoPrimaryIPAddress", "Primary IP Address" },
+                { "vInfoNetwork1",  "Network #1" },
+                { "vInfoNetwork2",  "Network #2" },
+                { "vInfoNetwork3",  "Network #3" },
+                { "vInfoNetwork4",  "Network #4" },
+                { "vInfoNetwork5",  "Network #5" },
+                { "vInfoNetwork6",  "Network #6" },
+                { "vInfoNetwork7",  "Network #7" },
+                { "vInfoNetwork8",  "Network #8" },
+                { "vInfoResourcepool",  "Resource pool" },
+                { "vInfoFolder", "Folder" }
+            }.ToFrozenDictionary(),
 
+            // vHost sheet mappings
+            ["vHost"] = new Dictionary<string, string>
+            {
+                { "vHostName", "Host" },
+                { "vHostDatacenter", "Datacenter" },
+                { "vHostCluster", "Cluster" },
+                { "vHostvSANFaultDomainName", "vSAN Fault Domain Name" },
+                { "vHostCpuModel", "CPU Model" },
+                { "vHostCpuMhz", "Speed" },
+                { "vHostNumCPU", "# CPU" },
+                { "vHostNumCpu", "# CPU" },
+                { "vHostCoresPerCPU", "Cores per CPU" },
+                { "vHostNumCpuCores", "# Cores" },
+                { "vHostOverallCpuUsage", "CPU usage %" },
+                { "vHostMemorySize", "# Memory" },
+                { "vHostOverallMemoryUsage", "Memory usage %" },
+                { "vHostvCPUs", "# vCPUs" },
+                { "vHostVCPUsPerCore", "vCPUs per Core" }
+            }.ToFrozenDictionary(),
 
-        // vHost sheet mappings
-        { "vHostName", "Host" },
-        { "vHostDatacenter", "Datacenter" },
-        { "vHostCluster", "Cluster" },
-        { "vHostvSANFaultDomainName", "vSAN Fault Domain Name" },
-        { "vHostCpuModel", "CPU Model" },
-        { "vHostCpuMhz", "Speed" },
-        { "vHostNumCPU", "# CPU" },
-        { "vHostNumCpu", "# CPU" },
-        { "vHostCoresPerCPU", "Cores per CPU" },
-        { "vHostNumCpuCores", "# Cores" },
-        { "vHostOverallCpuUsage", "CPU usage %" },
-        { "vHostMemorySize", "# Memory" },
-        { "vHostOverallMemoryUsage", "Memory usage %" },
-        { "vHostvCPUs", "# vCPUs" },
-        { "vHostVCPUsPerCore", "vCPUs per Core" },
+            // vPartition sheet mappings
+            ["vPartition"] = new Dictionary<string, string>
+            {
+                { "vPartitionDisk", "Disk" },
+                { "vPartitionVMName", "VM" },
+                { "vPartitionConsumedMiB", "Consumed MiB" },
+                { "vPartitionCapacityMiB", "Capacity MiB" }
+            }.ToFrozenDictionary(),
 
-        // vPartition sheet mappings
-        { "vPartitionDisk", "Disk" },
-        { "vPartitionVMName", "VM" },
-        { "vPartitionConsumedMiB", "Consumed MiB" },
-        { "vPartitionCapacityMiB", "Capacity MiB" },
-
-        // vMemory sheet mappings
-        { "vMemoryVMName", "VM" },
-        { "vMemorySizeMiB", "Size MiB" },
-        { "vMemoryReservation", "Reservation" }
-    }.ToFrozenDictionary();
+            // vMemory sheet mappings
+            ["vMemory"] = new Dictionary<string, string>
+            {
+                { "vMemoryVMName", "VM" },
+                { "vMemorySizeMiB", "Size MiB" },
+                { "vMemoryReservation", "Reservation" }
+            }.ToFrozenDictionary()
+        }.ToFrozenDictionary();
 
     /// <summary>
     /// Record to store information about validation issues.
@@ -116,8 +139,16 @@ class Program
         string productName = productAttribute?.Product ?? "RVTools Merger";
 
         // Enhanced header display with Spectre.Console
-        AnsiConsole.MarkupLine($"[bold green]{productName}[/] [yellow]v{versionString}[/]");
+        AnsiConsole.Write(
+            new FigletText(productName)
+                .Color(Color.Green)
+                .Centered()
+        );
+        AnsiConsole.MarkupLine($"[yellow]v{versionString}[/]");
         AnsiConsole.Write(new Rule().RuleStyle("grey"));
+
+        AnsiConsole.MarkupLineInterpolated($"[bold green]{productName}[/] - Merges multiple RVTools Excel files into a single file");
+        AnsiConsole.WriteLine();
 
         // Command line options
         bool ignoreMissingOptionalSheets = false;
@@ -126,6 +157,7 @@ class Program
         bool onlyMandatoryColumns = false;
         bool debugMode = false;
         bool includeSourceFileName = false;
+        bool skipRowsWithEmptyMandatoryValues = false; // Default is now false (include empty values)
 
         // Process options
         var processedArgs = new List<string>();
@@ -153,6 +185,9 @@ class Program
                     break;
                 case "-s" or "--include-source":
                     includeSourceFileName = true;
+                    break;
+                case "-e" or "--skip-empty-values":
+                    skipRowsWithEmptyMandatoryValues = true; // Now flag enables skipping
                     break;
                 default:
                     processedArgs.Add(args[i]);
@@ -185,6 +220,24 @@ class Program
         string outputFile = processedArgs.Count > 1
             ? processedArgs[1]
             : Path.Combine(Directory.GetCurrentDirectory(), "RVTools_Merged.xlsx");
+
+        // Display selected options
+        AnsiConsole.WriteLine();
+        AnsiConsole.MarkupLine("[bold]Selected Options:[/]");
+        var optionsTable = new Table().BorderColor(Color.Grey);
+        optionsTable.AddColumn(new TableColumn("Option").Centered());
+        optionsTable.AddColumn(new TableColumn("Status").Centered());
+
+        optionsTable.AddRow("[yellow]--ignore-missing-sheets[/]", ignoreMissingOptionalSheets ? "[green]Enabled[/]" : "[grey]Disabled[/]");
+        optionsTable.AddRow("[yellow]--skip-invalid-files[/]", skipInvalidFiles ? "[green]Enabled[/]" : "[grey]Disabled[/]");
+        optionsTable.AddRow("[yellow]--anonymize[/]", anonymizeData ? "[green]Enabled[/]" : "[grey]Disabled[/]");
+        optionsTable.AddRow("[yellow]--only-mandatory-columns[/]", onlyMandatoryColumns ? "[green]Enabled[/]" : "[grey]Disabled[/]");
+        optionsTable.AddRow("[yellow]--include-source[/]", includeSourceFileName ? "[green]Enabled[/]" : "[grey]Disabled[/]");
+        optionsTable.AddRow("[yellow]--skip-empty-values[/]", skipRowsWithEmptyMandatoryValues ? "[green]Enabled[/]" : "[grey]Disabled[/]");
+        optionsTable.AddRow("[yellow]--debug[/]", debugMode ? "[green]Enabled[/]" : "[grey]Disabled[/]");
+
+        AnsiConsole.Write(optionsTable);
+        AnsiConsole.WriteLine();
 
         try
         {
@@ -223,15 +276,17 @@ class Program
                 onlyMandatoryColumns,
                 includeSourceFileName,
                 validationIssues,
-                debugMode
+                debugMode,
+                skipRowsWithEmptyMandatoryValues
             );
 
+            AnsiConsole.WriteLine();
             AnsiConsole.MarkupLineInterpolated($"[green]Successfully merged files.[/] Output saved to: [blue]{outputFile}[/]");
 
             // Get product name from assembly attributes
             var finalProductAttr = Attribute.GetCustomAttribute(Assembly.GetExecutingAssembly(), typeof(AssemblyProductAttribute)) as AssemblyProductAttribute;
             string finalProdName = finalProductAttr?.Product ?? "RVToolsMerge";
-
+            AnsiConsole.WriteLine();
             AnsiConsole.MarkupLineInterpolated($"Thank you for using [green]{finalProdName}[/]");
         }
         catch (Exception ex)
@@ -333,6 +388,7 @@ class Program
     /// <param name="includeSourceFileName">Whether to include source file name in output.</param>
     /// <param name="validationIssues">List to store validation issues.</param>
     /// <param name="debugMode">Whether debug mode is enabled.</param>
+    /// <param name="skipRowsWithEmptyMandatoryValues">Whether to include rows with empty mandatory values.</param>
     /// <returns>A task representing the asynchronous operation.</returns>
     static async Task MergeRVToolsFilesAsync(
         string[] filePaths,
@@ -343,7 +399,8 @@ class Program
         bool onlyMandatoryColumns = false,
         bool includeSourceFileName = false,
         List<ValidationIssue>? validationIssues = null,
-        bool debugMode = false)
+        bool debugMode = false,
+        bool skipRowsWithEmptyMandatoryValues = false)
     {
         // Create validation issues list if not provided
         validationIssues ??= [];
@@ -362,6 +419,7 @@ class Program
         var clusterNameMap = new Dictionary<string, string>();
         var hostNameMap = new Dictionary<string, string>();
         var datacenterNameMap = new Dictionary<string, string>();
+        var ipAddressMap = new Dictionary<string, string>(); // Add new dictionary for IP addresses
 
         // Track which files to process (all by default)
         var validFilePaths = new List<string>(filePaths);
@@ -585,7 +643,6 @@ class Program
             var allFileColumns = new List<List<string>>();
 
             // First analyze all files to collect column information
-            AnsiConsole.MarkupLineInterpolated($"Analyzing columns for sheet '[cyan]{sheetName}[/]'...");
 
             AnsiConsole.Progress()
                 .AutoClear(false)
@@ -666,7 +723,6 @@ class Program
                 commonColumns[sheetName] = columnsInAllFiles;
             }
 
-            AnsiConsole.MarkupLineInterpolated($"Sheet '[green]{sheetName}[/]' mapping applied successfully.");
         }
 
         AnsiConsole.MarkupLine("[bold]Extracting data from files...[/]");
@@ -710,8 +766,9 @@ class Program
                         var worksheet = workbook.Worksheet(sheetName);
                         var columnMapping = GetColumnMapping(worksheet, commonColumns[sheetName]);
 
-                        // Find the last row with data
-                        int lastRow = worksheet.LastRowUsed().RowNumber();
+                        // Find the last row with data, handle null in case the worksheet is empty
+                        var lastRowUsed = worksheet.LastRowUsed();
+                        int lastRow = lastRowUsed is not null ? lastRowUsed.RowNumber() : 1;
 
                         // Find columns to anonymize in this sheet
                         var anonymizeColumnIndices = new Dictionary<string, int>();
@@ -732,6 +789,9 @@ class Program
                             // Datacenter Name
                             int datacenterColIndex = commonColumns[sheetName].IndexOf("Datacenter");
                             if (datacenterColIndex >= 0) anonymizeColumnIndices["Datacenter"] = datacenterColIndex;
+                            // IP Address
+                            int ipAddressColIndex = commonColumns[sheetName].IndexOf("Primary IP Address");
+                            if (ipAddressColIndex >= 0) anonymizeColumnIndices["Primary IP Address"] = ipAddressColIndex;
                         }
 
                         // Find source file column index if the option is enabled
@@ -740,6 +800,15 @@ class Program
                         {
                             sourceFileColumnIndex = commonColumns[sheetName].IndexOf("Source File");
                         }
+
+                        // Prepare for mandatory column validation (except "OS according to the configuration file")
+                        var mandatoryCols = MandatoryColumns.TryGetValue(sheetName, out var mcols)
+                            ? mcols.Where(c => c != "OS according to the configuration file").ToList()
+                            : new List<string>();
+                        var mandatoryColIndices = mandatoryCols
+                            .Select(col => commonColumns[sheetName].IndexOf(col))
+                            .Where(idx => idx >= 0)
+                            .ToList();
 
                         // Extract data rows
                         for (int row = 2; row <= lastRow; row++)
@@ -756,11 +825,31 @@ class Program
                                 if (anonymizeData)
                                 {
                                     cellValue = AnonymizeValue(cellValue, mapping.CommonColumnIndex, anonymizeColumnIndices,
-                                        vmNameMap, dnsNameMap, clusterNameMap, hostNameMap, datacenterNameMap);
+                                        vmNameMap, dnsNameMap, clusterNameMap, hostNameMap, datacenterNameMap, ipAddressMap);
                                 }
 
                                 // Store the value
                                 rowData[mapping.CommonColumnIndex] = cellValue;
+                            }
+
+                            // Validate mandatory columns (except "OS according to the configuration file")
+                            bool hasEmptyMandatory = mandatoryColIndices.Any(idx =>
+                                idx >= 0 &&
+                                (EqualityComparer<XLCellValue>.Default.Equals(rowData[idx], default) ||
+                                 string.IsNullOrWhiteSpace(rowData[idx].ToString()))
+                            );
+                            if (hasEmptyMandatory)
+                            {
+                                validationIssues?.Add(new ValidationIssue(
+                                    fileName,
+                                    false,
+                                    $"Row {row} in sheet '{sheetName}' has empty value(s) in mandatory column(s) (excluding 'OS according to the configuration file')."
+                                ));
+                                // INVERTED: Now we only skip if flag is enabled
+                                if (skipRowsWithEmptyMandatoryValues)
+                                {
+                                    continue; // skip this row
+                                }
                             }
 
                             // Add source file name if the option is enabled
@@ -777,6 +866,126 @@ class Program
                 }
             });
 
+        // After data extraction and before creating the output file
+        var rowCountMismatches = new List<(string FilePath, string SheetName, int ExpectedCount, int ActualCount, int SkippedRows)>();
+
+        foreach (var sheetName in availableSheets)
+        {
+            var expectedRowCount = mergedData[sheetName].Count;
+
+            // Calculate the actual row count, but subtract rows that would be skipped due to validation
+            int totalSkippedRows = 0;
+            var actualRowCount = validFilePaths.Sum(filePath =>
+            {
+                using var workbook = new XLWorkbook(filePath);
+                if (!SheetExists(workbook, sheetName))
+                    return 0;
+
+                var worksheet = workbook.Worksheet(sheetName);
+                var lastRowUsed = worksheet.LastRowUsed();
+
+                if (lastRowUsed is null)
+                    return 0;
+
+                int rowCount = lastRowUsed.RowNumber() - 1; // subtract header row
+
+                // Count rows that would be skipped due to validation
+                int fileSkippedRows = 0;
+                if (MandatoryColumns.TryGetValue(sheetName, out var mcols))
+                {
+                    var mandatoryCols = mcols.Where(c => c != "OS according to the configuration file").ToList();
+                    var columnMapping = GetColumnMapping(worksheet, commonColumns[sheetName]);
+
+                    // Map mandatory column names to column indices in the worksheet
+                    var mandatoryColIndices = new List<int>();
+                    foreach (var colName in mandatoryCols)
+                    {
+                        int commonIndex = commonColumns[sheetName].IndexOf(colName);
+                        if (commonIndex >= 0)
+                        {
+                            // Find the corresponding file column index
+                            var fileColMapping = columnMapping.FirstOrDefault(m => m.CommonColumnIndex == commonIndex);
+                            if (fileColMapping != null)
+                            {
+                                mandatoryColIndices.Add(fileColMapping.FileColumnIndex);
+                            }
+                        }
+                    }
+
+                    // Count rows with empty mandatory values
+                    for (int row = 2; row <= lastRowUsed.RowNumber(); row++)
+                    {
+                        bool hasEmptyMandatory = mandatoryColIndices.Any(colIndex =>
+                        {
+                            var cell = worksheet.Cell(row, colIndex);
+                            return EqualityComparer<XLCellValue>.Default.Equals(cell.Value, default) ||
+                                   string.IsNullOrWhiteSpace(cell.Value.ToString());
+                        });
+
+                        if (hasEmptyMandatory)
+                        {
+                            fileSkippedRows++;
+                        }
+                    }
+                }
+
+                totalSkippedRows += fileSkippedRows;
+
+                // Record mismatch data if rows would be skipped
+                if (fileSkippedRows > 0)
+                {
+                    rowCountMismatches.Add((filePath, sheetName, rowCount, rowCount - fileSkippedRows, fileSkippedRows));
+                }
+
+                return rowCount;
+            }) + 1; // add header row back
+
+            // Subtract the number of skipped rows from the actual count
+            actualRowCount -= totalSkippedRows;
+        }
+        // Display row count mismatch table if any mismatches were found
+        if (rowCountMismatches.Count > 0)
+        {
+            AnsiConsole.WriteLine();
+            AnsiConsole.Write(new Rule("[yellow]Row Count Mismatch Details[/]").RuleStyle("grey"));
+
+            // Create a single consolidated table for all mismatches
+            var mismatchtable = new Table();
+            mismatchtable.AddColumn(new TableColumn("File").LeftAligned());
+            mismatchtable.AddColumn(new TableColumn("Sheet").LeftAligned());
+            mismatchtable.AddColumn(new TableColumn("Total Rows").RightAligned());
+            mismatchtable.AddColumn(new TableColumn("Rows With Empty Values").RightAligned());
+            mismatchtable.AddColumn(new TableColumn("Status").Centered());
+
+            // Sort all mismatches by file name and then sheet name
+            var sortedMismatches = rowCountMismatches
+                .OrderBy(m => Path.GetFileName(m.FilePath))
+                .ThenBy(m => m.SheetName);
+
+            foreach (var mismatch in sortedMismatches)
+            {
+                string fileName = Path.GetFileName(mismatch.FilePath);
+                string status = skipRowsWithEmptyMandatoryValues ?
+                    "[yellow]Skipped[/]" : "[blue]Included[/]";
+
+                mismatchtable.AddRow(
+                    $"{fileName}",
+                    $"[green]{mismatch.SheetName}[/]",
+                    $"{mismatch.ExpectedCount}",
+                    $"[yellow]{mismatch.SkippedRows}[/]",
+                    status);
+            }
+
+            mismatchtable.Border(TableBorder.Rounded);
+            AnsiConsole.Write(mismatchtable);
+            AnsiConsole.WriteLine();
+
+            AnsiConsole.MarkupLine(skipRowsWithEmptyMandatoryValues ?
+                "[grey]Note: Rows with empty mandatory values are currently being skipped (--skip-empty-values is enabled)[/]" :
+                "[grey]Note: Rows with empty mandatory values are being included (use --skip-empty-values to exclude them)[/]");
+        }
+
+        // Proceed with creating the output file
         AnsiConsole.MarkupLine("[bold]Creating output file...[/]");
         await AnsiConsole.Progress()
             .AutoClear(false)
@@ -831,10 +1040,15 @@ class Program
         int totalRows = 0;
         foreach (var sheetName in availableSheets)
         {
-            totalRows += mergedData[sheetName].Count - 1; // Subtract 1 for header row
-            summaryTable.AddRow($"[yellow]{sheetName}[/] rows", $"[green]{mergedData[sheetName].Count - 1}[/]");
+            int rowCount = mergedData[sheetName].Count - 1; // Subtract 1 for header row
+            int colCount = commonColumns.TryGetValue(sheetName, out var cols) ? cols.Count : 0;
+            totalRows += rowCount;
+            summaryTable.AddRow(
+                $"[yellow]{sheetName}[/] rows",
+                $"[green]{rowCount}[/] ([grey]{colCount} columns[/])"
+            );
         }
-        summaryTable.AddRow("[bold]Total Data Rows[/]", $"[green]{totalRows}[/]");
+
         summaryTable.Border(TableBorder.Rounded);
         AnsiConsole.Write(summaryTable);
 
@@ -851,11 +1065,9 @@ class Program
             table.AddRow("[cyan]Clusters[/]", $"[green]{clusterNameMap.Count}[/]");
             table.AddRow("[cyan]Hosts[/]", $"[green]{hostNameMap.Count}[/]");
             table.AddRow("[cyan]Datacenters[/]", $"[green]{datacenterNameMap.Count}[/]");
+            table.AddRow("[cyan]IP Addresses[/]", $"[green]{ipAddressMap.Count}[/]"); // Add row for IP addresses
             table.Border(TableBorder.Rounded);
             AnsiConsole.Write(table);
-
-            int totalAnonymized = vmNameMap.Count + dnsNameMap.Count + clusterNameMap.Count + hostNameMap.Count + datacenterNameMap.Count;
-            AnsiConsole.MarkupLineInterpolated($"[bold]Total:[/] [green]{totalAnonymized}[/] items anonymized");
         }
     }
 
@@ -875,16 +1087,6 @@ class Program
     {
         // Get version and product info
         var assembly = Assembly.GetExecutingAssembly();
-        var version = assembly.GetName().Version;
-        string versionString = version is not null ? $"{version.Major}.{version.Minor}.{version.Build}" : "1.0.0";
-        var productAttribute = Attribute.GetCustomAttribute(assembly, typeof(AssemblyProductAttribute)) as AssemblyProductAttribute;
-        string productName = productAttribute?.Product ?? "RVTools Excel Merger";
-
-        AnsiConsole.MarkupLineInterpolated($"[bold green]{productName}[/] - Merges multiple RVTools Excel files into a single file");
-        AnsiConsole.MarkupLineInterpolated($"[yellow]Version {versionString}[/]");
-        AnsiConsole.Write(new Rule().RuleStyle("grey"));
-        AnsiConsole.WriteLine();
-
         AnsiConsole.MarkupLine("[bold]USAGE:[/]");
         AnsiConsole.MarkupLineInterpolated($"  [cyan]{Assembly.GetExecutingAssembly().GetName().Name}[/] [grey][[options]] inputPath [[outputFile]][/]");
         AnsiConsole.WriteLine();
@@ -901,10 +1103,12 @@ class Program
         AnsiConsole.MarkupLine("  [yellow]-m, --ignore-missing-sheets[/]");
         AnsiConsole.MarkupLine("                            Ignore missing optional sheets (vHost, vPartition & vMemory).");
         AnsiConsole.MarkupLine("  [yellow]-i, --skip-invalid-files[/]  Skip files that don't meet validation requirements.");
-        AnsiConsole.MarkupLine("  [yellow]-a, --anonymize[/]           Anonymize VM, DNS Name, Cluster, Host, and Datacenter names.");
+        AnsiConsole.MarkupLine("  [yellow]-a, --anonymize[/]           Anonymize VM, DNS Name, IP Address, Cluster, Host, and Datacenter names.");
         AnsiConsole.MarkupLine("  [yellow]-M, --only-mandatory-columns[/]");
         AnsiConsole.MarkupLine("                            Include only mandatory columns in output.");
         AnsiConsole.MarkupLine("  [yellow]-s, --include-source[/]      Include source file name in output.");
+        AnsiConsole.MarkupLine("  [yellow]-e, --skip-empty-values[/]   Skip rows with empty values in mandatory columns.");
+        AnsiConsole.MarkupLine("                            By default, all rows are included regardless of empty values.");
         AnsiConsole.MarkupLine("  [yellow]-d, --debug[/]               Show detailed error information.");
         AnsiConsole.WriteLine();
 
@@ -916,6 +1120,7 @@ class Program
         AnsiConsole.MarkupLine($"  [cyan]{appName}[/] [yellow]-a[/] C:\\RVTools\\Data\\RVTools.xlsx C:\\Reports\\Anonymized_RVTools.xlsx");
         AnsiConsole.MarkupLine($"  [cyan]{appName}[/] [yellow]-M[/] C:\\RVTools\\Data C:\\Reports\\Mandatory_Columns.xlsx");
         AnsiConsole.MarkupLine($"  [cyan]{appName}[/] [yellow]-a -M -s[/] C:\\RVTools\\Data C:\\Reports\\Complete_Analysis.xlsx");
+        AnsiConsole.MarkupLine($"  [cyan]{appName}[/] [yellow]-e[/] C:\\RVTools\\Data C:\\Reports\\Skip_Empty_Values.xlsx");
         AnsiConsole.WriteLine();
 
         AnsiConsole.MarkupLine("[bold]REQUIRED SHEETS AND COLUMNS:[/]");
@@ -950,14 +1155,10 @@ class Program
         AnsiConsole.MarkupLine("[bold]DOWNLOADS:[/]");
         AnsiConsole.MarkupLine("  Latest releases are available at:");
         AnsiConsole.MarkupLine("  [link]https://github.com/sbroenne/RVToolsMerge/releases[/]");
-        AnsiConsole.MarkupLine($"  - [cyan]{appName}-windows-Release.zip[/]       (Windows x64)");
-        AnsiConsole.MarkupLine($"  - [cyan]{appName}-windows-arm64-Release.zip[/] (Windows ARM64)");
-        AnsiConsole.MarkupLine($"  - [cyan]{appName}-linux-Release.zip[/]         (Linux x64)");
-        AnsiConsole.MarkupLine($"  - [cyan]{appName}-macos-arm64-Release.zip[/]   (macOS ARM64)");
     }
 
     /// <summary>
-    /// Gets the column names from a worksheet, normalizing them using the ColumnHeaderMapping.
+    /// Gets the column names from a worksheet, normalizing them using the per-sheet ColumnHeaderMapping.
     /// </summary>
     /// <param name="worksheet">The worksheet to extract column names from.</param>
     /// <returns>A list of normalized column names.</returns>
@@ -965,7 +1166,12 @@ class Program
     {
         var columnNames = new List<string>();
         var headerRow = worksheet.Row(1);
-        int lastColumn = worksheet.LastColumnUsed().ColumnNumber();
+        var lastColumnUsed = worksheet.LastColumnUsed();
+        int lastColumn = lastColumnUsed is not null ? lastColumnUsed.ColumnNumber() : 1;
+
+        // Use only the mapping for the current sheet, if available
+        var sheetName = worksheet.Name;
+        SheetColumnHeaderMappings.TryGetValue(sheetName, out var mapping);
 
         for (int col = 1; col <= lastColumn; col++)
         {
@@ -973,8 +1179,8 @@ class Program
             var cellValue = cell.Value.ToString();
             if (!string.IsNullOrWhiteSpace(cellValue))
             {
-                // Use the mapping if available, otherwise keep the original name
-                var normalizedName = ColumnHeaderMapping.GetValueOrDefault(cellValue, cellValue);
+                // Use the mapping if available for this sheet, otherwise keep the original name
+                var normalizedName = mapping?.GetValueOrDefault(cellValue, cellValue) ?? cellValue;
                 columnNames.Add(normalizedName);
             }
         }
@@ -999,7 +1205,8 @@ class Program
         // Get the first row
         var headerRow = worksheet.Row(1);
         // Find the last column with data
-        int lastColumn = worksheet.LastColumnUsed().ColumnNumber();
+        var lastColumnUsed = worksheet.LastColumnUsed();
+        int lastColumn = lastColumnUsed is not null ? lastColumnUsed.ColumnNumber() : 1;
 
         // Create a mapping between the file's column indices and the common column indices
         for (int fileColIndex = 1; fileColIndex <= lastColumn; fileColIndex++)
@@ -1008,7 +1215,20 @@ class Program
             var cellValue = cell.Value;
             if (!string.IsNullOrWhiteSpace(cellValue.ToString()))
             {
-                int commonIndex = commonColumns.IndexOf(cellValue.ToString()!);
+                // Apply column header mapping for this sheet, if available
+                var sheetName = worksheet.Name;
+                SheetColumnHeaderMappings.TryGetValue(sheetName, out var headerMapping);
+                string originalName = cellValue.ToString();
+                string mappedName = headerMapping is not null
+                    ? ((IReadOnlyDictionary<string, string?>)headerMapping).GetValueOrDefault(originalName, null) ?? originalName
+                    : originalName;
+
+                int commonIndex = commonColumns.IndexOf(mappedName);
+                if (commonIndex < 0 && headerMapping is not null)
+                {
+                    // If mapped name not found, try the original name from the sheet
+                    commonIndex = commonColumns.IndexOf(originalName);
+                }
                 if (commonIndex >= 0)
                 {
                     mapping.Add(new ColumnMapping(fileColIndex, commonIndex));
@@ -1030,6 +1250,7 @@ class Program
     /// <param name="clusterNameMap">Dictionary that maps original cluster names to their anonymized versions.</param>
     /// <param name="hostNameMap">Dictionary that maps original host names to their anonymized versions.</param>
     /// <param name="datacenterNameMap">Dictionary that maps original datacenter names to their anonymized versions.</param>
+    /// <param name="ipAddressMap">Dictionary that maps original IP addresses to their anonymized versions.</param>
     /// <returns>The anonymized cell value if the column requires anonymization; otherwise, the original value.</returns>
     /// <remarks>
     /// This method maintains consistent anonymization across all sheets by using the mapping dictionaries.
@@ -1040,6 +1261,7 @@ class Program
     /// - Cluster names (e.g., "cluster1", "cluster2")
     /// - Host names (e.g., "host1", "host2")
     /// - Datacenter names (e.g., "datacenter1", "datacenter2")
+    /// - IP addresses (e.g., "ip1", "ip2")
     /// </remarks>
     private static XLCellValue AnonymizeValue(
         XLCellValue value,
@@ -1049,7 +1271,8 @@ class Program
         Dictionary<string, string> dnsNameMap,
         Dictionary<string, string> clusterNameMap,
         Dictionary<string, string> hostNameMap,
-        Dictionary<string, string> datacenterNameMap)
+        Dictionary<string, string> datacenterNameMap,
+        Dictionary<string, string> ipAddressMap)
     {
         // VM Name
         if (anonymizeColumnIndices.TryGetValue("VM", out int vmColIndex) &&
@@ -1080,6 +1303,12 @@ class Program
                 currentColumnIndex == datacenterColIndex)
         {
             return GetOrCreateAnonymizedName(value, datacenterNameMap, "datacenter");
+        }
+        // IP Address
+        else if (anonymizeColumnIndices.TryGetValue("Primary IP Address", out int ipAddressColIndex) &&
+                currentColumnIndex == ipAddressColIndex)
+        {
+            return GetOrCreateAnonymizedName(value, ipAddressMap, "ip");
         }
         // Return original value if no anonymization is needed
         return value;
