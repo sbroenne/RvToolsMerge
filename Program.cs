@@ -28,55 +28,66 @@ class Program
     private static readonly string[] MinimumRequiredSheets = ["vInfo"];
 
     /// <summary>
-    /// Maps original RVTools column headers to their standardized names.
-    /// This mapping is used to normalize column names across different RVTools exports.
+    /// Maps original RVTools column headers to their standardized names for each sheet.
     /// </summary>
-    private static readonly FrozenDictionary<string, string> ColumnHeaderMapping = new Dictionary<string, string>
-    {
-        // vInfo sheet mappings
-        { "vInfoVMName", "VM" },
-        { "vInfoPowerstate", "Powerstate" },
-        { "vInfoTemplate", "Template" },
-        { "vInfoCPUs", "CPUs" },
-        { "vInfoMemory", "Memory" },
-        { "vInfoProvisioned", "Provisioned MiB" },
-        { "vInfoInUse", "In Use MiB" },
-        { "vInfoDataCenter", "Datacenter" },
-        { "vInfoCluster", "Cluster" },
-        { "vInfoHost", "Host" },
-        { "vInfoSRMPlaceHolder", "SRM Placeholder" },
-        { "vInfoOSTools", "OS according to the VMware Tools" },
-        { "vInfoOS", "OS according to the configuration file" },
+    private static readonly FrozenDictionary<string, FrozenDictionary<string, string>> SheetColumnHeaderMappings =
+        new Dictionary<string, FrozenDictionary<string, string>>
+        {
+            // vInfo sheet mappings
+            ["vInfo"] = new Dictionary<string, string>
+            {
+                { "vInfoVMName", "VM" },
+                { "vInfoPowerstate", "Powerstate" },
+                { "vInfoTemplate", "Template" },
+                { "vInfoCPUs", "CPUs" },
+                { "vInfoMemory", "Memory" },
+                { "vInfoProvisioned", "Provisioned MiB" },
+                { "vInfoInUse", "In Use MiB" },
+                { "vInfoDataCenter", "Datacenter" },
+                { "vInfoCluster", "Cluster" },
+                { "vInfoHost", "Host" },
+                { "vInfoSRMPlaceHolder", "SRM Placeholder" },
+                { "vInfoOSTools", "OS according to the VMware Tools" },
+                { "vInfoOS", "OS according to the configuration file" }
+            }.ToFrozenDictionary(),
 
+            // vHost sheet mappings
+            ["vHost"] = new Dictionary<string, string>
+            {
+                { "vHostName", "Host" },
+                { "vHostDatacenter", "Datacenter" },
+                { "vHostCluster", "Cluster" },
+                { "vHostvSANFaultDomainName", "vSAN Fault Domain Name" },
+                { "vHostCpuModel", "CPU Model" },
+                { "vHostCpuMhz", "Speed" },
+                { "vHostNumCPU", "# CPU" },
+                { "vHostNumCpu", "# CPU" },
+                { "vHostCoresPerCPU", "Cores per CPU" },
+                { "vHostNumCpuCores", "# Cores" },
+                { "vHostOverallCpuUsage", "CPU usage %" },
+                { "vHostMemorySize", "# Memory" },
+                { "vHostOverallMemoryUsage", "Memory usage %" },
+                { "vHostvCPUs", "# vCPUs" },
+                { "vHostVCPUsPerCore", "vCPUs per Core" }
+            }.ToFrozenDictionary(),
 
-        // vHost sheet mappings
-        { "vHostName", "Host" },
-        { "vHostDatacenter", "Datacenter" },
-        { "vHostCluster", "Cluster" },
-        { "vHostvSANFaultDomainName", "vSAN Fault Domain Name" },
-        { "vHostCpuModel", "CPU Model" },
-        { "vHostCpuMhz", "Speed" },
-        { "vHostNumCPU", "# CPU" },
-        { "vHostNumCpu", "# CPU" },
-        { "vHostCoresPerCPU", "Cores per CPU" },
-        { "vHostNumCpuCores", "# Cores" },
-        { "vHostOverallCpuUsage", "CPU usage %" },
-        { "vHostMemorySize", "# Memory" },
-        { "vHostOverallMemoryUsage", "Memory usage %" },
-        { "vHostvCPUs", "# vCPUs" },
-        { "vHostVCPUsPerCore", "vCPUs per Core" },
+            // vPartition sheet mappings
+            ["vPartition"] = new Dictionary<string, string>
+            {
+                { "vPartitionDisk", "Disk" },
+                { "vPartitionVMName", "VM" },
+                { "vPartitionConsumedMiB", "Consumed MiB" },
+                { "vPartitionCapacityMiB", "Capacity MiB" }
+            }.ToFrozenDictionary(),
 
-        // vPartition sheet mappings
-        { "vPartitionDisk", "Disk" },
-        { "vPartitionVMName", "VM" },
-        { "vPartitionConsumedMiB", "Consumed MiB" },
-        { "vPartitionCapacityMiB", "Capacity MiB" },
-
-        // vMemory sheet mappings
-        { "vMemoryVMName", "VM" },
-        { "vMemorySizeMiB", "Size MiB" },
-        { "vMemoryReservation", "Reservation" }
-    }.ToFrozenDictionary();
+            // vMemory sheet mappings
+            ["vMemory"] = new Dictionary<string, string>
+            {
+                { "vMemoryVMName", "VM" },
+                { "vMemorySizeMiB", "Size MiB" },
+                { "vMemoryReservation", "Reservation" }
+            }.ToFrozenDictionary()
+        }.ToFrozenDictionary();
 
     /// <summary>
     /// Record to store information about validation issues.
@@ -116,8 +127,15 @@ class Program
         string productName = productAttribute?.Product ?? "RVTools Merger";
 
         // Enhanced header display with Spectre.Console
-        AnsiConsole.MarkupLine($"[bold green]{productName}[/] [yellow]v{versionString}[/]");
+        AnsiConsole.Write(
+            new FigletText(productName)
+                .Color(Color.Green)
+                .Centered()
+        );
+        AnsiConsole.MarkupLine($"[yellow]v{versionString}[/]");
         AnsiConsole.Write(new Rule().RuleStyle("grey"));
+
+        AnsiConsole.MarkupLineInterpolated($"[bold green]{productName}[/] - Merges multiple RVTools Excel files into a single file");
 
         // Command line options
         bool ignoreMissingOptionalSheets = false;
@@ -741,6 +759,15 @@ class Program
                             sourceFileColumnIndex = commonColumns[sheetName].IndexOf("Source File");
                         }
 
+                        // Prepare for mandatory column validation (except "OS according to the configuration file")
+                        var mandatoryCols = MandatoryColumns.TryGetValue(sheetName, out var mcols)
+                            ? mcols.Where(c => c != "OS according to the configuration file").ToList()
+                            : new List<string>();
+                        var mandatoryColIndices = mandatoryCols
+                            .Select(col => commonColumns[sheetName].IndexOf(col))
+                            .Where(idx => idx >= 0)
+                            .ToList();
+
                         // Extract data rows
                         for (int row = 2; row <= lastRow; row++)
                         {
@@ -763,6 +790,22 @@ class Program
                                 rowData[mapping.CommonColumnIndex] = cellValue;
                             }
 
+                            // Validate mandatory columns (except "OS according to the configuration file")
+                            bool hasEmptyMandatory = mandatoryColIndices.Any(idx =>
+                                idx >= 0 &&
+                                (EqualityComparer<XLCellValue>.Default.Equals(rowData[idx], default) ||
+                                 string.IsNullOrWhiteSpace(rowData[idx].ToString()))
+                            );
+                            if (hasEmptyMandatory)
+                            {
+                                validationIssues?.Add(new ValidationIssue(
+                                    fileName,
+                                    false,
+                                    $"Row {row} in sheet '{sheetName}' has empty value(s) in mandatory column(s) (excluding 'OS according to the configuration file')."
+                                ));
+                                continue; // skip this row
+                            }
+
                             // Add source file name if the option is enabled
                             if (includeSourceFileName && sourceFileColumnIndex >= 0)
                             {
@@ -777,6 +820,30 @@ class Program
                 }
             });
 
+        // After data extraction and before creating the output file
+        foreach (var sheetName in availableSheets)
+        {
+            var expectedRowCount = mergedData[sheetName].Count;
+
+            var actualRowCount = validFilePaths.Sum(filePath =>
+            {
+                using var workbook = new XLWorkbook(filePath);
+                if (!SheetExists(workbook, sheetName))
+                    return 0;
+
+                var worksheet = workbook.Worksheet(sheetName);
+                return worksheet.LastRowUsed().RowNumber() - 1; // subtract header row
+            }) + 1; // add header row back
+
+            if (expectedRowCount != actualRowCount)
+            {
+                throw new InvalidOperationException(
+                    $"Row count mismatch detected for sheet '{sheetName}'. " +
+                    $"Expected {actualRowCount} rows, but found {expectedRowCount} rows in merged data.");
+            }
+        }
+
+        // Proceed with creating the output file
         AnsiConsole.MarkupLine("[bold]Creating output file...[/]");
         await AnsiConsole.Progress()
             .AutoClear(false)
@@ -831,10 +898,15 @@ class Program
         int totalRows = 0;
         foreach (var sheetName in availableSheets)
         {
-            totalRows += mergedData[sheetName].Count - 1; // Subtract 1 for header row
-            summaryTable.AddRow($"[yellow]{sheetName}[/] rows", $"[green]{mergedData[sheetName].Count - 1}[/]");
+            int rowCount = mergedData[sheetName].Count - 1; // Subtract 1 for header row
+            int colCount = commonColumns.TryGetValue(sheetName, out var cols) ? cols.Count : 0;
+            totalRows += rowCount;
+            summaryTable.AddRow(
+                $"[yellow]{sheetName}[/] rows",
+                $"[green]{rowCount}[/] ([grey]{colCount} columns[/])"
+            );
         }
-        summaryTable.AddRow("[bold]Total Data Rows[/]", $"[green]{totalRows}[/]");
+
         summaryTable.Border(TableBorder.Rounded);
         AnsiConsole.Write(summaryTable);
 
@@ -950,14 +1022,10 @@ class Program
         AnsiConsole.MarkupLine("[bold]DOWNLOADS:[/]");
         AnsiConsole.MarkupLine("  Latest releases are available at:");
         AnsiConsole.MarkupLine("  [link]https://github.com/sbroenne/RVToolsMerge/releases[/]");
-        AnsiConsole.MarkupLine($"  - [cyan]{appName}-windows-Release.zip[/]       (Windows x64)");
-        AnsiConsole.MarkupLine($"  - [cyan]{appName}-windows-arm64-Release.zip[/] (Windows ARM64)");
-        AnsiConsole.MarkupLine($"  - [cyan]{appName}-linux-Release.zip[/]         (Linux x64)");
-        AnsiConsole.MarkupLine($"  - [cyan]{appName}-macos-arm64-Release.zip[/]   (macOS ARM64)");
     }
 
     /// <summary>
-    /// Gets the column names from a worksheet, normalizing them using the ColumnHeaderMapping.
+    /// Gets the column names from a worksheet, normalizing them using the per-sheet ColumnHeaderMapping.
     /// </summary>
     /// <param name="worksheet">The worksheet to extract column names from.</param>
     /// <returns>A list of normalized column names.</returns>
@@ -967,14 +1035,18 @@ class Program
         var headerRow = worksheet.Row(1);
         int lastColumn = worksheet.LastColumnUsed().ColumnNumber();
 
+        // Use only the mapping for the current sheet, if available
+        var sheetName = worksheet.Name;
+        SheetColumnHeaderMappings.TryGetValue(sheetName, out var mapping);
+
         for (int col = 1; col <= lastColumn; col++)
         {
             var cell = headerRow.Cell(col);
             var cellValue = cell.Value.ToString();
             if (!string.IsNullOrWhiteSpace(cellValue))
             {
-                // Use the mapping if available, otherwise keep the original name
-                var normalizedName = ColumnHeaderMapping.GetValueOrDefault(cellValue, cellValue);
+                // Use the mapping if available for this sheet, otherwise keep the original name
+                var normalizedName = mapping?.GetValueOrDefault(cellValue, cellValue) ?? cellValue;
                 columnNames.Add(normalizedName);
             }
         }
@@ -1008,7 +1080,20 @@ class Program
             var cellValue = cell.Value;
             if (!string.IsNullOrWhiteSpace(cellValue.ToString()))
             {
-                int commonIndex = commonColumns.IndexOf(cellValue.ToString()!);
+                // Apply column header mapping for this sheet, if available
+                var sheetName = worksheet.Name;
+                SheetColumnHeaderMappings.TryGetValue(sheetName, out var headerMapping);
+                string originalName = cellValue.ToString();
+                string mappedName = headerMapping is not null
+                    ? ((IReadOnlyDictionary<string, string?>)headerMapping).GetValueOrDefault(originalName, null) ?? originalName
+                    : originalName;
+
+                int commonIndex = commonColumns.IndexOf(mappedName);
+                if (commonIndex < 0 && headerMapping is not null)
+                {
+                    // If mapped name not found, try the original name from the sheet
+                    commonIndex = commonColumns.IndexOf(originalName);
+                }
                 if (commonIndex >= 0)
                 {
                     mapping.Add(new ColumnMapping(fileColIndex, commonIndex));

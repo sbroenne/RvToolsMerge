@@ -31,17 +31,13 @@ RVToolsMerge is a tool for combining and processing multiple RVTools exports fro
 - Prefer string interpolation over concatenation
 - Use `var` when the type is obvious from the right side of assignment
 
-## CSV/Excel Processing
+## Excel Processing
 - Assume RVTools exports are in Excel format
 - Use ClosedXML for Excel file manipulation
 - Be aware that ClosedXML is single-threaded, so plan parallel processing strategies accordingly
-- Consider using a producer-consumer pattern where Excel processing is done by dedicated threads
 - Implement thread synchronization when multiple threads need access to ClosedXML operations
-- Batch Excel operations when possible to maximize throughput
-- Handle large files efficiently with streaming approaches when possible
 - Implement proper data validation for RVTools-specific data formats
-- Consider memory implications when working with large datasets
-
+- Handle Excel-specific exceptions gracefully (e.g., file not found, invalid format)
 ## VMware Specific Considerations
 - Be familiar with common RVTools export tabs (vInfo, vCPU, vMemory, vDisk, etc.)
 - Understand common VMware inventory objects (VMs, Hosts, Clusters, Datastores)
@@ -85,11 +81,9 @@ RVToolsMerge is a tool for combining and processing multiple RVTools exports fro
 - Utilize C# attributes effectively (e.g., `[Required]`, `[JsonProperty]`)
 - Use interpolated strings (`$"..."`) rather than string concatenation
 - Prefer pattern-based `switch` expressions over traditional `switch` statements
+- use string.Join instead of string.join
 
 ### .NET Core/6+ Specific
-- Use the .NET Generic Host for application configuration
-- Utilize built-in dependency injection rather than third-party containers
-- Take advantage of `ILogger` and logging extensions
 - Use minimal APIs where appropriate for simple endpoints
 - Leverage source generators when applicable
 - Prefer `IOptions<T>` pattern for configuration
@@ -114,7 +108,6 @@ RVToolsMerge is a tool for combining and processing multiple RVTools exports fro
 
 ### Console Application Best Practices
 - Use .NET 9 features and capabilities throughout the application
-- Leverage the .NET 9 Generic Host model with `HostBuilder` for configuration, DI, and logging
 - Use System.CommandLine (GA in .NET 9) for robust command-line argument parsing
 - Take advantage of .NET 9's performance improvements for Excel processing
 - Utilize .NET 9's improved JSON serialization for configuration files
