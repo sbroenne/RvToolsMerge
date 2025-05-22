@@ -4,12 +4,6 @@
 [![CodeQL](https://github.com/sbroenne/RVToolsMerge/actions/workflows/codeql.yml/badge.svg)](https://github.com/sbroenne/RVToolsMerge/actions/workflows/codeql.yml)
 [![GitHub Advanced Security](https://img.shields.io/badge/GitHub%20Advanced%20Security-enabled-brightgreen)](SECURITY.md)
 
-## IMPORTANT DISCLAIMER
-
-**RVToolsMerge is NOT affiliated with, endorsed by, or connected to RVTools or its creator Rob de Veij (Robware).**
-
-This is an independent, community-created utility that processes data exported from RVTools. RVTools is a trademark of Robware and this project is not associated with the official RVTools product.
-
 A modern, cross-platform console application for merging one or multiple [RVTools](https://www.robware.net/rvtools/) export files into a single consolidated file. Supports anonymization of sensitive data.
 
 > Created by Stefan Broenner (github.com/sbroenne) and contributors
