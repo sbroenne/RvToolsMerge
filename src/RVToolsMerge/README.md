@@ -8,16 +8,27 @@ This directory contains the source code for the RVToolsMerge application.
 RVToolsMerge/                 # Main project directory
 ├── Configuration/            # Configuration settings for the application
 ├── Exceptions/               # Custom exception classes
-├── Input/                    # Sample input files for testing
 ├── Models/                   # Data models and DTOs
-├── Output/                   # Directory for output files
 ├── Services/                 # Service implementations
 │   └── Interfaces/           # Service interfaces
-├── TestData/                 # Test data files
+├── UI/                       # User interface components
+│   ├── Console/              # Console-specific UI implementations
+│   └── Interfaces/           # UI interface definitions
 ├── ApplicationRunner.cs      # Main application runner
 ├── Program.cs                # Entry point
 └── RVToolsMerge.csproj       # Project file
 ```
+
+## Key Components
+
+-   **ApplicationRunner**: Coordinates the overall application flow and command handling
+-   **Services**:
+    -   **MergeService**: Core functionality for merging RVTools Excel files
+    -   **ExcelService**: Handles Excel file operations using ClosedXML
+    -   **ValidationService**: Validates RVTools export files for required sheets and columns
+    -   **AnonymizationService**: Provides data anonymization capabilities
+    -   **ConsoleUIService**: Handles rich console output using Spectre.Console
+    -   **CommandLineParser**: Parses command-line arguments and options
 
 ## Building and Running
 

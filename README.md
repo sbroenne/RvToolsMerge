@@ -8,6 +8,10 @@ A modern, cross-platform console application for merging one or multiple [RVTool
 
 > Created by Stefan Broenner (github.com/sbroenne) and contributors
 
+## What is RVTools?
+
+[RVTools](https://www.robware.net/rvtools/) is a popular Windows application for exporting detailed inventory and configuration data from VMware vSphere environments to Excel files. It is widely used by VMware administrators for reporting and analysis.
+
 ## Overview
 
 RVToolsMerge is a powerful command-line utility designed to consolidate multiple RVTools exports into one Excel file, making it easier to analyze VMware environment data from different sources.
@@ -205,6 +209,8 @@ When using the anonymization option, the following data is consistently anonymiz
 -   Datacenter names → datacenter1, datacenter2, datacenter3, etc.
 
 Anonymization maintains internal data relationships, ensuring that the same original value always maps to the same anonymized value throughout all sheets, preserving data integrity while protecting sensitive information.
+
+For more details on how anonymization is implemented, see the [Column Mappings Documentation](docs/ColumnMappings.md).
 
 ### Mandatory Columns Only Mode (-M, --only-mandatory-columns)
 
@@ -414,12 +420,21 @@ The project follows standard GitHub repository best practices:
 RVToolsMerge/
 ├── .github/           # GitHub-specific files (workflows)
 ├── docs/              # Documentation files
+├── Input/             # Sample input files
 ├── src/               # Source code
 │   └── RVToolsMerge/  # .NET project
+│       ├── Configuration/ # Configuration settings
+│       ├── Exceptions/    # Custom exception classes
+│       ├── Models/        # Data models and DTOs
+│       ├── Services/      # Service implementations
+│       │   └── Interfaces/ # Service interfaces
+│       └── UI/            # User interface components
 ├── CHANGELOG.md       # Version history
 ├── CONTRIBUTING.md    # Guidelines for contributors
 ├── LICENSE            # MIT License file
 ├── README.md          # This file
+├── run.bat            # Windows script to run the application
+├── run.sh             # Linux/macOS script to run the application
 └── SECURITY.md        # Security policy
 ```
 

@@ -99,6 +99,12 @@ Understanding this structure will help you navigate the codebase and contribute 
 -   Organize using directives alphabetically and remove unused ones
 -   Use file-scoped namespaces
 -   Explicitly specify access modifiers (public, private, etc.)
+-   Use `var` when the type is obvious from the right side of assignment
+-   Use the latest C# language features (pattern matching, nullable reference types, etc.)
+-   Embrace `null` handling with nullable reference types
+-   Use pattern matching for type checking and data extraction
+-   Prefer init-only properties for immutable data
+-   Leverage records for data objects, especially DTOs
 -   Prefer string interpolation over concatenation
 -   Use `var` when the type is obvious from the right side of assignment
 -   Use the latest C# language features appropriately
@@ -114,6 +120,23 @@ Understanding this structure will help you navigate the codebase and contribute 
 -   Implement thread synchronization when multiple threads need access to ClosedXML operations
 -   Implement proper data validation for RVTools-specific data formats
 -   Handle Excel-specific exceptions gracefully (e.g., file not found, invalid format)
+
+### UI Development with Spectre.Console
+
+When working with console UI using Spectre.Console:
+
+-   Always use `AnsiConsole.Write` instead of `AnsiConsole.Markup` for better performance
+-   Use `Live` displays for dynamic content that changes frequently
+-   Utilize `Prompt<T>` for type-safe user input with validation
+-   Implement proper exception handling via `SafeExecution` extensions
+-   Avoid repeated color markup in loops by pre-building strings
+-   Use the Status API for long-running operations with indeterminate progress
+-   Leverage word wrapping for better text display on different terminal sizes
+-   Implement proper graceful exit with `IDisposable` patterns for live displays
+-   Create rich, colorful tables for displaying data
+-   Use progress bars for long-running operations
+-   Display file trees for directory navigation
+-   Use FigletText for application branding/header
 
 ### Testing
 
