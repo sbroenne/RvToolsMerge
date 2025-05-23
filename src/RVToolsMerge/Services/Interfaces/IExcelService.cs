@@ -1,5 +1,5 @@
 //-----------------------------------------------------------------------
-// <copyright file="IExcelService.cs" company="Stefan Broenner"> ">
+// <copyright file="IExcelService.cs" company="Stefan Broenner">
 //     Copyright © Stefan Broenner 2025
 //     Created by Stefan Broenner (github.com/sbroenne) and contributors
 //     Licensed under the MIT License
@@ -37,4 +37,12 @@ public interface IExcelService
     /// <param name="commonColumns">The list of common column names.</param>
     /// <returns>A list of column mappings.</returns>
     List<ColumnMapping> GetColumnMapping(IXLWorksheet worksheet, List<string> commonColumns);
+
+    /// <summary>
+    /// Opens an Excel workbook from a file path.
+    /// </summary>
+    /// <param name="filePath">The path to the Excel file to open.</param>
+    /// <returns>The opened workbook.</returns>
+    /// <exception cref="FileNotFoundException">Thrown when the file is not found.</exception>
+    XLWorkbook OpenWorkbook(string filePath);
 }

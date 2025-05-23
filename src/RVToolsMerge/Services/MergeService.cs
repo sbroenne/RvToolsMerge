@@ -1,5 +1,5 @@
 //-----------------------------------------------------------------------
-// <copyright file="MergeService.cs" company="Stefan Broenner"> ">
+// <copyright file="MergeService.cs" company="Stefan Broenner">
 //     Copyright © Stefan Broenner 2025
 //     Created by Stefan Broenner (github.com/sbroenne) and contributors
 //     Licensed under the MIT License
@@ -11,6 +11,7 @@ using RVToolsMerge.Exceptions;
 using RVToolsMerge.Models;
 using RVToolsMerge.Services.Interfaces;
 using Spectre.Console;
+using System.IO.Abstractions;
 
 namespace RVToolsMerge.Services;
 
@@ -23,6 +24,7 @@ public class MergeService : IMergeService
     private readonly IValidationService _validationService;
     private readonly IAnonymizationService _anonymizationService;
     private readonly ConsoleUIService _consoleUiService;
+    private readonly IFileSystem _fileSystem;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="MergeService"/> class.
@@ -31,16 +33,19 @@ public class MergeService : IMergeService
     /// <param name="validationService">The validation service.</param>
     /// <param name="anonymizationService">The anonymization service.</param>
     /// <param name="consoleUiService">The console UI service.</param>
+    /// <param name="fileSystem">The file system abstraction.</param>
     public MergeService(
         IExcelService excelService,
         IValidationService validationService,
         IAnonymizationService anonymizationService,
-        ConsoleUIService consoleUiService)
+        ConsoleUIService consoleUiService,
+        IFileSystem fileSystem)
     {
         _excelService = excelService;
         _validationService = validationService;
         _anonymizationService = anonymizationService;
         _consoleUiService = consoleUiService;
+        _fileSystem = fileSystem;
     }
 
     /// <summary>
@@ -140,7 +145,8 @@ public class MergeService : IMergeService
                     status,
                     $"[grey]{details}[/]"
                 );
-            }            table.Border(TableBorder.Rounded);
+            }
+            table.Border(TableBorder.Rounded);
             _consoleUiService.Write(table);
             _consoleUiService.WriteLine();
 
@@ -196,10 +202,11 @@ public class MergeService : IMergeService
                                     allFileColumns.Add(columnNames);
                                 }
                             }
-                        }                        catch (IOException ioEx) when (options.DebugMode)
+                        }
+                        catch (IOException ioEx) when (options.DebugMode)
                         {
                             // On Linux, provide more verbose error information for filesystem issues
-                            _consoleUiService.MarkupLineInterpolated($"[yellow]Warning:[/] IO issue with file '{Path.GetFileName(filePath)}': {ioEx.Message}");
+                            _consoleUiService.MarkupLineInterpolated($"[yellow]Warning:[/] IO issue with file '{_fileSystem.Path.GetFileName(filePath)}': {ioEx.Message}");
                         }
                         fileAnalysisTask.Increment(1);
                     }
@@ -213,7 +220,8 @@ public class MergeService : IMergeService
                     : [];
 
                 foreach (var col in mandatoryColumns)
-                {                    if (!columnsInAllFiles.Contains(col))
+                {
+                    if (!columnsInAllFiles.Contains(col))
                     {
                         _consoleUiService.MarkupLineInterpolated($"[yellow]Warning:[/] Mandatory column '[cyan]{col}[/]' for sheet '[green]{sheetName}[/]' is missing from common columns.");
                     }
@@ -271,7 +279,8 @@ public class MergeService : IMergeService
                 int ipAddressColIndex = commonColumns[sheetName].IndexOf("Primary IP Address");
                 if (ipAddressColIndex >= 0) anonymizeColumnIndices[sheetName]["Primary IP Address"] = ipAddressColIndex;
             }
-        }        _consoleUiService.DisplayInfo("[bold]Extracting data from files...[/]");
+        }
+        _consoleUiService.DisplayInfo("[bold]Extracting data from files...[/]");
 
         // Display anonymization message if enabled
         if (options.AnonymizeData)
@@ -299,7 +308,7 @@ public class MergeService : IMergeService
 
                     foreach (var filePath in validFilePaths)
                     {
-                        var fileName = Path.GetFileName(filePath);
+                        var fileName = _fileSystem.Path.GetFileName(filePath);
                         using var workbook = new XLWorkbook(filePath);
 
                         if (!_excelService.SheetExists(workbook, sheetName))
@@ -374,7 +383,7 @@ public class MergeService : IMergeService
                             // Add source file name if the option is enabled
                             if (options.IncludeSourceFileName && sourceFileColumnIndex >= 0)
                             {
-                                rowData[sourceFileColumnIndex] = Path.GetFileName(filePath);
+                                rowData[sourceFileColumnIndex] = _fileSystem.Path.GetFileName(filePath);
                             }
 
                             mergedData[sheetName].Add(rowData);
@@ -444,7 +453,8 @@ public class MergeService : IMergeService
                 $"[yellow]{sheetName}[/] rows",
                 $"[green]{rowCount}[/] ([grey]{colCount} columns[/])"
             );
-        }        summaryTable.Border(TableBorder.Rounded);
+        }
+        summaryTable.Border(TableBorder.Rounded);
         _consoleUiService.Write(summaryTable);
 
         // Display anonymization summary if enabled
@@ -459,7 +469,8 @@ public class MergeService : IMergeService
             var stats = _anonymizationService.GetAnonymizationStatistics();
             foreach (var kvp in stats)
             {
-                table.AddRow($"[cyan]{kvp.Key}[/]", $"[green]{kvp.Value}[/]");            }
+                table.AddRow($"[cyan]{kvp.Key}[/]", $"[green]{kvp.Value}[/]");
+            }
 
             table.Border(TableBorder.Rounded);
             _consoleUiService.Write(table);

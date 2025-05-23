@@ -1,5 +1,5 @@
 //-----------------------------------------------------------------------
-// <copyright file="ExcelService.cs" company="Stefan Broenner"> ">
+// <copyright file="ExcelService.cs" company="Stefan Broenner">
 //     Copyright © Stefan Broenner 2025
 //     Created by Stefan Broenner (github.com/sbroenne) and contributors
 //     Licensed under the MIT License
@@ -10,6 +10,7 @@ using RVToolsMerge.Configuration;
 using RVToolsMerge.Models;
 using RVToolsMerge.Services.Interfaces;
 using System.Collections.Frozen;
+using System.IO.Abstractions;
 
 namespace RVToolsMerge.Services;
 
@@ -18,6 +19,17 @@ namespace RVToolsMerge.Services;
 /// </summary>
 public class ExcelService : IExcelService
 {
+    private readonly IFileSystem _fileSystem;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ExcelService"/> class.
+    /// </summary>
+    /// <param name="fileSystem">The file system abstraction.</param>
+    public ExcelService(IFileSystem fileSystem)
+    {
+        _fileSystem = fileSystem;
+    }
+
     /// <summary>
     /// Checks if a sheet exists in a workbook.
     /// </summary>
@@ -37,7 +49,7 @@ public class ExcelService : IExcelService
         var columnNames = new List<string>();
         var headerRow = worksheet.Row(1);
         var lastColumnUsed = worksheet.LastColumnUsed();
-        int lastColumn = lastColumnUsed is not null ? lastColumnUsed.ColumnNumber() : 1;
+        int lastColumn = lastColumnUsed?.ColumnNumber() ?? 1;
 
         // Use only the mapping for the current sheet, if available
         var sheetName = worksheet.Name;
@@ -71,7 +83,11 @@ public class ExcelService : IExcelService
         var headerRow = worksheet.Row(1);
         // Find the last column with data
         var lastColumnUsed = worksheet.LastColumnUsed();
-        int lastColumn = lastColumnUsed is not null ? lastColumnUsed.ColumnNumber() : 1;
+        int lastColumn = lastColumnUsed?.ColumnNumber() ?? 1;
+
+        // Get column header mapping for this sheet, if available
+        var sheetName = worksheet.Name;
+        SheetConfiguration.SheetColumnHeaderMappings.TryGetValue(sheetName, out var headerMapping);
 
         // Create a mapping between the file's column indices and the common column indices
         for (int fileColIndex = 1; fileColIndex <= lastColumn; fileColIndex++)
@@ -80,13 +96,8 @@ public class ExcelService : IExcelService
             var cellValue = cell.Value;
             if (!string.IsNullOrWhiteSpace(cellValue.ToString()))
             {
-                // Apply column header mapping for this sheet, if available
-                var sheetName = worksheet.Name;
-                SheetConfiguration.SheetColumnHeaderMappings.TryGetValue(sheetName, out var headerMapping);
-                string originalName = cellValue.ToString();
-                string mappedName = headerMapping is not null
-                    ? ((IReadOnlyDictionary<string, string?>)headerMapping).GetValueOrDefault(originalName, null) ?? originalName
-                    : originalName;
+                string originalName = cellValue.ToString() ?? string.Empty;
+                string mappedName = headerMapping?.GetValueOrDefault(originalName, originalName) ?? originalName;
 
                 int commonIndex = commonColumns.IndexOf(mappedName);
                 if (commonIndex < 0 && headerMapping is not null)
@@ -102,5 +113,29 @@ public class ExcelService : IExcelService
         }
 
         return mapping;
+    }
+
+    /// <summary>
+    /// Opens an Excel workbook from a file path.
+    /// </summary>
+    /// <param name="filePath">The path to the Excel file to open.</param>
+    /// <returns>The opened workbook.</returns>
+    /// <exception cref="FileNotFoundException">Thrown when the file is not found.</exception>
+    public XLWorkbook OpenWorkbook(string filePath)
+    {
+        if (!_fileSystem.File.Exists(filePath))
+        {
+            throw new FileNotFoundException($"Excel file not found: {filePath}");
+        }
+
+        try
+        {
+            using var stream = _fileSystem.File.OpenRead(filePath);
+            return new XLWorkbook(stream);
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException($"Error opening Excel file {filePath}: {ex.Message}", ex);
+        }
     }
 }

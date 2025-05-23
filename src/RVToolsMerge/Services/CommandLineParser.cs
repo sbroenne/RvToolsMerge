@@ -8,6 +8,7 @@
 
 using RVToolsMerge.Models;
 using RVToolsMerge.Services.Interfaces;
+using System.IO.Abstractions;
 
 namespace RVToolsMerge.Services;
 
@@ -16,6 +17,17 @@ namespace RVToolsMerge.Services;
 /// </summary>
 public class CommandLineParser : ICommandLineParser
 {
+    private readonly IFileSystem _fileSystem;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="CommandLineParser"/> class.
+    /// </summary>
+    /// <param name="fileSystem">The file system abstraction.</param>
+    public CommandLineParser(IFileSystem fileSystem)
+    {
+        _fileSystem = fileSystem;
+    }
+
     /// <summary>
     /// Parses command line arguments into options and input/output paths.
     /// </summary>
@@ -62,9 +74,7 @@ public class CommandLineParser : ICommandLineParser
                     processedArgs.Add(args[i]);
                     break;
             }
-        }
-
-        // Get input path (required)
+        }        // Get input path (required)
         if (processedArgs.Count > 0)
         {
             inputPath = processedArgs[0];
@@ -77,7 +87,7 @@ public class CommandLineParser : ICommandLineParser
         }
         else
         {
-            outputPath = Path.Combine(Directory.GetCurrentDirectory(), "RVTools_Merged.xlsx");
+            outputPath = _fileSystem.Path.Combine(_fileSystem.Directory.GetCurrentDirectory(), "RVTools_Merged.xlsx");
         }
 
         return false;

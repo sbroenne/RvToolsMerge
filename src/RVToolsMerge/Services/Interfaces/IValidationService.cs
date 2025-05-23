@@ -1,5 +1,5 @@
 //-----------------------------------------------------------------------
-// <copyright file="IValidationService.cs" company="Stefan Broenner"> ">
+// <copyright file="IValidationService.cs" company="Stefan Broenner">
 //     Copyright © Stefan Broenner 2025
 //     Created by Stefan Broenner (github.com/sbroenne) and contributors
 //     Licensed under the MIT License

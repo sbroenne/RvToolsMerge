@@ -1,5 +1,5 @@
 //-----------------------------------------------------------------------
-// <copyright file="Program.cs" company="Stefan Broenner"> ">
+// <copyright file="Program.cs" company="Stefan Broenner">
 //     Copyright © Stefan Broenner 2025
 //     Created by Stefan Broenner (github.com/sbroenne) and contributors
 //     Licensed under the MIT License
@@ -22,7 +22,7 @@ public class Program // Changed to public for better testability
     /// </summary>
     /// <param name="args">Command line arguments.</param>
     /// <returns>A task representing the asynchronous operation.</returns>
-    static async Task Main(string[] args)
+    public static async Task Main(string[] args)
     {
         // Setup dependency injection
         var services = new ServiceCollection();

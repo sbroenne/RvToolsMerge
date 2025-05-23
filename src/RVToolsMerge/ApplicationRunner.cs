@@ -11,6 +11,7 @@ using RVToolsMerge.Models;
 using RVToolsMerge.Services;
 using RVToolsMerge.Services.Interfaces;
 using Spectre.Console;
+using System.IO.Abstractions;
 
 namespace RVToolsMerge;
 
@@ -22,6 +23,7 @@ public class ApplicationRunner
     private readonly ConsoleUIService _consoleUiService;
     private readonly IMergeService _mergeService;
     private readonly ICommandLineParser _commandLineParser;
+    private readonly IFileSystem _fileSystem;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ApplicationRunner"/> class.
@@ -29,14 +31,17 @@ public class ApplicationRunner
     /// <param name="consoleUiService">The console UI service.</param>
     /// <param name="mergeService">The merge service.</param>
     /// <param name="commandLineParser">The command line parser.</param>
+    /// <param name="fileSystem">The file system abstraction.</param>
     public ApplicationRunner(
         ConsoleUIService consoleUiService,
         IMergeService mergeService,
-        ICommandLineParser commandLineParser)
+        ICommandLineParser commandLineParser,
+        IFileSystem fileSystem)
     {
         _consoleUiService = consoleUiService;
         _mergeService = mergeService;
         _commandLineParser = commandLineParser;
+        _fileSystem = fileSystem;
     }
 
     /// <summary>
@@ -58,7 +63,9 @@ public class ApplicationRunner
         {
             _consoleUiService.ShowHelp(Assembly.GetExecutingAssembly().GetName().Name ?? "RVToolsMerge");
             return;
-        }        if (inputPath == null)
+        }
+
+        if (inputPath == null)
         {
             _consoleUiService.DisplayError("Input path is required.");
             _consoleUiService.DisplayInfo("Use --help to see usage information.");
@@ -75,7 +82,8 @@ public class ApplicationRunner
         _consoleUiService.DisplayOptions(options);
 
         try
-        {            // Process the files
+        {
+            // Process the files
             var validationIssues = new List<ValidationIssue>();
             await _mergeService.MergeFilesAsync(excelFiles, outputPath!, options, validationIssues);
 
@@ -110,17 +118,18 @@ public class ApplicationRunner
 
     /// <summary>
     /// Validates the input path and gets the list of Excel files to process.
-    /// </summary>
-    /// <param name="inputPath">The input path to validate.</param>
+    /// </summary>    /// <param name="inputPath">The input path to validate.</param>
     /// <param name="isInputFile">Output whether the input is a file.</param>
     /// <param name="isInputDirectory">Output whether the input is a directory.</param>
     /// <param name="excelFiles">Output array of Excel files to process.</param>
     /// <returns>True if the input path is valid, false otherwise.</returns>
     private bool ValidateInputPath(string inputPath, out bool isInputFile, out bool isInputDirectory, out string[] excelFiles)
     {
-        isInputFile = File.Exists(inputPath);
-        isInputDirectory = Directory.Exists(inputPath);
-        excelFiles = Array.Empty<string>();        if (!isInputFile && !isInputDirectory)
+        isInputFile = _fileSystem.File.Exists(inputPath);
+        isInputDirectory = _fileSystem.Directory.Exists(inputPath);
+        excelFiles = Array.Empty<string>();
+
+        if (!isInputFile && !isInputDirectory)
         {
             _consoleUiService.MarkupLineInterpolated($"[red]Error:[/] Input path '[yellow]{inputPath}[/]' does not exist as either a file or directory.");
             _consoleUiService.DisplayInfo("Use --help to see usage information.");
@@ -129,17 +138,19 @@ public class ApplicationRunner
 
         // Get Excel files - either the single file or all Excel files in the directory
         if (isInputFile)
-        {            // Check if the file has the correct extension
-            if (!Path.GetExtension(inputPath).Equals(".xlsx", StringComparison.OrdinalIgnoreCase))
+        {
+            // Check if the file has the correct extension
+            if (!_fileSystem.Path.GetExtension(inputPath).Equals(".xlsx", StringComparison.OrdinalIgnoreCase))
             {
                 _consoleUiService.MarkupLineInterpolated($"[red]Error:[/] Input file '[yellow]{inputPath}[/]' must be an Excel file (.xlsx).");
                 return false;
             }
             excelFiles = new[] { inputPath };
-            _consoleUiService.MarkupLineInterpolated($"[green]Processing single Excel file: {Path.GetFileName(inputPath)}[/]");
+            _consoleUiService.MarkupLineInterpolated($"[green]Processing single Excel file: {_fileSystem.Path.GetFileName(inputPath)}[/]");
         }
         else // isInputDirectory
-        {            excelFiles = Directory.GetFiles(inputPath, "*.xlsx");
+        {
+            excelFiles = _fileSystem.Directory.GetFiles(inputPath, "*.xlsx");
             if (excelFiles.Length == 0)
             {
                 _consoleUiService.MarkupLineInterpolated($"[yellow]No Excel files found in '{inputPath}'.[/]");
@@ -149,7 +160,9 @@ public class ApplicationRunner
         }
 
         return true;
-    }    /// <summary>
+    }
+
+    /// <summary>
     /// Handles exceptions that occur during application execution.
     /// </summary>
     /// <param name="ex">The exception that occurred.</param>
