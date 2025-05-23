@@ -43,21 +43,40 @@ public class ConsoleUIService
     {
         AnsiConsole.WriteLine();
         AnsiConsole.MarkupLine("[bold]Selected Options:[/]");
+        var optionsTable = CreateOptionsTable(options);
+        AnsiConsole.Write(optionsTable);
+        AnsiConsole.WriteLine();
+    }
+
+    /// <summary>
+    /// Creates a table to display the selected options.
+    /// </summary>
+    /// <param name="options">The merge options to display.</param>
+    /// <returns>A table with option statuses.</returns>
+    private static Table CreateOptionsTable(MergeOptions options)
+    {
         var optionsTable = new Table().BorderColor(Color.Grey);
         optionsTable.AddColumn(new TableColumn("Option").Centered());
         optionsTable.AddColumn(new TableColumn("Status").Centered());
 
-        optionsTable.AddRow("[yellow]--ignore-missing-sheets[/]", options.IgnoreMissingOptionalSheets ? "[green]Enabled[/]" : "[grey]Disabled[/]");
-        optionsTable.AddRow("[yellow]--skip-invalid-files[/]", options.SkipInvalidFiles ? "[green]Enabled[/]" : "[grey]Disabled[/]");
-        optionsTable.AddRow("[yellow]--anonymize[/]", options.AnonymizeData ? "[green]Enabled[/]" : "[grey]Disabled[/]");
-        optionsTable.AddRow("[yellow]--only-mandatory-columns[/]", options.OnlyMandatoryColumns ? "[green]Enabled[/]" : "[grey]Disabled[/]");
-        optionsTable.AddRow("[yellow]--include-source[/]", options.IncludeSourceFileName ? "[green]Enabled[/]" : "[grey]Disabled[/]");
-        optionsTable.AddRow("[yellow]--skip-empty-values[/]", options.SkipRowsWithEmptyMandatoryValues ? "[green]Enabled[/]" : "[grey]Disabled[/]");
-        optionsTable.AddRow("[yellow]--debug[/]", options.DebugMode ? "[green]Enabled[/]" : "[grey]Disabled[/]");
+        optionsTable.AddRow("[yellow]--ignore-missing-sheets[/]", FormatOptionStatus(options.IgnoreMissingOptionalSheets));
+        optionsTable.AddRow("[yellow]--skip-invalid-files[/]", FormatOptionStatus(options.SkipInvalidFiles));
+        optionsTable.AddRow("[yellow]--anonymize[/]", FormatOptionStatus(options.AnonymizeData));
+        optionsTable.AddRow("[yellow]--only-mandatory-columns[/]", FormatOptionStatus(options.OnlyMandatoryColumns));
+        optionsTable.AddRow("[yellow]--include-source[/]", FormatOptionStatus(options.IncludeSourceFileName));
+        optionsTable.AddRow("[yellow]--skip-empty-values[/]", FormatOptionStatus(options.SkipRowsWithEmptyMandatoryValues));
+        optionsTable.AddRow("[yellow]--debug[/]", FormatOptionStatus(options.DebugMode));
 
-        AnsiConsole.Write(optionsTable);
-        AnsiConsole.WriteLine();
+        return optionsTable;
     }
+
+    /// <summary>
+    /// Formats the status of an option.
+    /// </summary>
+    /// <param name="isEnabled">Whether the option is enabled.</param>
+    /// <returns>A formatted string for the option status.</returns>
+    private static string FormatOptionStatus(bool isEnabled) =>
+        isEnabled ? "[green]Enabled[/]" : "[grey]Disabled[/]";
 
     /// <summary>
     /// Displays validation issues in a formatted table.
@@ -68,12 +87,38 @@ public class ConsoleUIService
         AnsiConsole.WriteLine();
         AnsiConsole.Write(new Rule("[yellow]Validation Issues[/]").RuleStyle("grey"));
 
-        // Group issues by filename
-        var groupedIssues = issues
+        var groupedIssues = GroupValidationIssues(issues);
+        var table = CreateValidationIssuesTable(groupedIssues);
+
+        AnsiConsole.Write(table);
+        AnsiConsole.WriteLine();
+
+        int totalFiles = groupedIssues.Count;
+        int totalIssues = issues.Count;
+        AnsiConsole.MarkupLineInterpolated($"[yellow]Total of {totalIssues} validation issues across {totalFiles} files.[/]");
+        AnsiConsole.WriteLine();
+    }
+
+    /// <summary>
+    /// Groups validation issues by filename.
+    /// </summary>
+    /// <param name="issues">The list of validation issues to group.</param>
+    /// <returns>A list of issue groups.</returns>
+    private static List<IGrouping<string, ValidationIssue>> GroupValidationIssues(List<ValidationIssue> issues)
+    {
+        return issues
             .GroupBy(issue => issue.FileName)
             .OrderBy(group => group.Key)
             .ToList();
+    }
 
+    /// <summary>
+    /// Creates a table to display validation issues.
+    /// </summary>
+    /// <param name="groupedIssues">The grouped validation issues.</param>
+    /// <returns>A table with validation issues.</returns>
+    private static Table CreateValidationIssuesTable(List<IGrouping<string, ValidationIssue>> groupedIssues)
+    {
         var table = new Table();
         table.AddColumn(new TableColumn("File Name").LeftAligned());
         table.AddColumn(new TableColumn("Status").Centered());
@@ -105,13 +150,7 @@ public class ConsoleUIService
         }
 
         table.Border(TableBorder.Rounded);
-        AnsiConsole.Write(table);
-        AnsiConsole.WriteLine();
-
-        int totalFiles = groupedIssues.Count;
-        int totalIssues = issues.Count;
-        AnsiConsole.MarkupLineInterpolated($"[yellow]Total of {totalIssues} validation issues across {totalFiles} files.[/]");
-        AnsiConsole.WriteLine();
+        return table;
     }
 
     /// <summary>
@@ -120,17 +159,43 @@ public class ConsoleUIService
     /// <param name="appName">The application name.</param>
     public void ShowHelp(string appName)
     {
+        DisplayHelpUsage(appName);
+        DisplayHelpArguments();
+        DisplayHelpOptions();
+        DisplayHelpExamples(appName);
+        DisplaySupportedSheetsTable();
+        DisplayHelpDownloadInfo();
+    }
+
+    /// <summary>
+    /// Displays usage information in the help screen.
+    /// </summary>
+    /// <param name="appName">The application name.</param>
+    private static void DisplayHelpUsage(string appName)
+    {
         AnsiConsole.MarkupLine("[bold]USAGE:[/]");
         AnsiConsole.MarkupLineInterpolated($"  [cyan]{appName}[/] [grey][[options]] inputPath [[outputFile]][/]");
         AnsiConsole.WriteLine();
+    }
 
+    /// <summary>
+    /// Displays arguments information in the help screen.
+    /// </summary>
+    private static void DisplayHelpArguments()
+    {
         AnsiConsole.MarkupLine("[bold]ARGUMENTS:[/]");
         AnsiConsole.MarkupLine("  [green]inputPath[/]     Path to an Excel file or a folder containing RVTools Excel files.");
         AnsiConsole.MarkupLine("                [bold]Required[/]. Must be a valid file path or directory path.");
         AnsiConsole.MarkupLine("  [green]outputFile[/]    Path where the merged file will be saved.");
         AnsiConsole.MarkupLine("                Defaults to \"RVTools_Merged.xlsx\" in the current directory.");
         AnsiConsole.WriteLine();
+    }
 
+    /// <summary>
+    /// Displays options information in the help screen.
+    /// </summary>
+    private static void DisplayHelpOptions()
+    {
         AnsiConsole.MarkupLine("[bold]OPTIONS:[/]");
         AnsiConsole.MarkupLine("  [yellow]-h, --help, /?[/]            Show this help message and exit.");
         AnsiConsole.MarkupLine("  [yellow]-m, --ignore-missing-sheets[/]");
@@ -144,7 +209,14 @@ public class ConsoleUIService
         AnsiConsole.MarkupLine("                            By default, all rows are included regardless of empty values.");
         AnsiConsole.MarkupLine("  [yellow]-d, --debug[/]               Show detailed error information.");
         AnsiConsole.WriteLine();
+    }
 
+    /// <summary>
+    /// Displays examples in the help screen.
+    /// </summary>
+    /// <param name="appName">The application name.</param>
+    private static void DisplayHelpExamples(string appName)
+    {
         AnsiConsole.MarkupLine("[bold]EXAMPLES:[/]");
         AnsiConsole.MarkupLine($"  [cyan]{appName}[/] C:\\RVTools\\Data");
         AnsiConsole.MarkupLine($"  [cyan]{appName}[/] C:\\RVTools\\Data\\SingleFile.xlsx");
@@ -154,8 +226,13 @@ public class ConsoleUIService
         AnsiConsole.MarkupLine($"  [cyan]{appName}[/] [yellow]-a -M -s[/] C:\\RVTools\\Data C:\\Reports\\Complete_Analysis.xlsx");
         AnsiConsole.MarkupLine($"  [cyan]{appName}[/] [yellow]-e[/] C:\\RVTools\\Data C:\\Reports\\Skip_Empty_Values.xlsx");
         AnsiConsole.WriteLine();
+    }
 
-        // Display required sheets and columns table
+    /// <summary>
+    /// Displays the supported sheets table in the help screen.
+    /// </summary>
+    private static void DisplaySupportedSheetsTable()
+    {
         var table = new Table();
         table.AddColumn(new TableColumn("Sheet").LeftAligned());
         table.AddColumn(new TableColumn("Status").Centered());
@@ -183,7 +260,13 @@ public class ConsoleUIService
         table.Border(TableBorder.Rounded);
         AnsiConsole.Write(table);
         AnsiConsole.WriteLine();
+    }
 
+    /// <summary>
+    /// Displays download information in the help screen.
+    /// </summary>
+    private static void DisplayHelpDownloadInfo()
+    {
         AnsiConsole.MarkupLine("[bold]DOWNLOADS:[/]");
         AnsiConsole.MarkupLine("  Latest releases are available at:");
         AnsiConsole.MarkupLine("  [link]https://github.com/sbroenne/RVToolsMerge/releases[/]");

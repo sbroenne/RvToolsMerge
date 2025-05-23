@@ -23,6 +23,14 @@ public class AnonymizationService : IAnonymizationService
     private readonly Dictionary<string, string> _datacenterNameMap = [];
     private readonly Dictionary<string, string> _ipAddressMap = [];
 
+    // Constants for column identifiers
+    private const string VmColumnName = "VM";
+    private const string DnsNameColumnName = "DNS Name";
+    private const string ClusterColumnName = "Cluster";
+    private const string HostColumnName = "Host";
+    private const string DatacenterColumnName = "Datacenter";
+    private const string IpAddressColumnName = "Primary IP Address";
+
     /// <summary>
     /// Anonymizes a cell value based on its column type.
     /// </summary>
@@ -33,38 +41,32 @@ public class AnonymizationService : IAnonymizationService
     public XLCellValue AnonymizeValue(XLCellValue value, int currentColumnIndex, Dictionary<string, int> anonymizeColumnIndices)
     {
         // VM Name
-        if (anonymizeColumnIndices.TryGetValue("VM", out int vmColIndex) &&
-            currentColumnIndex == vmColIndex)
+        if (ShouldAnonymizeColumn(anonymizeColumnIndices, VmColumnName, currentColumnIndex))
         {
             return GetOrCreateAnonymizedName(value, _vmNameMap, "vm");
         }
         // DNS Name
-        else if (anonymizeColumnIndices.TryGetValue("DNS Name", out int dnsColIndex) &&
-                currentColumnIndex == dnsColIndex)
+        else if (ShouldAnonymizeColumn(anonymizeColumnIndices, DnsNameColumnName, currentColumnIndex))
         {
             return GetOrCreateAnonymizedName(value, _dnsNameMap, "dns");
         }
         // Cluster Name
-        else if (anonymizeColumnIndices.TryGetValue("Cluster", out int clusterColIndex) &&
-                currentColumnIndex == clusterColIndex)
+        else if (ShouldAnonymizeColumn(anonymizeColumnIndices, ClusterColumnName, currentColumnIndex))
         {
             return GetOrCreateAnonymizedName(value, _clusterNameMap, "cluster");
         }
         // Host Name
-        else if (anonymizeColumnIndices.TryGetValue("Host", out int hostColIndex) &&
-                currentColumnIndex == hostColIndex)
+        else if (ShouldAnonymizeColumn(anonymizeColumnIndices, HostColumnName, currentColumnIndex))
         {
             return GetOrCreateAnonymizedName(value, _hostNameMap, "host");
         }
         // Datacenter Name
-        else if (anonymizeColumnIndices.TryGetValue("Datacenter", out int datacenterColIndex) &&
-                currentColumnIndex == datacenterColIndex)
+        else if (ShouldAnonymizeColumn(anonymizeColumnIndices, DatacenterColumnName, currentColumnIndex))
         {
             return GetOrCreateAnonymizedName(value, _datacenterNameMap, "datacenter");
         }
         // IP Address
-        else if (anonymizeColumnIndices.TryGetValue("Primary IP Address", out int ipAddressColIndex) &&
-                currentColumnIndex == ipAddressColIndex)
+        else if (ShouldAnonymizeColumn(anonymizeColumnIndices, IpAddressColumnName, currentColumnIndex))
         {
             return GetOrCreateAnonymizedName(value, _ipAddressMap, "ip");
         }
@@ -81,13 +83,28 @@ public class AnonymizationService : IAnonymizationService
         return new Dictionary<string, int>
         {
             { "VMs", _vmNameMap.Count },
-            { "IP Address", _ipAddressMap.Count },
             { "DNS Names", _dnsNameMap.Count },
             { "Clusters", _clusterNameMap.Count },
             { "Hosts", _hostNameMap.Count },
             { "Datacenters", _datacenterNameMap.Count },
             { "IP Addresses", _ipAddressMap.Count }
         };
+    }
+
+    /// <summary>
+    /// Determines if a column should be anonymized.
+    /// </summary>
+    /// <param name="anonymizeColumnIndices">Dictionary of column indices for anonymization.</param>
+    /// <param name="columnName">The name of the column to check.</param>
+    /// <param name="currentColumnIndex">The current column index being processed.</param>
+    /// <returns>True if the column should be anonymized; otherwise, false.</returns>
+    private static bool ShouldAnonymizeColumn(
+        Dictionary<string, int> anonymizeColumnIndices,
+        string columnName,
+        int currentColumnIndex)
+    {
+        return anonymizeColumnIndices.TryGetValue(columnName, out int colIndex) &&
+               currentColumnIndex == colIndex;
     }
 
     /// <summary>
