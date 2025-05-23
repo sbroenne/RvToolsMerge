@@ -115,4 +115,6 @@ coverage/
 
 # RVToolsMerge specific
 /input/
+/src/RVToolsMerge/Input/*.xlsx
+/src/RVToolsMerge/Output/*.xlsx
 *.xlsx

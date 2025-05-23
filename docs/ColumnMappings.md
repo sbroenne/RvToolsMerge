@@ -4,57 +4,82 @@ The application standardizes column names across different RVTools exports. Belo
 
 ## vInfo Sheet Mappings
 
-| Original Column Name | Standardized Name |
-|---------------------|-------------------|
-| vInfoVMName | VM |
-| vInfoPowerstate | Powerstate |
-| vInfoTemplate | Template |
-| vInfoCPUs | CPUs |
-| vInfoMemory | Memory |
-| vInfoProvisioned | Provisioned MiB |
-| vInfoInUse | In Use MiB |
-| vInfoOS | OS according to the configuration file |
-| vInfoDataCenter | Datacenter |
-| vInfoCluster | Cluster |
-| vInfoHost | Host |
-| vInfoSRMPlaceHolder | SRM Placeholder |
-| vInfoOSTools | OS according to the VMware Tools |
+| Original Column Name  | Standardized Name                      |
+| --------------------- | -------------------------------------- |
+| vInfoVMName           | VM                                     |
+| vInfoPowerstate       | Powerstate                             |
+| vInfoTemplate         | Template                               |
+| vInfoGuestHostName    | DNS Name                               |
+| vInfoCPUs             | CPUs                                   |
+| vInfoMemory           | Memory                                 |
+| vInfoProvisioned      | Provisioned MiB                        |
+| vInfoInUse            | In Use MiB                             |
+| vInfoDataCenter       | Datacenter                             |
+| vInfoCluster          | Cluster                                |
+| vInfoHost             | Host                                   |
+| vInfoSRMPlaceHolder   | SRM Placeholder                        |
+| vInfoOSTools          | OS according to the VMware Tools       |
+| vInfoOS               | OS according to the configuration file |
+| vInfoPrimaryIPAddress | Primary IP Address                     |
+| vInfoNetwork1         | Network #1                             |
+| vInfoNetwork2         | Network #2                             |
+| vInfoNetwork3         | Network #3                             |
+| vInfoNetwork4         | Network #4                             |
+| vInfoNetwork5         | Network #5                             |
+| vInfoNetwork6         | Network #6                             |
+| vInfoNetwork7         | Network #7                             |
+| vInfoNetwork8         | Network #8                             |
+| vInfoResourcepool     | Resource pool                          |
+| vInfoFolder           | Folder                                 |
 
 ## vHost Sheet Mappings
 
-| Original Column Name | Standardized Name |
-|---------------------|-------------------|
-| vHostName | Host |
-| vHostDatacenter | Datacenter |
-| vHostCluster | Cluster |
+| Original Column Name     | Standardized Name      |
+| ------------------------ | ---------------------- |
+| vHostName                | Host                   |
+| vHostDatacenter          | Datacenter             |
+| vHostCluster             | Cluster                |
 | vHostvSANFaultDomainName | vSAN Fault Domain Name |
-| vHostCpuModel | CPU Model |
-| vHostCpuMhz | Speed |
-| vHostNumCPU | # CPU |
-| vHostNumCpu | # CPU |
-| vHostCoresPerCPU | Cores per CPU |
-| vHostNumCpuCores | # Cores |
-| vHostOverallCpuUsage | CPU usage % |
-| vHostMemorySize | # Memory |
-| vHostOverallMemoryUsage | Memory usage % |
-| vHostvCPUs | # vCPUs |
-| vHostVCPUsPerCore | vCPUs per Core |
+| vHostCpuModel            | CPU Model              |
+| vHostCpuMhz              | Speed                  |
+| vHostNumCPU              | # CPU                  |
+| vHostNumCpu              | # CPU                  |
+| vHostCoresPerCPU         | Cores per CPU          |
+| vHostNumCpuCores         | # Cores                |
+| vHostOverallCpuUsage     | CPU usage %            |
+| vHostMemorySize          | # Memory               |
+| vHostOverallMemoryUsage  | Memory usage %         |
+| vHostvCPUs               | # vCPUs                |
+| vHostVCPUsPerCore        | vCPUs per Core         |
 
 ## vPartition Sheet Mappings
 
-| Original Column Name | Standardized Name |
-|---------------------|-------------------|
-| vPartitionDisk | Disk |
-| vPartitionVMName | VM |
-| vPartitionConsumedMiB | Consumed MiB |
-| vPartitionCapacityMiB | Capacity MiB |
+| Original Column Name  | Standardized Name |
+| --------------------- | ----------------- |
+| vPartitionDisk        | Disk              |
+| vPartitionVMName      | VM                |
+| vPartitionConsumedMiB | Consumed MiB      |
+| vPartitionCapacityMiB | Capacity MiB      |
 
 ## vMemory Sheet Mappings
 
 | Original Column Name | Standardized Name |
-|---------------------|-------------------|
-| vMemoryVMName | VM |
-| vMemorySizeMiB | Size MiB |
-| vMemoryReservation | Reservation |
+| -------------------- | ----------------- |
+| vMemoryVMName        | VM                |
+| vMemorySizeMiB       | Size MiB          |
+| vMemoryReservation   | Reservation       |
 
-> **Note:** These mappings help normalize column names between different versions of RVTools exports.
+## Anonymization Mapping
+
+When anonymization is enabled, the following fields are anonymized with a consistent pattern:
+
+| Data Type  | Original Value      | Anonymized Format |
+| ---------- | ------------------- | ----------------- |
+| VM Name    | myVM01              | vm1               |
+| DNS Name   | server.domain.local | dns1              |
+| IP Address | 192.168.1.10        | ip1               |
+| Cluster    | Production-Cluster  | cluster1          |
+| Host       | esx01.domain.local  | host1             |
+| Datacenter | DC-East             | datacenter1       |
+
+> **Note:** These mappings help normalize column names between different versions of RVTools exports while maintaining data relationships during anonymization.

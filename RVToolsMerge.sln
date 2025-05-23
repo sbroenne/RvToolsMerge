@@ -2,7 +2,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.5.2.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RVToolsMerge", "RVToolsMerge.csproj", "{E4F422ED-5127-72D1-4487-C163558F8C2B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RVToolsMerge", "src\RVToolsMerge\RVToolsMerge.csproj", "{E4F422ED-5127-72D1-4487-C163558F8C2B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -19,6 +19,22 @@ updates:
     commit-message:
       prefix: "ci"
       include: "scope"
+
+  # Maintain dependencies for NuGet packages
+  - package-ecosystem: "nuget"
+    directory: "/src/RVToolsMerge/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "07:00"
+      timezone: Etc/UTC
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "nuget"
+    commit-message:
+      prefix: "deps"
+      include: "scope"
     # Group all GitHub Actions updates together for easier management
     groups:
       github-actions:

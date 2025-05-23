@@ -12,21 +12,36 @@ The following versions of RVToolsMerge are currently supported with security upd
 
 RVToolsMerge uses the following security features and practices:
 
-- **GitHub Advanced Security**: 
-  - CodeQL Analysis for automated code scanning
-  - Dependency Review to catch vulnerabilities in dependencies
-  - Secret Scanning to prevent credential leaks
-  - Dependabot security updates
+-   **GitHub Advanced Security**:
 
-- **Additional Security Measures**:
-  - Regular vulnerability scanning of NuGet packages
-  - License compliance monitoring
-  - Regular security patches via Dependabot
+    -   CodeQL Analysis for automated code scanning
+    -   Dependency Review to catch vulnerabilities in dependencies
+    -   Secret Scanning to prevent credential leaks
+    -   Dependabot security updates
 
-- **Development Practices**:
-  - Secure coding guidelines
-  - Regular code reviews
-  - Automated testing
+-   **Data Protection Features**:
+
+    -   Comprehensive anonymization of sensitive infrastructure data:
+        -   VM names
+        -   DNS names
+        -   IP addresses
+        -   Cluster names
+        -   Host names
+        -   Datacenter names
+    -   Consistent anonymization that preserves data relationships
+    -   Option to include only mandatory columns to limit data exposure
+    -   No storage of sensitive information in memory longer than necessary
+
+-   **Additional Security Measures**:
+
+    -   Regular vulnerability scanning of NuGet packages
+    -   License compliance monitoring
+    -   Regular security patches via Dependabot
+
+-   **Development Practices**:
+    -   Secure coding guidelines
+    -   Regular code reviews
+    -   Automated testing
 
 ## Reporting a Vulnerability
 
@@ -36,22 +51,22 @@ If you believe you've found a security vulnerability in RVToolsMerge, please fol
 
 1. **Do not disclose the vulnerability publicly**
 2. **Submit the report through one of these channels**:
-   - Submit a [security advisory](https://github.com/sbroenne/RVToolsMerge/security/advisories/new) on GitHub
-   - Email us at [stefan_broenner@yahoo.com](mailto:stefan_broenner@yahoo.com)
+    - Submit a [security advisory](https://github.com/sbroenne/RVToolsMerge/security/advisories/new) on GitHub
+    - Email us at [stefan_broenner@yahoo.com](mailto:stefan_broenner@yahoo.com)
 
 ### When reporting, please include:
 
-- Description of the vulnerability
-- Steps to reproduce
-- Potential impact
-- Any recommended remediation
-- Whether you want to be credited
+-   Description of the vulnerability
+-   Steps to reproduce
+-   Potential impact
+-   Any recommended remediation
+-   Whether you want to be credited
 
 ## What to expect after your report:
 
-- We'll acknowledge receipt of your report within 48 hours
-- We'll provide a timeline for a fix and release
-- We'll keep you updated on our progress
-- After the vulnerability is fixed and released, we'll publicly acknowledge your responsible disclosure (if you wish)
+-   We'll acknowledge receipt of your report within 48 hours
+-   We'll provide a timeline for a fix and release
+-   We'll keep you updated on our progress
+-   After the vulnerability is fixed and released, we'll publicly acknowledge your responsible disclosure (if you wish)
 
 Thank you for helping keep RVToolsMerge and our users safe!
