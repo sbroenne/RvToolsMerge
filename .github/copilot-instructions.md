@@ -1,8 +1,19 @@
-# RVToolsMerge Copilot Instructions
+# RVToolsMerge Copilot Coding Agent Instructions
 
 ## Project Overview
 
-RVToolsMerge is a tool for combining and processing multiple RVTools exports from VMware environments. When providing assistance with this project, understand that it deals with virtualization data, inventory management, and potentially large datasets from VMware infrastructures.
+RVToolsMerge is a tool for combining and processing multiple RVTools exports from VMware environments. It deals with virtualization data, inventory management, and potentially large datasets from VMware infrastructures.
+
+## Copilot Coding Agent Usage Guidelines
+
+-   Copilot agent is enabled for this repository and may be assigned issues or pull requests for code, documentation, or test tasks.
+-   The agent must follow all standards and best practices in this file and the main README.md.
+-   Write clear, descriptive issues and PRs with context and acceptance criteria.
+-   Use checklists for multi-step tasks.
+-   Document code and design decisions in comments and PRs.
+-   Review and test all Copilot agent contributions before merging.
+-   Use Copilot agent for repetitive, boilerplate, or test code generation.
+-   Reference and update this file and README.md if project standards change.
 
 ## Coding Standards
 
@@ -30,7 +41,6 @@ RVToolsMerge is a tool for combining and processing multiple RVTools exports fro
 -   Organize using directives alphabetically and remove unused ones
 -   Use file-scoped namespaces
 -   Explicitly specify access modifiers (public, private, etc.)
--   Prefer string interpolation over concatenation
 -   Use `var` when the type is obvious from the right side of assignment
 -   Make sure that UI elements are separated from business logic and are in different files
 -   Make sure that source files are organized in a way that makes sense for the project
