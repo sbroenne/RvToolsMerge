@@ -4,6 +4,8 @@ VisualStudioVersion = 17.5.2.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RVToolsMerge", "src\RVToolsMerge\RVToolsMerge.csproj", "{E4F422ED-5127-72D1-4487-C163558F8C2B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RVToolsMerge.IntegrationTests", "tests\RVToolsMerge.IntegrationTests\RVToolsMerge.IntegrationTests.csproj", "{EA4F9D3A-5F56-4F29-9A7A-B9827C5A9E50}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -14,6 +16,10 @@ Global
 		{E4F422ED-5127-72D1-4487-C163558F8C2B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E4F422ED-5127-72D1-4487-C163558F8C2B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E4F422ED-5127-72D1-4487-C163558F8C2B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EA4F9D3A-5F56-4F29-9A7A-B9827C5A9E50}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EA4F9D3A-5F56-4F29-9A7A-B9827C5A9E50}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EA4F9D3A-5F56-4F29-9A7A-B9827C5A9E50}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EA4F9D3A-5F56-4F29-9A7A-B9827C5A9E50}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
