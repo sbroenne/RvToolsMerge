@@ -25,3 +25,18 @@ jobs:
         with:
           dotnet-version: 9.0.x
 
+      - name: Install .NET tools
+        run: |
+          dotnet tool install -g dotnet-reportgenerator-globaltool
+          dotnet tool install -g dotnet-coverage
+
+      - name: Install required packages
+        run: |
+          dotnet restore
+
+      - name: Create coverage directories
+        run: |
+          mkdir -p TestResults/Coverage
+          mkdir -p TestResults/CoverageReport
+          mkdir -p TestResults/CoverageHistory
+
