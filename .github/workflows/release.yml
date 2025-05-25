@@ -11,6 +11,9 @@ on:
         required: true
         type: string
 
+permissions:
+  contents: write  # Needed for creating releases and uploading artifacts
+
 jobs:
   call-build-workflow:
     name: Build Release Artifacts
@@ -24,6 +27,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      actions: read
     steps:
       - uses: actions/checkout@v4
 

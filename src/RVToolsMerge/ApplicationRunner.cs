@@ -6,12 +6,12 @@
 // </copyright>
 //-----------------------------------------------------------------------
 
+using System.IO.Abstractions;
 using System.Reflection;
 using RVToolsMerge.Models;
 using RVToolsMerge.Services;
 using RVToolsMerge.Services.Interfaces;
 using Spectre.Console;
-using System.IO.Abstractions;
 
 namespace RVToolsMerge;
 

@@ -5,12 +5,12 @@
 //     Licensed under the MIT License
 // </copyright>
 //-----------------------------------------------------------------------
+using System.Collections.Frozen;
+using System.IO.Abstractions;
 using ClosedXML.Excel;
 using RVToolsMerge.Configuration;
 using RVToolsMerge.Models;
 using RVToolsMerge.Services.Interfaces;
-using System.Collections.Frozen;
-using System.IO.Abstractions;
 
 namespace RVToolsMerge.Services;
 
