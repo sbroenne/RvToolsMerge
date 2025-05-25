@@ -58,27 +58,8 @@ public class MockConsoleService : IConsoleService
     /// <param name="action">The action to perform with the progress context.</param>
     public void RenderProgress(Action<ProgressContext> action)
     {
-        try
-        {
-            // Execute directly with the real AnsiConsole but trap any exceptions
-            AnsiConsole.Progress()
-                .Columns(Array.Empty<ProgressColumn>())
-                .Start(ctx => 
-                {
-                    try
-                    {
-                        action(ctx);
-                    }
-                    catch
-                    {
-                        // Suppress exceptions
-                    }
-                });
-        }
-        catch
-        {
-            // Ignore test exceptions
-        }
+        // This method is not used in tests since we directly implement our own MergeService 
+        // that doesn't use Progress
     }
     
     /// <summary>
@@ -88,27 +69,9 @@ public class MockConsoleService : IConsoleService
     /// <returns>A task representing the asynchronous operation.</returns>
     public Task RenderProgressAsync(Func<ProgressContext, Task> action)
     {
-        try
-        {
-            return AnsiConsole.Progress()
-                .Columns(Array.Empty<ProgressColumn>())
-                .StartAsync(async ctx => 
-                {
-                    try
-                    {
-                        await action(ctx);
-                    }
-                    catch
-                    {
-                        // Suppress exceptions
-                    }
-                });
-        }
-        catch
-        {
-            // Ignore test exceptions
-            return Task.CompletedTask;
-        }
+        // This method is not used in tests since we directly implement our own MergeService 
+        // that doesn't use Progress
+        return Task.CompletedTask;
     }
     
     /// <summary>
@@ -127,6 +90,8 @@ public class MockConsoleService : IConsoleService
     /// <returns>A Progress object.</returns>
     public Progress Progress()
     {
+        // Return a minimal Progress object
+        // This is not actually used in tests since we override the MergeService
         return AnsiConsole.Progress()
             .AutoClear(true)
             .HideCompleted(true)

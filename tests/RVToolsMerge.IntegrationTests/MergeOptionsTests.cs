@@ -12,6 +12,7 @@ using Xunit;
 
 namespace RVToolsMerge.IntegrationTests;
 
+[Collection("SpectreConsole")]
 /// <summary>
 /// Tests for the various merge options.
 /// </summary>

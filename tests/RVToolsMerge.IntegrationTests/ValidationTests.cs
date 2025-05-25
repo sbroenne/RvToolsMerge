@@ -12,6 +12,7 @@ using RVToolsMerge.Exceptions;
 using Xunit;
 
 namespace RVToolsMerge.IntegrationTests;
+[Collection("SpectreConsole")]
 
 /// <summary>
 /// Tests for the validation functionality.
