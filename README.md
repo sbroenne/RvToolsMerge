@@ -360,6 +360,7 @@ This project follows strict development standards:
 -   **Coding Style**: C# coding best practices with PascalCase for public members, camelCase for private fields
 -   **Documentation**: XML documentation for all public methods and classes
 -   **Error Handling**: Robust exception handling and validation
+-   **Code Coverage**: Comprehensive test coverage with detailed reports - see [Code Coverage Documentation](docs/code-coverage.md)
 
 ### Continuous Integration
 

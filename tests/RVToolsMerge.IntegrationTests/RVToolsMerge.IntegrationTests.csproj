@@ -7,13 +7,28 @@
 
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
+    
+    <!-- Code coverage settings -->
+    <CollectCoverage>true</CollectCoverage>
+    <CoverletOutputFormat>cobertura,opencover</CoverletOutputFormat>
+    <CoverletOutput>$(MSBuildProjectDirectory)/../../TestResults/Coverage/</CoverletOutput>
+    <ExcludeByAttribute>Obsolete,GeneratedCodeAttribute,CompilerGeneratedAttribute</ExcludeByAttribute>
+    <Include>[RVToolsMerge]*</Include>
+    <Exclude>[RVToolsMerge.IntegrationTests]*</Exclude>
+    <SkipAutoProps>true</SkipAutoProps>
+    <DeterministicReport>false</DeterministicReport>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="ClosedXML" Version="0.105.0" />
+    <PackageReference Include="coverlet.msbuild" Version="6.0.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.5" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.6.0" />
     <PackageReference Include="Moq" Version="4.20.70" />
+    <PackageReference Include="ReportGenerator" Version="5.2.4" />
     <PackageReference Include="System.IO.Abstractions" Version="22.0.14" />
     <PackageReference Include="System.IO.Abstractions.TestingHelpers" Version="22.0.14" />
     <PackageReference Include="xunit" Version="2.4.2" />
