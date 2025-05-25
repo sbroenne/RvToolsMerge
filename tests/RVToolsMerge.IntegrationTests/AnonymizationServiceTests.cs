@@ -6,9 +6,9 @@
 // </copyright>
 //-----------------------------------------------------------------------
 
+using System.IO.Abstractions.TestingHelpers;
 using ClosedXML.Excel;
 using RVToolsMerge.Services;
-using System.IO.Abstractions.TestingHelpers;
 using Xunit;
 
 namespace RVToolsMerge.IntegrationTests;
@@ -31,15 +31,15 @@ public class AnonymizationServiceTests : IntegrationTestBase
             { "VM", 0 }
         };
         var originalValue = (XLCellValue)"vm-webserver01";
-        
+
         // Act
         var result = AnonymizationService.AnonymizeValue(originalValue, 0, columnIndices);
-        
+
         // Assert
         Assert.NotEqual(originalValue, result);
         Assert.StartsWith("vm", result.ToString());
     }
-    
+
     /// <summary>
     /// Tests that anonymization is consistent for the same input.
     /// </summary>
@@ -52,15 +52,15 @@ public class AnonymizationServiceTests : IntegrationTestBase
             { "VM", 0 }
         };
         var originalValue = (XLCellValue)"vm-database01";
-        
+
         // Act
         var result1 = AnonymizationService.AnonymizeValue(originalValue, 0, columnIndices);
         var result2 = AnonymizationService.AnonymizeValue(originalValue, 0, columnIndices);
-        
+
         // Assert
         Assert.Equal(result1, result2);
     }
-    
+
     /// <summary>
     /// Tests DNS name anonymization.
     /// </summary>
@@ -73,15 +73,15 @@ public class AnonymizationServiceTests : IntegrationTestBase
             { "DNS Name", 0 }
         };
         var originalValue = (XLCellValue)"web-server.example.com";
-        
+
         // Act
         var result = AnonymizationService.AnonymizeValue(originalValue, 0, columnIndices);
-        
+
         // Assert
         Assert.NotEqual(originalValue, result);
         Assert.StartsWith("dns", result.ToString());
     }
-    
+
     /// <summary>
     /// Tests IP address anonymization.
     /// </summary>
@@ -94,15 +94,15 @@ public class AnonymizationServiceTests : IntegrationTestBase
             { "Primary IP Address", 0 }
         };
         var originalValue = (XLCellValue)"192.168.1.10";
-        
+
         // Act
         var result = AnonymizationService.AnonymizeValue(originalValue, 0, columnIndices);
-        
+
         // Assert
         Assert.NotEqual(originalValue, result);
         Assert.StartsWith("ip", result.ToString());
     }
-    
+
     /// <summary>
     /// Tests cluster name anonymization.
     /// </summary>
@@ -115,15 +115,15 @@ public class AnonymizationServiceTests : IntegrationTestBase
             { "Cluster", 0 }
         };
         var originalValue = (XLCellValue)"Production-Cluster-01";
-        
+
         // Act
         var result = AnonymizationService.AnonymizeValue(originalValue, 0, columnIndices);
-        
+
         // Assert
         Assert.NotEqual(originalValue, result);
         Assert.StartsWith("cluster", result.ToString());
     }
-    
+
     /// <summary>
     /// Tests host name anonymization.
     /// </summary>
@@ -136,15 +136,15 @@ public class AnonymizationServiceTests : IntegrationTestBase
             { "Host", 0 }
         };
         var originalValue = (XLCellValue)"esx01.example.com";
-        
+
         // Act
         var result = AnonymizationService.AnonymizeValue(originalValue, 0, columnIndices);
-        
+
         // Assert
         Assert.NotEqual(originalValue, result);
         Assert.StartsWith("host", result.ToString());
     }
-    
+
     /// <summary>
     /// Tests datacenter name anonymization.
     /// </summary>
@@ -157,15 +157,15 @@ public class AnonymizationServiceTests : IntegrationTestBase
             { "Datacenter", 0 }
         };
         var originalValue = (XLCellValue)"London-DC-01";
-        
+
         // Act
         var result = AnonymizationService.AnonymizeValue(originalValue, 0, columnIndices);
-        
+
         // Assert
         Assert.NotEqual(originalValue, result);
         Assert.StartsWith("datacenter", result.ToString());
     }
-    
+
     /// <summary>
     /// Tests that non-anonymizable columns are not modified.
     /// </summary>
@@ -178,14 +178,14 @@ public class AnonymizationServiceTests : IntegrationTestBase
             { "VM", 1 } // Different index than the one we're checking
         };
         var originalValue = (XLCellValue)"This should not change";
-        
+
         // Act
         var result = AnonymizationService.AnonymizeValue(originalValue, 0, columnIndices);
-        
+
         // Assert
         Assert.Equal(originalValue, result);
     }
-    
+
     /// <summary>
     /// Tests that numeric values are not modified - this test isn't accurate since in the actual
     /// code numeric values can be anonymized if they're in a column that should be anonymized.
@@ -197,7 +197,7 @@ public class AnonymizationServiceTests : IntegrationTestBase
         // The AnonymizationService in the actual code doesn't check for numeric values
         // It only checks if the column should be anonymized
     }
-    
+
     /// <summary>
     /// Tests that empty values are not modified.
     /// </summary>
@@ -210,14 +210,14 @@ public class AnonymizationServiceTests : IntegrationTestBase
             { "VM", 0 }
         };
         var originalValue = (XLCellValue)string.Empty;
-        
+
         // Act
         var result = AnonymizationService.AnonymizeValue(originalValue, 0, columnIndices);
-        
+
         // Assert
         Assert.Equal(originalValue, result);
     }
-    
+
     /// <summary>
     /// Tests that null values are not modified.
     /// </summary>
@@ -230,10 +230,10 @@ public class AnonymizationServiceTests : IntegrationTestBase
             { "VM", 0 }
         };
         var originalValue = XLCellValue.FromObject(null);
-        
+
         // Act
         var result = AnonymizationService.AnonymizeValue(originalValue, 0, columnIndices);
-        
+
         // Assert
         Assert.Equal(originalValue, result);
     }

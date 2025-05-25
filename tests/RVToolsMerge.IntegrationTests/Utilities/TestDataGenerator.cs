@@ -6,9 +6,9 @@
 // </copyright>
 //-----------------------------------------------------------------------
 
+using System.IO.Abstractions;
 using ClosedXML.Excel;
 using RVToolsMerge.Configuration;
-using System.IO.Abstractions;
 
 namespace RVToolsMerge.IntegrationTests.Utilities;
 
@@ -29,7 +29,7 @@ public class TestDataGenerator
     {
         _fileSystem = fileSystem;
         _testDataDirectory = testDataDirectory;
-        
+
         // Create test data directory if it doesn't exist
         if (!_fileSystem.Directory.Exists(_testDataDirectory))
         {
@@ -48,19 +48,19 @@ public class TestDataGenerator
     public string CreateValidRVToolsFile(string fileName, int numVMs = 5, int numHosts = 2, bool includeAllSheets = true)
     {
         string filePath = _fileSystem.Path.Combine(_testDataDirectory, fileName);
-        
+
         using var workbook = new XLWorkbook();
-        
+
         // Always create required sheets
         CreateVInfoSheet(workbook, numVMs);
-        
+
         if (includeAllSheets)
         {
             CreateVHostSheet(workbook, numHosts);
             CreateVPartitionSheet(workbook, numVMs);
             CreateVMemorySheet(workbook, numVMs);
         }
-        
+
         workbook.SaveAs(filePath);
         return filePath;
     }
@@ -74,12 +74,12 @@ public class TestDataGenerator
     public string CreateFileWithAlternativeHeaders(string fileName, int numVMs = 5)
     {
         string filePath = _fileSystem.Path.Combine(_testDataDirectory, fileName);
-        
+
         using var workbook = new XLWorkbook();
-        
+
         // Create vInfo sheet with alternative headers
         var vInfoSheet = workbook.AddWorksheet("vInfo");
-        
+
         // Add all mandatory columns for vInfo with alternative header names
         vInfoSheet.Cell(1, 1).Value = "vInfoVMName";        // Should map to "VM"
         vInfoSheet.Cell(1, 2).Value = "vInfoPowerstate";    // Should map to "Powerstate"
@@ -89,7 +89,7 @@ public class TestDataGenerator
         vInfoSheet.Cell(1, 6).Value = "vInfoInUse";         // Should map to "In Use MiB" 
         vInfoSheet.Cell(1, 7).Value = "vInfoOS";            // Should map to "OS according to the configuration file"
         vInfoSheet.Cell(1, 8).Value = "vInfoSRMPlaceHolder"; // Should map to "SRM Placeholder"
-        
+
         // Add data rows
         for (int i = 1; i <= numVMs; i++)
         {
@@ -102,9 +102,9 @@ public class TestDataGenerator
             vInfoSheet.Cell(i + 1, 7).Value = $"Windows Server 201{i % 2 + 8}";
             vInfoSheet.Cell(i + 1, 8).Value = "FALSE";
         }
-        
+
         // Add additional required sheets with alternative headers
-        
+
         // vHost sheet with alternative headers
         var vHostSheet = workbook.AddWorksheet("vHost");
         vHostSheet.Cell(1, 1).Value = "vHostName";           // Maps to "Host"
@@ -118,7 +118,7 @@ public class TestDataGenerator
         vHostSheet.Cell(1, 9).Value = "vHostOverallCpuUsage"; // Maps to "CPU usage %"
         vHostSheet.Cell(1, 10).Value = "vHostMemorySize";     // Maps to "# Memory"
         vHostSheet.Cell(1, 11).Value = "vHostOverallMemoryUsage"; // Maps to "Memory usage %"
-        
+
         // Add sample data
         for (int i = 1; i <= 2; i++)
         {
@@ -134,14 +134,14 @@ public class TestDataGenerator
             vHostSheet.Cell(i + 1, 10).Value = 192 * 1024;
             vHostSheet.Cell(i + 1, 11).Value = 40 + (i * 5);
         }
-        
+
         // vPartition sheet with alternative headers
         var vPartitionSheet = workbook.AddWorksheet("vPartition");
         vPartitionSheet.Cell(1, 1).Value = "vPartitionVMName"; // Maps to "VM"
         vPartitionSheet.Cell(1, 2).Value = "vPartitionDisk";   // Maps to "Disk"
         vPartitionSheet.Cell(1, 3).Value = "vPartitionCapacityMiB"; // Maps to "Capacity MiB"
         vPartitionSheet.Cell(1, 4).Value = "vPartitionConsumedMiB"; // Maps to "Consumed MiB"
-        
+
         // Add sample data
         int row = 2;
         for (int i = 1; i <= numVMs; i++)
@@ -153,13 +153,13 @@ public class TestDataGenerator
             vPartitionSheet.Cell(row, 4).Value = 25600;
             row++;
         }
-        
+
         // vMemory sheet with alternative headers
         var vMemorySheet = workbook.AddWorksheet("vMemory");
         vMemorySheet.Cell(1, 1).Value = "vMemoryVMName";      // Maps to "VM"
         vMemorySheet.Cell(1, 2).Value = "vMemorySizeMiB";     // Maps to "Size MiB"
         vMemorySheet.Cell(1, 3).Value = "vMemoryReservation"; // Maps to "Reservation"
-        
+
         // Add sample data
         for (int i = 1; i <= numVMs; i++)
         {
@@ -167,7 +167,7 @@ public class TestDataGenerator
             vMemorySheet.Cell(i + 1, 2).Value = 4096 * i;
             vMemorySheet.Cell(i + 1, 3).Value = i % 2 == 0 ? 2048 : 0;
         }
-        
+
         workbook.SaveAs(filePath);
         return filePath;
     }
@@ -180,15 +180,15 @@ public class TestDataGenerator
     public string CreateInvalidRVToolsFile(string fileName)
     {
         string filePath = _fileSystem.Path.Combine(_testDataDirectory, fileName);
-        
+
         using var workbook = new XLWorkbook();
-        
+
         // Create empty vInfo sheet without required columns
         var vInfoSheet = workbook.AddWorksheet("vInfo");
         vInfoSheet.Cell(1, 1).Value = "VM";
         vInfoSheet.Cell(1, 2).Value = "Powerstate";
         // Missing several required columns
-        
+
         workbook.SaveAs(filePath);
         return filePath;
     }
@@ -201,11 +201,11 @@ public class TestDataGenerator
     public string CreateFileForAnonymizationTesting(string fileName)
     {
         string filePath = _fileSystem.Path.Combine(_testDataDirectory, fileName);
-        
+
         using var workbook = new XLWorkbook();
-        
+
         var vInfoSheet = workbook.AddWorksheet("vInfo");
-        
+
         // Add headers
         vInfoSheet.Cell(1, 1).Value = "VM";
         vInfoSheet.Cell(1, 2).Value = "Powerstate";
@@ -217,7 +217,7 @@ public class TestDataGenerator
         vInfoSheet.Cell(1, 8).Value = "OS according to the configuration file";
         vInfoSheet.Cell(1, 9).Value = "Primary IP Address";
         vInfoSheet.Cell(1, 10).Value = "SRM Placeholder";
-        
+
         // Add data with items that should be anonymized
         vInfoSheet.Cell(2, 1).Value = "CONFIDENTIAL-SERVER-01";
         vInfoSheet.Cell(2, 2).Value = "poweredOn";
@@ -229,7 +229,7 @@ public class TestDataGenerator
         vInfoSheet.Cell(2, 8).Value = "Windows Server 2019";
         vInfoSheet.Cell(2, 9).Value = "192.168.1.100";
         vInfoSheet.Cell(2, 10).Value = "FALSE";
-        
+
         workbook.SaveAs(filePath);
         return filePath;
     }
@@ -242,7 +242,7 @@ public class TestDataGenerator
     private void CreateVInfoSheet(XLWorkbook workbook, int numVMs)
     {
         var vInfoSheet = workbook.AddWorksheet("vInfo");
-        
+
         // Add headers - using standard names as defined in the app
         vInfoSheet.Cell(1, 1).Value = "VM";
         vInfoSheet.Cell(1, 2).Value = "Powerstate";
@@ -255,7 +255,7 @@ public class TestDataGenerator
         vInfoSheet.Cell(1, 9).Value = "Cluster";
         vInfoSheet.Cell(1, 10).Value = "Host";
         vInfoSheet.Cell(1, 11).Value = "SRM Placeholder";
-        
+
         // Add data rows
         for (int i = 1; i <= numVMs; i++)
         {
@@ -281,7 +281,7 @@ public class TestDataGenerator
     private void CreateVHostSheet(XLWorkbook workbook, int numHosts)
     {
         var vHostSheet = workbook.AddWorksheet("vHost");
-        
+
         // Add headers
         vHostSheet.Cell(1, 1).Value = "Host";
         vHostSheet.Cell(1, 2).Value = "Datacenter";
@@ -294,7 +294,7 @@ public class TestDataGenerator
         vHostSheet.Cell(1, 9).Value = "CPU usage %";
         vHostSheet.Cell(1, 10).Value = "# Memory";
         vHostSheet.Cell(1, 11).Value = "Memory usage %";
-        
+
         // Add data rows
         for (int i = 1; i <= numHosts; i++)
         {
@@ -320,13 +320,13 @@ public class TestDataGenerator
     private void CreateVPartitionSheet(XLWorkbook workbook, int numVMs)
     {
         var vPartitionSheet = workbook.AddWorksheet("vPartition");
-        
+
         // Add headers
         vPartitionSheet.Cell(1, 1).Value = "VM";
         vPartitionSheet.Cell(1, 2).Value = "Disk";
         vPartitionSheet.Cell(1, 3).Value = "Capacity MiB";
         vPartitionSheet.Cell(1, 4).Value = "Consumed MiB";
-        
+
         // Add data rows - assume each VM has 2 disks
         int row = 2;
         for (int i = 1; i <= numVMs; i++)
@@ -337,7 +337,7 @@ public class TestDataGenerator
             vPartitionSheet.Cell(row, 3).Value = 51200; // 50 GB
             vPartitionSheet.Cell(row, 4).Value = 25600; // 25 GB used
             row++;
-            
+
             // Data disk
             vPartitionSheet.Cell(row, 1).Value = $"TestVM{i:D2}";
             vPartitionSheet.Cell(row, 2).Value = "Hard disk 2";
@@ -355,12 +355,12 @@ public class TestDataGenerator
     private void CreateVMemorySheet(XLWorkbook workbook, int numVMs)
     {
         var vMemorySheet = workbook.AddWorksheet("vMemory");
-        
+
         // Add headers
         vMemorySheet.Cell(1, 1).Value = "VM";
         vMemorySheet.Cell(1, 2).Value = "Size MiB";
         vMemorySheet.Cell(1, 3).Value = "Reservation";
-        
+
         // Add data rows
         for (int i = 1; i <= numVMs; i++)
         {

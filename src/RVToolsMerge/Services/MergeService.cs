@@ -5,13 +5,13 @@
 //     Licensed under the MIT License
 // </copyright>
 //-----------------------------------------------------------------------
+using System.IO.Abstractions;
 using ClosedXML.Excel;
 using RVToolsMerge.Configuration;
 using RVToolsMerge.Exceptions;
 using RVToolsMerge.Models;
 using RVToolsMerge.Services.Interfaces;
 using Spectre.Console;
-using System.IO.Abstractions;
 
 namespace RVToolsMerge.Services;
 

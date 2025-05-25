@@ -26,11 +26,11 @@ public class AnonymizationServiceExtendedTests : IntegrationTestBase
     {
         // Act
         var result = AnonymizationService.GetAnonymizationStatistics();
-        
+
         // Assert
         Assert.NotNull(result);
     }
-    
+
     /// <summary>
     /// Tests anonymization of various column types.
     /// </summary>
@@ -46,13 +46,13 @@ public class AnonymizationServiceExtendedTests : IntegrationTestBase
         // Arrange
         var columnIndices = new Dictionary<string, int> { { columnName, columnIndex } };
         var originalValue = (XLCellValue)value;
-        
+
         // Act
         var result = AnonymizationService.AnonymizeValue(originalValue, columnIndex, columnIndices);
-        
+
         // Assert
         Assert.NotEqual(originalValue, result);
-        
+
         // Verify prefix based on column type
         string expectedPrefix = columnName.ToLowerInvariant().Split(' ')[0];
         // Special case for "Primary IP Address" which uses "ip" as prefix
@@ -62,7 +62,7 @@ public class AnonymizationServiceExtendedTests : IntegrationTestBase
         }
         Assert.StartsWith(expectedPrefix, result.ToString().ToLowerInvariant());
     }
-    
+
     /// <summary>
     /// Tests that different types of columns are anonymized with different prefixes.
     /// </summary>
@@ -73,25 +73,25 @@ public class AnonymizationServiceExtendedTests : IntegrationTestBase
         var vmColumnIndices = new Dictionary<string, int> { { "VM", 0 } };
         var hostColumnIndices = new Dictionary<string, int> { { "Host", 0 } };
         var ipColumnIndices = new Dictionary<string, int> { { "Primary IP Address", 0 } };
-        
+
         var originalValue = (XLCellValue)"test-value";
-        
+
         // Act
         var vmResult = AnonymizationService.AnonymizeValue(originalValue, 0, vmColumnIndices);
         var hostResult = AnonymizationService.AnonymizeValue(originalValue, 0, hostColumnIndices);
         var ipResult = AnonymizationService.AnonymizeValue(originalValue, 0, ipColumnIndices);
-        
+
         // Assert - different columns should have different prefixes
         Assert.StartsWith("vm", vmResult.ToString().ToLowerInvariant());
         Assert.StartsWith("host", hostResult.ToString().ToLowerInvariant());
         Assert.StartsWith("ip", ipResult.ToString().ToLowerInvariant());
-        
+
         // Different column types should produce different anonymized values
         Assert.NotEqual(vmResult, hostResult);
         Assert.NotEqual(vmResult, ipResult);
         Assert.NotEqual(hostResult, ipResult);
     }
-    
+
     /// <summary>
     /// Tests that anonymization is consistent for the same input.
     /// </summary>
@@ -101,15 +101,15 @@ public class AnonymizationServiceExtendedTests : IntegrationTestBase
         // Arrange
         var columnIndices = new Dictionary<string, int> { { "VM", 0 } };
         var originalValue = (XLCellValue)"test-vm-01";
-        
+
         // Act
         var result1 = AnonymizationService.AnonymizeValue(originalValue, 0, columnIndices);
         var result2 = AnonymizationService.AnonymizeValue(originalValue, 0, columnIndices);
-        
+
         // Assert
         Assert.Equal(result1, result2);
     }
-    
+
     /// <summary>
     /// Tests that empty values are not anonymized.
     /// </summary>
@@ -119,14 +119,14 @@ public class AnonymizationServiceExtendedTests : IntegrationTestBase
         // Arrange
         var columnIndices = new Dictionary<string, int> { { "VM", 0 } };
         var originalValue = (XLCellValue)string.Empty;
-        
+
         // Act
         var result = AnonymizationService.AnonymizeValue(originalValue, 0, columnIndices);
-        
+
         // Assert
         Assert.Equal(originalValue, result);
     }
-    
+
     /// <summary>
     /// Tests that white space values are not anonymized.
     /// </summary>
@@ -136,14 +136,14 @@ public class AnonymizationServiceExtendedTests : IntegrationTestBase
         // Arrange
         var columnIndices = new Dictionary<string, int> { { "VM", 0 } };
         var originalValue = (XLCellValue)"   ";
-        
+
         // Act
         var result = AnonymizationService.AnonymizeValue(originalValue, 0, columnIndices);
-        
+
         // Assert
         Assert.Equal(originalValue, result);
     }
-    
+
     /// <summary>
     /// Tests that anonymization statistics are updated correctly.
     /// </summary>
@@ -154,14 +154,14 @@ public class AnonymizationServiceExtendedTests : IntegrationTestBase
         var service = new AnonymizationService();
         var vmColumnIndices = new Dictionary<string, int> { { "VM", 0 } };
         var hostColumnIndices = new Dictionary<string, int> { { "Host", 0 } };
-        
+
         // Act - Anonymize multiple values
         service.AnonymizeValue((XLCellValue)"vm1", 0, vmColumnIndices);
         service.AnonymizeValue((XLCellValue)"vm2", 0, vmColumnIndices);
         service.AnonymizeValue((XLCellValue)"host1", 0, hostColumnIndices);
-        
+
         var stats = service.GetAnonymizationStatistics();
-        
+
         // Assert
         Assert.Equal(2, stats["VMs"]);
         Assert.Equal(1, stats["Hosts"]);

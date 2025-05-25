@@ -6,11 +6,11 @@
 // </copyright>
 //-----------------------------------------------------------------------
 
+using System.IO.Abstractions.TestingHelpers;
+using Microsoft.Extensions.DependencyInjection;
 using RVToolsMerge.Models;
 using RVToolsMerge.Services;
 using RVToolsMerge.Services.Interfaces;
-using System.IO.Abstractions.TestingHelpers;
-using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace RVToolsMerge.IntegrationTests;
@@ -50,7 +50,7 @@ public class CommandLineTests
     {
         // Arrange
         var options = new MergeOptions();
-        string[] args = 
+        string[] args =
         {
             "-m", "-i", "-a", "-M", "-s", "-e", "-d",
             "/tmp/rvtools_test/test.xlsx",
@@ -81,14 +81,14 @@ public class CommandLineTests
     {
         // Arrange
         var options = new MergeOptions();
-        string[] args = 
+        string[] args =
         {
-            "--ignore-missing-sheets", 
-            "--skip-invalid-files", 
-            "--anonymize", 
-            "--only-mandatory-columns", 
-            "--include-source", 
-            "--skip-empty-values", 
+            "--ignore-missing-sheets",
+            "--skip-invalid-files",
+            "--anonymize",
+            "--only-mandatory-columns",
+            "--include-source",
+            "--skip-empty-values",
             "--debug",
             "/tmp/rvtools_test/test.xlsx",
             "/tmp/output.xlsx"
@@ -179,10 +179,10 @@ public class CommandLineTests
     {
         // Arrange
         var options = new MergeOptions();
-        string[] args = 
+        string[] args =
         {
             "/tmp/rvtools_test/test.xlsx",
-            "-a", 
+            "-a",
             "/tmp/output.xlsx",
             "-d"
         };
@@ -213,7 +213,7 @@ public class CommandLineTests
         services.AddSingleton<IConsoleService>(mockConsoleService);
         services.AddTransient<ConsoleUIService>();
         var serviceProvider = services.BuildServiceProvider();
-        
+
         var testRunner = new TestApplicationRunner(
             serviceProvider.GetRequiredService<ConsoleUIService>(),
             null!, // MergeService not needed for this test
@@ -222,9 +222,9 @@ public class CommandLineTests
 
         // Act
         bool isValid = testRunner.TestValidateInputPath(
-            "/tmp/rvtools_test/test.xlsx", 
-            out bool isInputFile, 
-            out bool isInputDirectory, 
+            "/tmp/rvtools_test/test.xlsx",
+            out bool isInputFile,
+            out bool isInputDirectory,
             out string[] excelFiles);
 
         // Assert
@@ -247,7 +247,7 @@ public class CommandLineTests
         services.AddSingleton<IConsoleService>(mockConsoleService);
         services.AddTransient<ConsoleUIService>();
         var serviceProvider = services.BuildServiceProvider();
-        
+
         var testRunner = new TestApplicationRunner(
             serviceProvider.GetRequiredService<ConsoleUIService>(),
             null!, // MergeService not needed for this test
@@ -256,9 +256,9 @@ public class CommandLineTests
 
         // Act
         bool isValid = testRunner.TestValidateInputPath(
-            "/tmp/rvtools_test/subdir", 
-            out bool isInputFile, 
-            out bool isInputDirectory, 
+            "/tmp/rvtools_test/subdir",
+            out bool isInputFile,
+            out bool isInputDirectory,
             out string[] excelFiles);
 
         // Assert
@@ -282,7 +282,7 @@ public class CommandLineTests
         services.AddSingleton<IConsoleService>(mockConsoleService);
         services.AddTransient<ConsoleUIService>();
         var serviceProvider = services.BuildServiceProvider();
-        
+
         var testRunner = new TestApplicationRunner(
             serviceProvider.GetRequiredService<ConsoleUIService>(),
             null!, // MergeService not needed for this test
@@ -291,9 +291,9 @@ public class CommandLineTests
 
         // Act
         bool isValid = testRunner.TestValidateInputPath(
-            "/tmp/rvtools_test/empty_dir", 
-            out bool isInputFile, 
-            out bool isInputDirectory, 
+            "/tmp/rvtools_test/empty_dir",
+            out bool isInputFile,
+            out bool isInputDirectory,
             out string[] excelFiles);
 
         // Assert
@@ -315,7 +315,7 @@ public class CommandLineTests
         services.AddSingleton<IConsoleService>(mockConsoleService);
         services.AddTransient<ConsoleUIService>();
         var serviceProvider = services.BuildServiceProvider();
-        
+
         var testRunner = new TestApplicationRunner(
             serviceProvider.GetRequiredService<ConsoleUIService>(),
             null!, // MergeService not needed for this test
@@ -324,9 +324,9 @@ public class CommandLineTests
 
         // Act
         bool isValid = testRunner.TestValidateInputPath(
-            "/tmp/path/does/not/exist", 
-            out bool isInputFile, 
-            out bool isInputDirectory, 
+            "/tmp/path/does/not/exist",
+            out bool isInputFile,
+            out bool isInputDirectory,
             out string[] excelFiles);
 
         // Assert
@@ -348,7 +348,7 @@ public class CommandLineTests
         services.AddSingleton<IConsoleService>(mockConsoleService);
         services.AddTransient<ConsoleUIService>();
         var serviceProvider = services.BuildServiceProvider();
-        
+
         var testRunner = new TestApplicationRunner(
             serviceProvider.GetRequiredService<ConsoleUIService>(),
             null!, // MergeService not needed for this test
@@ -357,9 +357,9 @@ public class CommandLineTests
 
         // Act
         bool isValid = testRunner.TestValidateInputPath(
-            "/tmp/rvtools_test/test.txt", 
-            out bool isInputFile, 
-            out bool isInputDirectory, 
+            "/tmp/rvtools_test/test.txt",
+            out bool isInputFile,
+            out bool isInputDirectory,
             out string[] excelFiles);
 
         // Assert
@@ -394,7 +394,7 @@ public class TestApplicationRunner : RVToolsMerge.ApplicationRunner
     {
         // Use reflection to call the private method
         var method = typeof(RVToolsMerge.ApplicationRunner).GetMethod(
-            "ValidateInputPath", 
+            "ValidateInputPath",
             System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
 
         isInputFile = false;
