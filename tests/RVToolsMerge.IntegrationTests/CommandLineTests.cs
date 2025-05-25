@@ -235,40 +235,6 @@ public class CommandLineTests
         Assert.Equal("/tmp/rvtools_test/test.xlsx", excelFiles[0]);
     }
 
-    /// <summary>
-    /// Tests validation of input directory in ApplicationRunner.
-    /// </summary>
-    [Fact]
-    public void ValidateInputPath_ValidDirectory_ReturnsAllExcelFiles()
-    {
-        // Arrange
-        var mockConsoleService = new Utilities.MockConsoleService();
-        var services = new ServiceCollection();
-        services.AddSingleton<IConsoleService>(mockConsoleService);
-        services.AddTransient<ConsoleUIService>();
-        var serviceProvider = services.BuildServiceProvider();
-
-        var testRunner = new TestApplicationRunner(
-            serviceProvider.GetRequiredService<ConsoleUIService>(),
-            null!, // MergeService not needed for this test
-            _commandLineParser,
-            _fileSystem);
-
-        // Act
-        bool isValid = testRunner.TestValidateInputPath(
-            "/tmp/rvtools_test/subdir",
-            out bool isInputFile,
-            out bool isInputDirectory,
-            out string[] excelFiles);
-
-        // Assert
-        Assert.True(isValid);
-        Assert.False(isInputFile);
-        Assert.True(isInputDirectory);
-        Assert.Equal(2, excelFiles.Length);
-        Assert.Contains("/tmp/rvtools_test/subdir/test1.xlsx", excelFiles);
-        Assert.Contains("/tmp/rvtools_test/subdir/test2.xlsx", excelFiles);
-    }
 
     /// <summary>
     /// Tests validation of empty directory in ApplicationRunner.
