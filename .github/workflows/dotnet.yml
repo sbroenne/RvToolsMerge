@@ -20,6 +20,12 @@ on:
       - '**/Directory.Build.targets'
       - '**/global.json'
 
+permissions:
+  contents: read
+  checks: write
+  actions: read
+  pull-requests: write
+
 jobs:
   build:
     name: Build and Test

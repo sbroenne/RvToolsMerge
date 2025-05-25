@@ -7,6 +7,13 @@ on:
         type: string
         default: 'Debug'
         description: 'Build configuration (Debug/Release)'
+
+permissions:
+  contents: read
+  checks: write
+  actions: read
+  pull-requests: read
+
 jobs:
   build-windows:
     runs-on: windows-latest

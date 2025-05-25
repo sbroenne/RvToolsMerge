@@ -12,6 +12,10 @@ on:
     types:
       - completed
 
+permissions:
+  contents: read
+  actions: read
+
 jobs:
   notify:
     runs-on: ubuntu-latest

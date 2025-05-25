@@ -21,6 +21,13 @@ on:
         default: false
         type: boolean
 
+permissions:
+  contents: write  # Needed for GitHub Pages
+  pages: write     # Needed for GitHub Pages
+  id-token: write  # Needed for GitHub Pages
+  checks: write
+  pull-requests: write # Needed for PR comments
+
 jobs:
   generate-coverage:
     runs-on: ubuntu-latest
