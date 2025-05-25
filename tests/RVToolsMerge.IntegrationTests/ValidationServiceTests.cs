@@ -178,8 +178,7 @@ public class ValidationServiceTests : IntegrationTestBase
             "poweredOn",    // Powerstate - index 1
         };
         
-        // Include an index that's out of bounds (99)
-        var mandatoryColumnIndices = new List<int> { 0, 1, 99 };
+        
         
         // Act & Assert
         // This test is mainly to verify the method doesn't throw an exception
