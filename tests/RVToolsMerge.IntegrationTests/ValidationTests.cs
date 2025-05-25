@@ -9,6 +9,7 @@
 using ClosedXML.Excel;
 using RVToolsMerge.Models;
 using RVToolsMerge.Exceptions;
+using RVToolsMerge.Configuration;
 using Xunit;
 
 namespace RVToolsMerge.IntegrationTests;
@@ -60,6 +61,121 @@ public class ValidationTests : IntegrationTestBase
         Assert.False(isValid);
         Assert.NotEmpty(issues);
         Assert.Contains(issues, issue => issue.Skipped && issue.ValidationError.Contains("mandatory column"));
+    }
+    
+    /// <summary>
+    /// Tests validation with missing optional sheets when not set to ignore them.
+    /// </summary>
+    [Fact]
+    public void ValidateFile_WithMissingOptionalSheets_WhenNotIgnoring_DetectsIssue()
+    {
+        // Arrange
+        // Create a file with only vInfo, missing other required sheets
+        var filePath = FileSystem.Path.Combine(TestInputDirectory, "missing_optional_sheets.xlsx");
+        using (var workbook = new XLWorkbook())
+        {
+            var sheet = workbook.AddWorksheet("vInfo");
+            
+            // Add all mandatory columns for vInfo
+            sheet.Cell(1, 1).Value = "VM";
+            sheet.Cell(1, 2).Value = "Powerstate";
+            sheet.Cell(1, 3).Value = "Template";
+            sheet.Cell(1, 4).Value = "CPUs";
+            sheet.Cell(1, 5).Value = "Memory";
+            sheet.Cell(1, 6).Value = "In Use MiB";
+            sheet.Cell(1, 7).Value = "OS according to the configuration file";
+            sheet.Cell(1, 8).Value = "SRM Placeholder";
+            
+            // Add one data row
+            sheet.Cell(2, 1).Value = "TestVM";
+            sheet.Cell(2, 2).Value = "poweredOn";
+            sheet.Cell(2, 3).Value = "FALSE";
+            sheet.Cell(2, 4).Value = 2;
+            sheet.Cell(2, 5).Value = 4096;
+            sheet.Cell(2, 6).Value = 2048;
+            sheet.Cell(2, 7).Value = "Windows Server 2019";
+            sheet.Cell(2, 8).Value = "FALSE";
+            
+            workbook.SaveAs(filePath);
+        }
+        
+        var issues = new List<ValidationIssue>();
+        
+        // Act - validate with ignoreMissingOptionalSheets = false
+        bool isValid = ValidationService.ValidateFile(filePath, false, issues);
+        
+        // Assert
+        Assert.False(isValid);
+        Assert.NotEmpty(issues);
+        
+        // Should have issues for each missing required sheet (vHost, vPartition, vMemory)
+        foreach (var requiredSheet in SheetConfiguration.RequiredSheets.Where(s => s != "vInfo"))
+        {
+            Assert.Contains(issues, issue => 
+                issue.Skipped && 
+                issue.ValidationError.Contains($"Missing optional sheet '{requiredSheet}'"));
+        }
+    }
+    
+    /// <summary>
+    /// Tests validation with each mandatory column missing individually.
+    /// </summary>
+    [Fact]
+    public void ValidateFile_WithEachMandatoryColumnMissing_DetectsIssue()
+    {
+        // Test each mandatory column for vInfo sheet
+        foreach (var mandatoryColumn in SheetConfiguration.MandatoryColumns["vInfo"])
+        {
+            // Arrange - create file with one mandatory column missing
+            var filePath = FileSystem.Path.Combine(TestInputDirectory, $"missing_{mandatoryColumn.Replace(" ", "_")}.xlsx");
+            using (var workbook = new XLWorkbook())
+            {
+                var sheet = workbook.AddWorksheet("vInfo");
+                
+                // Add all mandatory columns except the one we're testing
+                int colIndex = 1;
+                foreach (var column in SheetConfiguration.MandatoryColumns["vInfo"])
+                {
+                    if (column != mandatoryColumn)
+                    {
+                        sheet.Cell(1, colIndex++).Value = column;
+                    }
+                }
+                
+                workbook.SaveAs(filePath);
+            }
+            
+            var issues = new List<ValidationIssue>();
+            
+            // Act
+            bool isValid = ValidationService.ValidateFile(filePath, false, issues);
+            
+            // Assert
+            Assert.False(isValid, $"File with missing '{mandatoryColumn}' should be invalid");
+            Assert.NotEmpty(issues);
+            Assert.Contains(issues, issue => 
+                issue.Skipped && 
+                issue.ValidationError.Contains("mandatory column") && 
+                issue.ValidationError.Contains(mandatoryColumn));
+        }
+    }
+    
+    /// <summary>
+    /// Tests validation of alternative column headers based on SheetColumnHeaderMappings.
+    /// </summary>
+    [Fact]
+    public void ValidateFile_WithAlternativeHeaders_MapsCorrectly()
+    {
+        // Arrange
+        var filePath = TestDataGenerator.CreateFileWithAlternativeHeaders("alternative_headers.xlsx");
+        var issues = new List<ValidationIssue>();
+        
+        // Act
+        bool isValid = ValidationService.ValidateFile(filePath, false, issues);
+        
+        // Assert
+        Assert.True(isValid, "File with alternative headers should be valid");
+        Assert.Empty(issues.Where(i => i.Skipped)); // No critical issues
     }
     
     /// <summary>

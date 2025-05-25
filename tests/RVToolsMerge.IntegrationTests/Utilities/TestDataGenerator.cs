@@ -80,7 +80,7 @@ public class TestDataGenerator
         // Create vInfo sheet with alternative headers
         var vInfoSheet = workbook.AddWorksheet("vInfo");
         
-        // Add alternative headers (these should be mapped correctly based on SheetConfiguration.SheetColumnHeaderMappings)
+        // Add all mandatory columns for vInfo with alternative header names
         vInfoSheet.Cell(1, 1).Value = "vInfoVMName";        // Should map to "VM"
         vInfoSheet.Cell(1, 2).Value = "vInfoPowerstate";    // Should map to "Powerstate"
         vInfoSheet.Cell(1, 3).Value = "vInfoTemplate";      // Should map to "Template"
@@ -101,6 +101,71 @@ public class TestDataGenerator
             vInfoSheet.Cell(i + 1, 6).Value = 2048 * i;    // In Use MiB
             vInfoSheet.Cell(i + 1, 7).Value = $"Windows Server 201{i % 2 + 8}";
             vInfoSheet.Cell(i + 1, 8).Value = "FALSE";
+        }
+        
+        // Add additional required sheets with alternative headers
+        
+        // vHost sheet with alternative headers
+        var vHostSheet = workbook.AddWorksheet("vHost");
+        vHostSheet.Cell(1, 1).Value = "vHostName";           // Maps to "Host"
+        vHostSheet.Cell(1, 2).Value = "vHostDatacenter";     // Maps to "Datacenter"
+        vHostSheet.Cell(1, 3).Value = "vHostCluster";        // Maps to "Cluster"
+        vHostSheet.Cell(1, 4).Value = "vHostCpuModel";       // Maps to "CPU Model"
+        vHostSheet.Cell(1, 5).Value = "vHostCpuMhz";         // Maps to "Speed"
+        vHostSheet.Cell(1, 6).Value = "vHostNumCPU";         // Maps to "# CPU"
+        vHostSheet.Cell(1, 7).Value = "vHostCoresPerCPU";    // Maps to "Cores per CPU"
+        vHostSheet.Cell(1, 8).Value = "vHostNumCpuCores";    // Maps to "# Cores"
+        vHostSheet.Cell(1, 9).Value = "vHostOverallCpuUsage"; // Maps to "CPU usage %"
+        vHostSheet.Cell(1, 10).Value = "vHostMemorySize";     // Maps to "# Memory"
+        vHostSheet.Cell(1, 11).Value = "vHostOverallMemoryUsage"; // Maps to "Memory usage %"
+        
+        // Add sample data
+        for (int i = 1; i <= 2; i++)
+        {
+            vHostSheet.Cell(i + 1, 1).Value = $"Host{i}";
+            vHostSheet.Cell(i + 1, 2).Value = "Datacenter1";
+            vHostSheet.Cell(i + 1, 3).Value = "Cluster1";
+            vHostSheet.Cell(i + 1, 4).Value = "Intel Xeon Gold 6248R";
+            vHostSheet.Cell(i + 1, 5).Value = 3000;
+            vHostSheet.Cell(i + 1, 6).Value = 2;
+            vHostSheet.Cell(i + 1, 7).Value = 12;
+            vHostSheet.Cell(i + 1, 8).Value = 24;
+            vHostSheet.Cell(i + 1, 9).Value = 35 + (i * 10);
+            vHostSheet.Cell(i + 1, 10).Value = 192 * 1024;
+            vHostSheet.Cell(i + 1, 11).Value = 40 + (i * 5);
+        }
+        
+        // vPartition sheet with alternative headers
+        var vPartitionSheet = workbook.AddWorksheet("vPartition");
+        vPartitionSheet.Cell(1, 1).Value = "vPartitionVMName"; // Maps to "VM"
+        vPartitionSheet.Cell(1, 2).Value = "vPartitionDisk";   // Maps to "Disk"
+        vPartitionSheet.Cell(1, 3).Value = "vPartitionCapacityMiB"; // Maps to "Capacity MiB"
+        vPartitionSheet.Cell(1, 4).Value = "vPartitionConsumedMiB"; // Maps to "Consumed MiB"
+        
+        // Add sample data
+        int row = 2;
+        for (int i = 1; i <= numVMs; i++)
+        {
+            // System disk
+            vPartitionSheet.Cell(row, 1).Value = $"VM{i}";
+            vPartitionSheet.Cell(row, 2).Value = "Hard disk 1";
+            vPartitionSheet.Cell(row, 3).Value = 51200;
+            vPartitionSheet.Cell(row, 4).Value = 25600;
+            row++;
+        }
+        
+        // vMemory sheet with alternative headers
+        var vMemorySheet = workbook.AddWorksheet("vMemory");
+        vMemorySheet.Cell(1, 1).Value = "vMemoryVMName";      // Maps to "VM"
+        vMemorySheet.Cell(1, 2).Value = "vMemorySizeMiB";     // Maps to "Size MiB"
+        vMemorySheet.Cell(1, 3).Value = "vMemoryReservation"; // Maps to "Reservation"
+        
+        // Add sample data
+        for (int i = 1; i <= numVMs; i++)
+        {
+            vMemorySheet.Cell(i + 1, 1).Value = $"VM{i}";
+            vMemorySheet.Cell(i + 1, 2).Value = 4096 * i;
+            vMemorySheet.Cell(i + 1, 3).Value = i % 2 == 0 ? 2048 : 0;
         }
         
         workbook.SaveAs(filePath);
