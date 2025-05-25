@@ -28,7 +28,7 @@ jobs:
       - name: Get Current Version
         id: get-version
         run: |
-          CURRENT_VERSION=$(grep -o '<Version>[^<]*' RVToolsMerge.csproj | sed 's/<Version>//')
+          CURRENT_VERSION=$(grep -o '<Version>[^<]*' src/RVToolsMerge/RVToolsMerge.csproj | sed 's/<Version>//')
           echo "current_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
 
           # Handle complex versions with pre-release tags
@@ -106,11 +106,11 @@ jobs:
           ASSEMBLY_VERSION="${{ steps.calc-version.outputs.assembly_version }}"
 
           # Update the package version
-          sed -i "s/<Version>.*<\/Version>/<Version>$PACKAGE_VERSION<\/Version>/g" RVToolsMerge.csproj
+          sed -i "s/<Version>.*<\/Version>/<Version>$PACKAGE_VERSION<\/Version>/g" src/RVToolsMerge/RVToolsMerge.csproj
 
           # Update assembly and file versions (must be strictly numeric with 4 parts)
-          sed -i "s/<AssemblyVersion>.*<\/AssemblyVersion>/<AssemblyVersion>$ASSEMBLY_VERSION<\/AssemblyVersion>/g" RVToolsMerge.csproj
-          sed -i "s/<FileVersion>.*<\/FileVersion>/<FileVersion>$ASSEMBLY_VERSION<\/FileVersion>/g" RVToolsMerge.csproj
+          sed -i "s/<AssemblyVersion>.*<\/AssemblyVersion>/<AssemblyVersion>$ASSEMBLY_VERSION<\/AssemblyVersion>/g" src/RVToolsMerge/RVToolsMerge.csproj
+          sed -i "s/<FileVersion>.*<\/FileVersion>/<FileVersion>$ASSEMBLY_VERSION<\/FileVersion>/g" src/RVToolsMerge/RVToolsMerge.csproj
 
           echo "::notice::Version updated from ${{ steps.get-version.outputs.current_version }} to package version $PACKAGE_VERSION (assembly version: $ASSEMBLY_VERSION)"
 
@@ -121,7 +121,7 @@ jobs:
           VERSION_BRANCH="version-update-${{ steps.calc-version.outputs.package_version }}"
           git checkout -b $VERSION_BRANCH
           echo "branch_name=$VERSION_BRANCH" >> $GITHUB_OUTPUT
-          git add RVToolsMerge.csproj
+          git add src/RVToolsMerge/RVToolsMerge.csproj
           git config --local user.email "actions@github.com"
           git config --local user.name "GitHub Actions"
           git commit -m "chore: bump version to ${{ steps.calc-version.outputs.package_version }} [skip ci]"
