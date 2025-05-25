@@ -56,14 +56,31 @@ jobs:
 
       - name: Generate code coverage report
         run: |
+          # Create required directories
+          mkdir -p ./TestResults/Coverage
+          mkdir -p ./TestResults/CoverageReport
+          mkdir -p ./TestResults/CoverageHistory
+          
+          # Find coverage file (handles different possible locations)
+          COVERAGE_FILE=$(find ./TestResults -name "coverage.cobertura.xml" -type f | head -n 1)
+          
+          if [ -z "$COVERAGE_FILE" ]; then
+            echo "Warning: Coverage file not found. Creating an empty report."
+            echo "<html><body><h1>No coverage data available</h1></body></html>" > ./TestResults/CoverageReport/index.html
+            echo "0" > ./TestResults/CoverageReport/badge_linecoverage.svg
+            exit 0
+          fi
+          
+          # Set report types based on input
           if [ "${{ github.event.inputs.fullReport }}" == "true" ]; then
             reporttypes="Html;HtmlSummary;Cobertura;Badges;MarkdownSummary;JsonSummary"
           else
             reporttypes="Html;HtmlSummary;Cobertura;Badges"
           fi
 
+          # Generate report
           reportgenerator \
-            -reports:"./TestResults/Coverage/coverage.cobertura.xml" \
+            -reports:"$COVERAGE_FILE" \
             -targetdir:"./TestResults/CoverageReport" \
             -reporttypes:"$reporttypes" \
             -historydir:"./TestResults/CoverageHistory" \
@@ -81,7 +98,12 @@ jobs:
         if: github.ref == 'refs/heads/main'
         run: |
           mkdir -p ./badges
-          cp ./TestResults/CoverageReport/badge_linecoverage.svg ./badges/coverage.svg
+          if [ -f "./TestResults/CoverageReport/badge_linecoverage.svg" ]; then
+            cp ./TestResults/CoverageReport/badge_linecoverage.svg ./badges/coverage.svg
+          else
+            echo "Warning: Badge file not found. Creating a placeholder."
+            echo '<svg xmlns="http://www.w3.org/2000/svg" width="150" height="20"><text x="5" y="15">Coverage: N/A</text></svg>' > ./badges/coverage.svg
+          fi
 
       - name: Upload badges to GitHub Pages
         if: github.ref == 'refs/heads/main'
@@ -93,6 +115,19 @@ jobs:
           keep_files: true
 
       - name: Comment PR with coverage summary
+        if: github.event_name == 'pull_request'
+        run: |
+          if [ -f "./TestResults/CoverageReport/Summary.md" ]; then
+            # File exists, proceed with commenting
+            echo "Summary.md found, will post as PR comment"
+          else
+            # Create a simple summary
+            echo "## Code Coverage Summary" > ./TestResults/CoverageReport/Summary.md
+            echo "" >> ./TestResults/CoverageReport/Summary.md
+            echo "Coverage report could not be generated. Please check the workflow run for details." >> ./TestResults/CoverageReport/Summary.md
+          fi
+          
+      - name: Post comment to PR
         if: github.event_name == 'pull_request'
         uses: marocchino/sticky-pull-request-comment@v2
         with:

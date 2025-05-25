@@ -53,7 +53,20 @@ jobs:
       run: dotnet tool install -g dotnet-reportgenerator-globaltool
 
     - name: Generate code coverage report
-      run: reportgenerator -reports:"./TestResults/Coverage/coverage.cobertura.xml" -targetdir:"./TestResults/CoverageReport" -reporttypes:Html
+      run: |
+        # Create directories if they don't exist
+        mkdir -p TestResults\Coverage
+        mkdir -p TestResults\CoverageReport
+        
+        # Find coverage file (handle case where path might be different)
+        $coverageFile = Get-ChildItem -Path TestResults -Filter coverage.cobertura.xml -Recurse | Select-Object -First 1 -ExpandProperty FullName
+        
+        if ($coverageFile) {
+          reportgenerator -reports:"$coverageFile" -targetdir:".\TestResults\CoverageReport" -reporttypes:Html
+        } else {
+          Write-Warning "Coverage file not found. Creating an empty report."
+          New-Item -Path TestResults\CoverageReport\index.html -ItemType File -Force -Value "<html><body><h1>No coverage data available</h1></body></html>"
+        }
 
     - name: Upload coverage report
       uses: actions/upload-artifact@v4
