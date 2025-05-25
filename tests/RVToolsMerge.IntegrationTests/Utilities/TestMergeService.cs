@@ -115,8 +115,7 @@ public class TestMergeService : IMergeService
         // Dictionary to store common columns for each sheet
         var commonColumns = new Dictionary<string, List<string>>();
 
-        // Dictionary to store column indices for anonymization
-        var anonymizeColumnIndices = new Dictionary<string, Dictionary<string, int>>();
+        // Dictionary to store column indices for anonymization (currently unused)
 
         // Validate files first - no progress tracking in test mode
         await ValidateFilesAsync(validFilePaths, options, validationIssues);
