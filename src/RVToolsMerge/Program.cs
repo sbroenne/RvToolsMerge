@@ -5,10 +5,10 @@
 //     Licensed under the MIT License
 // </copyright>
 //-----------------------------------------------------------------------
+using System.IO.Abstractions;
 using Microsoft.Extensions.DependencyInjection;
 using RVToolsMerge.Services;
 using RVToolsMerge.Services.Interfaces;
-using System.IO.Abstractions;
 
 namespace RVToolsMerge;
 

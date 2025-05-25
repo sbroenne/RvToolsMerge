@@ -6,13 +6,13 @@
 // </copyright>
 //-----------------------------------------------------------------------
 
+using System.IO.Abstractions;
 using ClosedXML.Excel;
 using RVToolsMerge.Configuration;
 using RVToolsMerge.Exceptions;
 using RVToolsMerge.Models;
 using RVToolsMerge.Services;
 using RVToolsMerge.Services.Interfaces;
-using System.IO.Abstractions;
 
 namespace RVToolsMerge.IntegrationTests.Utilities;
 
@@ -26,7 +26,7 @@ public class TestMergeService : IMergeService
     private readonly IAnonymizationService _anonymizationService;
     private readonly ConsoleUIService _consoleUiService;
     private readonly IFileSystem _fileSystem;
-    
+
     /// <summary>
     /// Initializes a new instance of the <see cref="TestMergeService"/> class.
     /// </summary>
@@ -48,7 +48,7 @@ public class TestMergeService : IMergeService
         _consoleUiService = consoleUiService;
         _fileSystem = fileSystem;
     }
-    
+
     /// <summary>
     /// Merges multiple RVTools Excel files into a single file.
     /// This version is optimized for tests without using Spectre.Console's Progress features.
@@ -80,7 +80,7 @@ public class TestMergeService : IMergeService
             if (!_fileSystem.File.Exists(filePath) && filePath.Contains("/tmp/rvtools_test/"))
             {
                 // This is a test scenario, so we can mock the file for validation purposes
-                try 
+                try
                 {
                     // For tests, create an empty file to avoid FileNotFound exceptions
                     // The actual content should be added by the test setup
@@ -89,7 +89,7 @@ public class TestMergeService : IMergeService
                     {
                         _fileSystem.Directory.CreateDirectory(directory);
                     }
-                    
+
                     if (!_fileSystem.File.Exists(filePath))
                     {
                         using var stream = _fileSystem.File.Create(filePath);
@@ -132,15 +132,15 @@ public class TestMergeService : IMergeService
         {
             // Create a simple set of columns for testing
             commonColumns[sheetName] = new List<string>();
-            
+
             // Add basic columns expected in tests
             if (sheetName == "vInfo")
             {
-                commonColumns[sheetName].AddRange(new[] { 
-                    "VM", "Powerstate", "Template", "CPUs", "Memory", 
+                commonColumns[sheetName].AddRange(new[] {
+                    "VM", "Powerstate", "Template", "CPUs", "Memory",
                     "In Use MiB", "OS according to the configuration file", "SRM Placeholder"
                 });
-                
+
                 if (options.IncludeSourceFileName)
                 {
                     commonColumns[sheetName].Add("Source File");
@@ -165,22 +165,22 @@ public class TestMergeService : IMergeService
                     "VM", "Size MiB", "Reservation"
                 });
             }
-            
+
             // For each sheet, add a header row
             mergedData[sheetName] = [
                 commonColumns[sheetName].Select(col => (XLCellValue)col).ToArray()
             ];
-            
+
             // Add some fake data rows for testing
             for (int i = 1; i <= 5; i++)
             {
                 var rowData = new XLCellValue[commonColumns[sheetName].Count];
-                
+
                 // Fill with some test data based on sheet type
                 for (int col = 0; col < commonColumns[sheetName].Count; col++)
                 {
                     string colName = commonColumns[sheetName][col];
-                    
+
                     // Set values based on column name
                     if (colName == "VM") rowData[col] = $"TestVM{i:D2}";
                     else if (colName == "Host") rowData[col] = $"Host{i % 3 + 1}";
@@ -199,7 +199,7 @@ public class TestMergeService : IMergeService
                     else if (colName == "Reservation") rowData[col] = i % 2 == 0 ? 2048 : 0;
                     else rowData[col] = $"Value{i}";
                 }
-                
+
                 mergedData[sheetName].Add(rowData);
             }
         }
@@ -212,27 +212,27 @@ public class TestMergeService : IMergeService
                 int vmColIndex = commonColumns[sheetName].IndexOf("VM");
                 int dnsColIndex = commonColumns[sheetName].IndexOf("DNS Name");
                 int ipColIndex = commonColumns[sheetName].IndexOf("Primary IP Address");
-                
+
                 if (vmColIndex >= 0 || dnsColIndex >= 0 || ipColIndex >= 0)
                 {
                     for (int row = 1; row < mergedData[sheetName].Count; row++)
                     {
                         var rowData = mergedData[sheetName][row];
-                        
+
                         // Anonymize VM names
                         if (vmColIndex >= 0)
                         {
                             string originalValue = rowData[vmColIndex].ToString() ?? "";
                             rowData[vmColIndex] = $"VM-{Math.Abs(originalValue.GetHashCode()) % 1000:D3}";
                         }
-                        
+
                         // Anonymize DNS names
                         if (dnsColIndex >= 0)
                         {
                             string originalValue = rowData[dnsColIndex].ToString() ?? "";
                             rowData[dnsColIndex] = $"host-{Math.Abs(originalValue.GetHashCode()) % 1000:D3}.example.com";
                         }
-                        
+
                         // Anonymize IP addresses
                         if (ipColIndex >= 0)
                         {
@@ -246,7 +246,7 @@ public class TestMergeService : IMergeService
 
         // Create output file - no progress tracking in test mode
         await CreateOutputFileAsync(outputPath, availableSheets.ToList(), mergedData, commonColumns);
-        
+
         // Ensure the file was created in the mock file system
         if (!_fileSystem.File.Exists(outputPath))
         {
@@ -260,7 +260,7 @@ public class TestMergeService : IMergeService
         {
             // In test mode, we'll handle validation differently to support tests
             // We won't actually validate files in the TestMergeService to avoid file existence issues
-            
+
             // If any validation issues were already provided, use those
             if (validationIssues.Count > 0)
             {
@@ -271,7 +271,7 @@ public class TestMergeService : IMergeService
                         .Where(issue => issue.Skipped)
                         .Select(issue => issue.FileName)
                         .ToHashSet();
-                    
+
                     for (int i = validFilePaths.Count - 1; i >= 0; i--)
                     {
                         var fileName = _fileSystem.Path.GetFileName(validFilePaths[i]);
@@ -307,7 +307,7 @@ public class TestMergeService : IMergeService
                         {
                             continue;
                         }
-                        
+
                         using (var workbook = new XLWorkbook(filePath))
                         {
                             if (_excelService.SheetExists(workbook, sheetName))
@@ -344,7 +344,7 @@ public class TestMergeService : IMergeService
 
                     // Start with mandatory columns
                     var filteredColumns = new List<string>();
-                    
+
                     // Add each mandatory column if it exists in any file
                     foreach (var mandatoryCol in mandatoryColumns)
                     {
@@ -353,7 +353,7 @@ public class TestMergeService : IMergeService
                             filteredColumns.Add(mandatoryCol);
                         }
                     }
-                    
+
                     commonColumns[sheetName] = filteredColumns;
                 }
                 else
@@ -454,7 +454,7 @@ public class TestMergeService : IMergeService
                         }
 
                         var fileName = _fileSystem.Path.GetFileName(filePath);
-                        
+
                         try
                         {
                             using var workbook = new XLWorkbook(filePath);
@@ -550,7 +550,7 @@ public class TestMergeService : IMergeService
                                 fileName,
                                 true,
                                 $"Error processing file: {ex.Message}"));
-                            
+
                             if (!options.SkipInvalidFiles)
                             {
                                 throw;
@@ -618,14 +618,14 @@ public class TestMergeService : IMergeService
                     // For tests, we create an empty mock file in the MockFileSystem
                     // Since we can't actually save a real Excel file in the mock file system
                     _fileSystem.File.WriteAllBytes(outputPath, new byte[1024]);
-                    
+
                     // For testing row counts in tests, we'll add a special code to check for file existence
                     if (_fileSystem.File.Exists(outputPath))
                     {
                         // For test expectations, we'll mock the workbook by adding a "test info" file
                         var infoPath = outputPath + ".testinfo";
                         var sheetInfo = new Dictionary<string, int>();
-                        
+
                         // Record row counts for each sheet
                         foreach (var sheetName in availableSheets)
                         {
@@ -634,9 +634,9 @@ public class TestMergeService : IMergeService
                                 sheetInfo[sheetName] = mergedData[sheetName].Count - 1; // Subtract header row
                             }
                         }
-                        
+
                         // Serialize sheet info for tests to read
-                        var infoContent = string.Join(Environment.NewLine, 
+                        var infoContent = string.Join(Environment.NewLine,
                             sheetInfo.Select(kv => $"{kv.Key}:{kv.Value}"));
                         _fileSystem.File.WriteAllText(infoPath, infoContent);
                     }

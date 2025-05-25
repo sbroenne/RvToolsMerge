@@ -6,9 +6,9 @@
 // </copyright>
 //-----------------------------------------------------------------------
 
+using System.IO.Abstractions;
 using RVToolsMerge.Models;
 using RVToolsMerge.Services.Interfaces;
-using System.IO.Abstractions;
 
 namespace RVToolsMerge.Services;
 

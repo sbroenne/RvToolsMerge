@@ -6,11 +6,11 @@
 // </copyright>
 //-----------------------------------------------------------------------
 
+using System.IO.Abstractions;
 using Moq;
 using RVToolsMerge.Models;
 using RVToolsMerge.Services;
 using RVToolsMerge.Services.Interfaces;
-using System.IO.Abstractions;
 using Xunit;
 
 namespace RVToolsMerge.IntegrationTests;
@@ -22,7 +22,7 @@ namespace RVToolsMerge.IntegrationTests;
 public class ConsoleUIServiceTests : IntegrationTestBase
 {
     private readonly ConsoleUIService _consoleUIService;
-    
+
     /// <summary>
     /// Initializes a new instance of the <see cref="ConsoleUIServiceTests"/> class.
     /// </summary>
@@ -30,7 +30,7 @@ public class ConsoleUIServiceTests : IntegrationTestBase
     {
         _consoleUIService = new ConsoleUIService();
     }
-    
+
     /// <summary>
     /// Tests that GetUserFriendlyErrorMessage formats various errors.
     /// </summary>
@@ -58,14 +58,14 @@ public class ConsoleUIServiceTests : IntegrationTestBase
         {
             exception = new Exception(exceptionMessage);
         }
-        
+
         // Act
         string result = _consoleUIService.GetUserFriendlyErrorMessage(exception);
-        
+
         // Assert
         Assert.Contains(expectedSubstring, result);
     }
-    
+
     /// <summary>
     /// Tests that GetUserFriendlyErrorMessage handles unknown errors gracefully.
     /// </summary>
@@ -74,14 +74,14 @@ public class ConsoleUIServiceTests : IntegrationTestBase
     {
         // Arrange
         var exception = new Exception("Unknown error message");
-        
+
         // Act
         string result = _consoleUIService.GetUserFriendlyErrorMessage(exception);
-        
+
         // Assert
         Assert.Equal("Unknown error message", result);
     }
-    
+
     /// <summary>
     /// Tests that GetUserFriendlyErrorMessage handles errors with specific content.
     /// </summary>
@@ -90,10 +90,10 @@ public class ConsoleUIServiceTests : IntegrationTestBase
     {
         // Arrange
         var exception = new Exception("No valid files to process");
-        
+
         // Act
         string result = _consoleUIService.GetUserFriendlyErrorMessage(exception);
-        
+
         // Assert
         Assert.Contains("No valid files to process", result);
         Assert.Contains("Ensure your input folder contains valid RVTools Excel files", result);

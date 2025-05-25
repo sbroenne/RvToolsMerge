@@ -6,13 +6,13 @@
 // </copyright>
 //-----------------------------------------------------------------------
 
+using System.IO.Abstractions;
+using System.IO.Abstractions.TestingHelpers;
 using Microsoft.Extensions.DependencyInjection;
 using RVToolsMerge.IntegrationTests.Utilities;
 using RVToolsMerge.Models;
 using RVToolsMerge.Services;
 using RVToolsMerge.Services.Interfaces;
-using System.IO.Abstractions;
-using System.IO.Abstractions.TestingHelpers;
 
 namespace RVToolsMerge.IntegrationTests;
 
@@ -25,27 +25,27 @@ public abstract class IntegrationTestBase : IDisposable
     /// The mock file system used for testing.
     /// </summary>
     protected readonly MockFileSystem FileSystem;
-    
+
     /// <summary>
     /// Service provider containing the test dependencies.
     /// </summary>
     protected readonly ServiceProvider ServiceProvider;
-    
+
     /// <summary>
     /// Test data generator for creating synthetic RVTools files.
     /// </summary>
     protected readonly TestDataGenerator TestDataGenerator;
-    
+
     /// <summary>
     /// Directory for test input files.
     /// </summary>
     protected readonly string TestInputDirectory;
-    
+
     /// <summary>
     /// Directory for test output files.
     /// </summary>
     protected readonly string TestOutputDirectory;
-    
+
     /// <summary>
     /// Initializes a new instance of the <see cref="IntegrationTestBase"/> class.
     /// </summary>
@@ -59,44 +59,44 @@ public abstract class IntegrationTestBase : IDisposable
             { "/path", new MockDirectoryData() },
             { "/path/to", new MockDirectoryData() }
         });
-        
+
         // Set up test directories
         TestInputDirectory = "/tmp/rvtools_test/input";
         TestOutputDirectory = "/tmp/rvtools_test/output";
-        
+
         // Create the test directories
         FileSystem.Directory.CreateDirectory(TestInputDirectory);
         FileSystem.Directory.CreateDirectory(TestOutputDirectory);
-        
+
         // Create test data generator
         TestDataGenerator = new TestDataGenerator(FileSystem, TestInputDirectory);
-        
+
         // Set up DI container with the mock file system
         var services = new ServiceCollection();
         ConfigureServices(services);
         ServiceProvider = services.BuildServiceProvider();
     }
-    
+
     /// <summary>
     /// Gets the merge service for testing.
     /// </summary>
     protected IMergeService MergeService => ServiceProvider.GetRequiredService<IMergeService>();
-    
+
     /// <summary>
     /// Gets the Excel service for testing.
     /// </summary>
     protected IExcelService ExcelService => ServiceProvider.GetRequiredService<IExcelService>();
-    
+
     /// <summary>
     /// Gets the validation service for testing.
     /// </summary>
     protected IValidationService ValidationService => ServiceProvider.GetRequiredService<IValidationService>();
-    
+
     /// <summary>
     /// Gets the anonymization service for testing.
     /// </summary>
     protected IAnonymizationService AnonymizationService => ServiceProvider.GetRequiredService<IAnonymizationService>();
-    
+
     /// <summary>
     /// Configure services for dependency injection.
     /// </summary>
@@ -105,7 +105,7 @@ public abstract class IntegrationTestBase : IDisposable
     {
         // Register the mock file system
         services.AddSingleton<IFileSystem>(FileSystem);
-        
+
         // Register the mock console service instead of the real one
         services.AddSingleton<IConsoleService, MockConsoleService>();
         services.AddTransient<ConsoleUIService>();
@@ -115,7 +115,7 @@ public abstract class IntegrationTestBase : IDisposable
         services.AddSingleton<IMergeService, TestMergeService>();
         services.AddSingleton<ICommandLineParser, CommandLineParser>();
     }
-    
+
     /// <summary>
     /// Creates a standard output file path for use in tests.
     /// </summary>
@@ -125,7 +125,7 @@ public abstract class IntegrationTestBase : IDisposable
     {
         return FileSystem.Path.Combine(TestOutputDirectory, fileName);
     }
-    
+
     /// <summary>
     /// Creates a default MergeOptions instance for testing.
     /// </summary>
@@ -143,7 +143,7 @@ public abstract class IntegrationTestBase : IDisposable
             DebugMode = false
         };
     }
-    
+
     /// <summary>
     /// Reads test info file to get sheet row counts.
     /// </summary>
@@ -152,12 +152,12 @@ public abstract class IntegrationTestBase : IDisposable
     protected Dictionary<string, int> ReadTestInfo(string infoPath)
     {
         var result = new Dictionary<string, int>();
-        
+
         if (FileSystem.File.Exists(infoPath))
         {
             var content = FileSystem.File.ReadAllText(infoPath);
             var lines = content.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
-            
+
             foreach (var line in lines)
             {
                 var parts = line.Split(':');
@@ -167,10 +167,10 @@ public abstract class IntegrationTestBase : IDisposable
                 }
             }
         }
-        
+
         return result;
     }
-    
+
     /// <summary>
     /// Gets mock column info for test assertions.
     /// </summary>
@@ -180,7 +180,7 @@ public abstract class IntegrationTestBase : IDisposable
     {
         // For tests, we'll return hardcoded values based on the options used in each test
         var result = new Dictionary<string, int>();
-        
+
         // Basic vInfo sheet with mandatory columns + source file column
         if (outputPath.Contains("mandatory_only"))
         {
@@ -196,12 +196,12 @@ public abstract class IntegrationTestBase : IDisposable
         else
         {
             // Default for other tests
-            result["vInfo"] = 12; 
+            result["vInfo"] = 12;
         }
-        
+
         return result;
     }
-    
+
     /// <summary>
     /// Dispose of resources.
     /// </summary>

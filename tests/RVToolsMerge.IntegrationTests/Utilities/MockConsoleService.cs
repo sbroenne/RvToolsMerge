@@ -33,7 +33,7 @@ public class MockConsoleService : IConsoleService
     {
         // Do nothing in tests
     }
-    
+
     /// <summary>
     /// Writes a blank line to the console.
     /// </summary>
@@ -41,7 +41,7 @@ public class MockConsoleService : IConsoleService
     {
         // Do nothing in tests
     }
-    
+
     /// <summary>
     /// Writes generic content to the console.
     /// </summary>
@@ -51,7 +51,7 @@ public class MockConsoleService : IConsoleService
     {
         // Do nothing in tests
     }
-    
+
     /// <summary>
     /// Creates and displays a progress bar.
     /// </summary>
@@ -61,7 +61,7 @@ public class MockConsoleService : IConsoleService
         // This method is not used in tests since we directly implement our own MergeService 
         // that doesn't use Progress
     }
-    
+
     /// <summary>
     /// Creates and displays an async progress bar.
     /// </summary>
@@ -73,7 +73,7 @@ public class MockConsoleService : IConsoleService
         // that doesn't use Progress
         return Task.CompletedTask;
     }
-    
+
     /// <summary>
     /// Displays a rule (horizontal line) with text.
     /// </summary>
@@ -83,7 +83,7 @@ public class MockConsoleService : IConsoleService
     {
         // Do nothing in tests
     }
-    
+
     /// <summary>
     /// Gets a Progress for tracking progress.
     /// </summary>
@@ -92,7 +92,7 @@ public class MockConsoleService : IConsoleService
     {
         // Use AnsiConsole.Create to get an isolated console instance for tests
         var console = AnsiConsole.Create(new AnsiConsoleSettings());
-        
+
         // Create a Progress instance with our isolated console
         return new Progress(console)
             .AutoClear(true)
