@@ -87,14 +87,15 @@ public class MockConsoleService : IConsoleService
     /// <summary>
     /// Gets a Progress for tracking progress.
     /// </summary>
-    /// <returns>A Progress object.</returns>
+    /// <returns>A mock Progress object that won't conflict with other test instances.</returns>
     public Progress Progress()
     {
-        // Return a minimal Progress object
-        // This is not actually used in tests since we override the MergeService
-        return AnsiConsole.Progress()
+        // Use AnsiConsole.Create to get an isolated console instance for tests
+        var console = AnsiConsole.Create(new AnsiConsoleSettings());
+        
+        // Create a Progress instance with our isolated console
+        return new Progress(console)
             .AutoClear(true)
-            .HideCompleted(true)
-            .Columns(Array.Empty<ProgressColumn>());
+            .HideCompleted(true);
     }
 }
