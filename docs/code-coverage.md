@@ -54,4 +54,28 @@ When adding new features or fixing bugs:
 
 ## Continuous Integration
 
-The coverage report is also generated during CI builds, allowing you to track coverage metrics over time as the project evolves.
+The coverage report is generated during GitHub Actions workflows:
+
+1. **Main CI Builds**: Every PR and push to main that affects code includes code coverage reporting
+2. **Dedicated Coverage Workflow**: A standalone workflow specifically for detailed coverage reporting
+
+### Coverage Badges
+
+[![Code Coverage](https://github.com/sbroenne/RvToolsMerge/raw/gh-pages/badges/coverage.svg)](https://github.com/sbroenne/RvToolsMerge/actions/workflows/code-coverage.yml)
+
+Coverage badges are automatically generated and updated when code is pushed to the main branch.
+
+### PR Coverage Comments
+
+When you create a PR, the coverage workflow will automatically comment with a coverage summary, helping reviewers understand the impact of your changes on test coverage.
+
+### Manually Triggering Coverage Reports
+
+You can manually trigger the dedicated coverage workflow from the "Actions" tab in GitHub by:
+
+1. Selecting the "Code Coverage Report" workflow
+2. Clicking "Run workflow"
+3. Optionally enabling "Generate full detailed report" for more comprehensive output
+4. Clicking "Run workflow" again
+
+The generated reports will be available as artifacts in the workflow run.

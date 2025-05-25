@@ -1,0 +1,100 @@
+name: Code Coverage Report
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - '**.cs'
+      - '**.csproj'
+      - '**.sln'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - '**.cs'
+      - '**.csproj'
+      - '**.sln'
+  workflow_dispatch:
+    inputs:
+      fullReport:
+        description: 'Generate full detailed report'
+        required: false
+        default: 'false'
+        type: boolean
+
+jobs:
+  generate-coverage:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Fetch all history for accurate coverage history
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 9.0.x
+    
+    - name: Cache NuGet packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.nuget/packages
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/RVToolsMerge.csproj') }}
+        restore-keys: |
+          ${{ runner.os }}-nuget-
+    
+    - name: Restore dependencies
+      run: dotnet restore
+    
+    - name: Build
+      run: dotnet build --configuration Release --no-restore
+    
+    - name: Test with coverage
+      run: dotnet test tests/RVToolsMerge.IntegrationTests/RVToolsMerge.IntegrationTests.csproj --configuration Release --no-build --verbosity normal
+    
+    - name: Install ReportGenerator
+      run: dotnet tool install -g dotnet-reportgenerator-globaltool
+    
+    - name: Generate code coverage report
+      run: |
+        if [ "${{ github.event.inputs.fullReport }}" == "true" ]; then
+          reporttypes="Html;HtmlSummary;Cobertura;Badges;MarkdownSummary;JsonSummary"
+        else
+          reporttypes="Html;HtmlSummary;Cobertura;Badges"
+        fi
+        
+        reportgenerator \
+          -reports:"./TestResults/Coverage/coverage.cobertura.xml" \
+          -targetdir:"./TestResults/CoverageReport" \
+          -reporttypes:"$reporttypes" \
+          -historydir:"./TestResults/CoverageHistory" \
+          -title:"RVToolsMerge Coverage Report" \
+          -tag:${{ github.run_number }}
+    
+    - name: Upload coverage report
+      uses: actions/upload-artifact@v4
+      with:
+        name: code-coverage-report
+        path: ./TestResults/CoverageReport
+        retention-days: 30
+    
+    - name: Create coverage badge
+      if: github.ref == 'refs/heads/main'
+      run: |
+        mkdir -p ./badges
+        cp ./TestResults/CoverageReport/badge_linecoverage.svg ./badges/coverage.svg
+    
+    - name: Upload badges to GitHub Pages
+      if: github.ref == 'refs/heads/main'
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./badges
+        destination_dir: badges
+        keep_files: true
+    
+    - name: Comment PR with coverage summary
+      if: github.event_name == 'pull_request'
+      uses: marocchino/sticky-pull-request-comment@v2
+      with:
+        recreate: true
+        path: ./TestResults/CoverageReport/Summary.md
