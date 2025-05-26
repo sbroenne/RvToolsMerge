@@ -13,6 +13,7 @@ using RVToolsMerge.Models;
 using Xunit;
 
 namespace RVToolsMerge.IntegrationTests;
+
 [Collection("SpectreConsole")]
 
 /// <summary>
@@ -74,27 +75,25 @@ public class ValidationTests : IntegrationTestBase
         var filePath = FileSystem.Path.Combine(TestInputDirectory, "missing_optional_sheets.xlsx");
         using (var workbook = new XLWorkbook())
         {
-            var sheet = workbook.AddWorksheet("vInfo");
-
-            // Add all mandatory columns for vInfo
+            var sheet = workbook.AddWorksheet("vInfo");            // Add all mandatory columns for vInfo
             sheet.Cell(1, 1).Value = "VM";
-            sheet.Cell(1, 2).Value = "Powerstate";
-            sheet.Cell(1, 3).Value = "Template";
-            sheet.Cell(1, 4).Value = "CPUs";
-            sheet.Cell(1, 5).Value = "Memory";
-            sheet.Cell(1, 6).Value = "In Use MiB";
-            sheet.Cell(1, 7).Value = "OS according to the configuration file";
-            sheet.Cell(1, 8).Value = "SRM Placeholder";
-
-            // Add one data row
+            sheet.Cell(1, 2).Value = "VM UUID";  // Added missing mandatory column
+            sheet.Cell(1, 3).Value = "Powerstate";
+            sheet.Cell(1, 4).Value = "Template";
+            sheet.Cell(1, 5).Value = "CPUs";
+            sheet.Cell(1, 6).Value = "Memory";
+            sheet.Cell(1, 7).Value = "In Use MiB";
+            sheet.Cell(1, 8).Value = "OS according to the configuration file";
+            sheet.Cell(1, 9).Value = "SRM Placeholder";            // Add one data row
             sheet.Cell(2, 1).Value = "TestVM";
-            sheet.Cell(2, 2).Value = "poweredOn";
-            sheet.Cell(2, 3).Value = "FALSE";
-            sheet.Cell(2, 4).Value = 2;
-            sheet.Cell(2, 5).Value = 4096;
-            sheet.Cell(2, 6).Value = 2048;
-            sheet.Cell(2, 7).Value = "Windows Server 2019";
-            sheet.Cell(2, 8).Value = "FALSE";
+            sheet.Cell(2, 2).Value = "42008ee5-71f9-48d7-8e02-7e371f5a8b01";  // Added UUID value
+            sheet.Cell(2, 3).Value = "poweredOn";
+            sheet.Cell(2, 4).Value = "FALSE";
+            sheet.Cell(2, 5).Value = 2;
+            sheet.Cell(2, 6).Value = 4096;
+            sheet.Cell(2, 7).Value = 2048;
+            sheet.Cell(2, 8).Value = "Windows Server 2019";
+            sheet.Cell(2, 9).Value = "FALSE";
 
             workbook.SaveAs(filePath);
         }
@@ -227,7 +226,7 @@ public class ValidationTests : IntegrationTestBase
         // Create parent directory to avoid permission issues
         FileSystem.Directory.CreateDirectory("/path/to");
 
-        // Act 
+        // Act
         await MergeService.MergeFilesAsync(filesToMerge, outputPath, options, validationIssues);
 
         // Assert - no exception, but file exists with warnings

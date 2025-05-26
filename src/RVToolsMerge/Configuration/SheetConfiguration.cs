@@ -34,6 +34,7 @@ public static class SheetConfiguration
             ["vInfo"] = new Dictionary<string, string>
             {
                 { "vInfoVMName", "VM" },
+                { "vInfoUUID", "VM UUID" },
                 { "vInfoPowerstate", "Powerstate" },
                 { "vInfoTemplate", "Template" },
                 { "vInfoGuestHostName", "DNS Name" },
@@ -69,7 +70,6 @@ public static class SheetConfiguration
                 { "vHostvSANFaultDomainName", "vSAN Fault Domain Name" },
                 { "vHostCpuModel", "CPU Model" },
                 { "vHostCpuMhz", "Speed" },
-                { "vHostNumCPU", "# CPU" },
                 { "vHostNumCpu", "# CPU" },
                 { "vHostCoresPerCPU", "Cores per CPU" },
                 { "vHostNumCpuCores", "# Cores" },
@@ -85,6 +85,7 @@ public static class SheetConfiguration
             {
                 { "vPartitionDisk", "Disk" },
                 { "vPartitionVMName", "VM" },
+                { "vPartitionUUID", "VM UUID" },
                 { "vPartitionConsumedMiB", "Consumed MiB" },
                 { "vPartitionCapacityMiB", "Capacity MiB" }
             }.ToFrozenDictionary(),
@@ -93,6 +94,7 @@ public static class SheetConfiguration
             ["vMemory"] = new Dictionary<string, string>
             {
                 { "vMemoryVMName", "VM" },
+                { "vMemoryUUID", "VM UUID" },
                 { "vMemorySizeMiB", "Size MiB" },
                 { "vMemoryReservation", "Reservation" }
             }.ToFrozenDictionary()
@@ -103,9 +105,9 @@ public static class SheetConfiguration
     /// </summary>
     public static readonly FrozenDictionary<string, string[]> MandatoryColumns = new Dictionary<string, string[]>
     {
-        { "vInfo", ["Template", "SRM Placeholder", "Powerstate", "VM", "CPUs", "Memory", "In Use MiB", "OS according to the configuration file"] },
+        { "vInfo", ["VM UUID", "Template", "SRM Placeholder", "Powerstate", "VM", "CPUs", "Memory", "In Use MiB", "OS according to the configuration file"] },
         { "vHost", ["Host", "Datacenter", "Cluster", "CPU Model", "Speed", "# CPU", "Cores per CPU", "# Cores", "CPU usage %", "# Memory", "Memory usage %"] },
-        { "vPartition", ["VM", "Disk", "Capacity MiB", "Consumed MiB"] },
-        { "vMemory", ["VM", "Size MiB", "Reservation"] }
+        { "vPartition", ["VM UUID", "VM", "Disk", "Capacity MiB", "Consumed MiB"] },
+        { "vMemory", ["VM UUID", "VM", "Size MiB", "Reservation"] }
     }.ToFrozenDictionary();
 }
