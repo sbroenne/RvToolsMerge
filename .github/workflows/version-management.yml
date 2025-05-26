@@ -370,11 +370,11 @@ jobs:
         run: |
           echo "Processing code coverage from Windows x64 build..."
 
-          # Look for the Windows code coverage report
-          WIN_COVERAGE_DIR=$(find artifacts -type d -name "*code-coverage-report-windows*" | head -1)
+          # Look for the code coverage report
+          WIN_COVERAGE_DIR=$(find artifacts -type d -name "*code-coverage-report*" | head -1)
 
           if [[ -n "$WIN_COVERAGE_DIR" && -d "$WIN_COVERAGE_DIR" ]]; then
-            echo "Found Windows coverage directory: $WIN_COVERAGE_DIR"
+            echo "Found coverage directory: $WIN_COVERAGE_DIR"
 
             # Create a consolidated coverage directory
             mkdir -p release-coverage
