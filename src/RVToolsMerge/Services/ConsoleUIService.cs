@@ -140,7 +140,7 @@ public class ConsoleUIService
                 .Select(error => $"• {error}")
                 .ToList();
 
-            string details = string.Join("\n", errorDetails);
+            string details = String.Join("\n", errorDetails);
 
             table.AddRow(
                 $"[cyan]{filename}[/]",

@@ -212,7 +212,7 @@ public class MergeService : IMergeService
                     .Select(error => $"• {error}")
                     .ToList();
 
-                string details = string.Join("\n", errorDetails);
+                string details = String.Join("\n", errorDetails);
 
                 table.AddRow(
                     $"[cyan]{filename}[/]",
