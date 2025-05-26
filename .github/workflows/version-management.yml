@@ -284,17 +284,25 @@ jobs:
 
               if [[ $file_count -gt 0 ]]; then
                 archive_name="RVToolsMerge-${version}-${platform}.zip"
+                archive_path="release-files/$archive_name"
                 echo "Creating archive: $archive_name"
 
                 cd "$artifact_dir"
-                zip -r "../../release-files/$archive_name" . -x "*.pdb"
+                zip -r "../../$archive_path" . -x "*.pdb"
                 cd - > /dev/null
 
-                if [[ -f "release-files/$archive_name" ]]; then
+                # Verify the archive was created and add to list
+                if [[ -f "$archive_path" ]]; then
                   echo "✅ Successfully created $archive_name"
-                  created_files="$created_files release-files/$archive_name"
+                  # Use absolute path for GitHub Actions
+                  abs_path="$(pwd)/$archive_path"
+                  if [[ -z "$created_files" ]]; then
+                    created_files="$abs_path"
+                  else
+                    created_files="$created_files,$abs_path"
+                  fi
                 else
-                  echo "::error::Failed to create $archive_name"
+                  echo "::error::Failed to create $archive_name at $archive_path"
                 fi
               else
                 echo "::warning::No files found in $artifact_dir"
@@ -310,20 +318,24 @@ jobs:
           }
 
           # Create archives for each expected platform with exact artifact names
-          create_archive "win-x64" "rvtoolsmerge-windows-x64" "${{ steps.get-version.outputs.version }}"
-          create_archive "win-arm64" "rvtoolsmerge-windows-arm64" "${{ steps.get-version.outputs.version }}"
-          create_archive "linux-x64" "rvtoolsmerge-linux-x64" "${{ steps.get-version.outputs.version }}"
-          create_archive "osx-arm64" "rvtoolsmerge-macos-arm64" "${{ steps.get-version.outputs.version }}"
+          create_archive "win-x64" "RVToolsMerge-win-x64" "${{ steps.get-version.outputs.version }}"
+          create_archive "win-arm64" "RVToolsMerge-win-arm64" "${{ steps.get-version.outputs.version }}"
+          create_archive "linux-x64" "RVToolsMerge-linux-x64" "${{ steps.get-version.outputs.version }}"
+          create_archive "osx-arm64" "RVToolsMerge-osx-arm64" "${{ steps.get-version.outputs.version }}"
 
-          # Output created files for the release step
+          # Output created files for the release step (comma-separated for multiple files)
           echo "created_files=$created_files" >> $GITHUB_OUTPUT
 
           echo "Final release files:"
           ls -la release-files/ || echo "No release files created"
 
+          echo "Created files list: $created_files"
+
       - name: Validate Release Files
         run: |
-          if [[ -z "${{ steps.create-archives.outputs.created_files }}" ]]; then
+          created_files="${{ steps.create-archives.outputs.created_files }}"
+
+          if [[ -z "$created_files" ]]; then
             echo "::error::No release files were created. Check build artifacts."
 
             # Diagnostic info for missing files
@@ -340,7 +352,11 @@ jobs:
           fi
 
           echo "Validating release files..."
-          for file in ${{ steps.create-archives.outputs.created_files }}; do
+          # Split comma-separated file list and validate each file
+          IFS=',' read -ra FILE_ARRAY <<< "$created_files"
+          for file in "${FILE_ARRAY[@]}"; do
+            # Remove any leading/trailing whitespace
+            file=$(echo "$file" | xargs)
             if [[ -f "$file" ]]; then
               size=$(stat -c%s "$file" 2>/dev/null || stat -f%z "$file" 2>/dev/null || echo "0")
               echo "✅ $file (${size} bytes)"
@@ -383,8 +399,9 @@ jobs:
           tag_name: v${{ steps.get-version.outputs.version }}
           draft: false
           prerelease: ${{ contains(steps.get-version.outputs.version, '-') }}
-          files: ${{ steps.create-archives.outputs.created_files }}
-          fail_on_unmatched_files: true
+          files: |
+            release-files/*.zip
+          fail_on_unmatched_files: false
           body: |
             ## RVToolsMerge v${{ steps.get-version.outputs.version }}
 
