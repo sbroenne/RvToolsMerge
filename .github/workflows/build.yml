@@ -128,17 +128,17 @@ jobs:
             ${{ runner.os }}-arm-nuget-
 
       - name: Restore dependencies
-        run: dotnet restore
+        run: dotnet restore -r win-arm64
 
       - name: Build
         run: dotnet build --configuration ${{ inputs.configuration }} --no-restore
 
       - name: Test
-        run: dotnet test tests/RVToolsMerge.IntegrationTests/RVToolsMerge.IntegrationTests.csproj --configuration ${{ inputs.configuration }} --no-build --verbosity normal
+        run: dotnet test tests/RVToolsMerge.IntegrationTests/RVToolsMerge.IntegrationTests.csproj --configuration ${{ inputs.configuration }} --no-build --verbosity normal -r win-arm64
         
       - name: Publish
         if: inputs.configuration == 'Release'
-        run: dotnet publish src/RVToolsMerge/RVToolsMerge.csproj -c Release -r win-arm64 --self-contained true --no-restore
+        run: dotnet publish src/RVToolsMerge/RVToolsMerge.csproj -c Release -r win-arm64 --self-contained true
         
       - name: Upload artifact
         if: inputs.configuration == 'Release'

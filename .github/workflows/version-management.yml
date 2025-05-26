@@ -260,13 +260,13 @@ jobs:
           # Function to create archive if directory exists and has files
           create_archive() {
             local platform=$1
-            local artifact_pattern=$2
+            local artifact_name=$2
             local version=$3
 
-            echo "Looking for artifacts matching pattern: $artifact_pattern"
+            echo "Looking for artifact with name: $artifact_name"
 
-            # Find the artifact directory
-            artifact_dir=$(find artifacts -type d -name "*$artifact_pattern*" | head -1)
+            # Find the artifact directory using exact name
+            artifact_dir=$(find artifacts -type d -name "$artifact_name" | head -1)
 
             if [[ -n "$artifact_dir" && -d "$artifact_dir" ]]; then
               file_count=$(find "$artifact_dir" -type f | wc -l)
@@ -290,15 +290,15 @@ jobs:
                 echo "::warning::No files found in $artifact_dir"
               fi
             else
-              echo "::warning::No artifact directory found for pattern: $artifact_pattern"
+              echo "::warning::No artifact directory found with name: $artifact_name"
             fi
           }
 
-          # Create archives for each expected platform
-          create_archive "win-x64" "windows" "${{ steps.get-version.outputs.version }}"
-          create_archive "win-arm64" "windows-arm64" "${{ steps.get-version.outputs.version }}"
-          create_archive "linux-x64" "linux" "${{ steps.get-version.outputs.version }}"
-          create_archive "osx-arm64" "macos-arm64" "${{ steps.get-version.outputs.version }}"
+          # Create archives for each expected platform with exact artifact names
+          create_archive "win-x64" "rvtoolsmerge-windows-x64" "${{ steps.get-version.outputs.version }}"
+          create_archive "win-arm64" "rvtoolsmerge-windows-arm64" "${{ steps.get-version.outputs.version }}"
+          create_archive "linux-x64" "rvtoolsmerge-linux-x64" "${{ steps.get-version.outputs.version }}"
+          create_archive "osx-arm64" "rvtoolsmerge-macos-arm64" "${{ steps.get-version.outputs.version }}"
 
           # Output created files for the release step
           echo "created_files=$created_files" >> $GITHUB_OUTPUT
