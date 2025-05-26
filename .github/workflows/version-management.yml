@@ -147,14 +147,14 @@ jobs:
             --base "${{ github.ref_name }}" \
             --head "${{ steps.create-branch.outputs.branch_name }}")
           echo "pr_url=$PR_URL" >> $GITHUB_OUTPUT
-          # Extract the PR number from the URL for use in subsequent steps
-          PR_NUMBER=$(echo $PR_URL | grep -o '[0-9]*$')
+          # Extract the PR number from the URL for use in subsequent steps          PR_NUMBER=$(echo $PR_URL | grep -o '[0-9]*$')
           echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
           echo "::notice::Created PR for version update: $PR_URL"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Auto-Squash-Merge PR
+        id: auto-merge
         run: |
           # Attempt to automatically squash-merge the PR with retry logic
           # Some repositories may have required checks that need to complete
@@ -166,10 +166,12 @@ jobs:
             echo "Attempting to squash-merge PR (attempt $i of $RETRIES)..."
             if gh pr merge ${{ steps.create-pr.outputs.pr_number }} --squash --delete-branch; then
               echo "::notice::PR ${{ steps.create-pr.outputs.pr_number }} auto-squash-merged successfully."
+              echo "merge_success=true" >> $GITHUB_OUTPUT
               break
             else
               if [ $i -eq $RETRIES ]; then
                 echo "::warning::Failed to auto-squash-merge PR after $RETRIES attempts. PR may need manual attention."
+                echo "merge_success=false" >> $GITHUB_OUTPUT
               else
                 echo "Squash-merge attempt failed, waiting $RETRY_DELAY seconds before retrying..."
                 sleep $RETRY_DELAY
@@ -192,10 +194,12 @@ jobs:
 
           # Pull the latest changes after PR merge
           # This ensures we have the merged version update in our working directory
-          git pull origin ${{ github.ref_name }}
+          git pull origin main
 
           # Create a tag with the new version in format v1.0.0
-          TAG_NAME="v${{ steps.calc-version.outputs.package_version }}"          # Check if tag already exists
+          TAG_NAME="v${{ steps.calc-version.outputs.package_version }}"
+
+          # Check if tag already exists
           if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
             echo "::warning::Tag $TAG_NAME already exists, skipping tag creation"
           else
@@ -250,7 +254,7 @@ jobs:
           find artifacts -type f | sort
           echo "Directory structure:"
           find artifacts -type d | sort
-          
+
           echo "Artifact directories with file counts:"
           for dir in $(find artifacts -mindepth 1 -maxdepth 1 -type d); do
             count=$(find "$dir" -type f | wc -l)
@@ -321,17 +325,17 @@ jobs:
         run: |
           if [[ -z "${{ steps.create-archives.outputs.created_files }}" ]]; then
             echo "::error::No release files were created. Check build artifacts."
-            
+
             # Diagnostic info for missing files
             echo "Expected files:"
             echo "- release-files/RVToolsMerge-${{ steps.get-version.outputs.version }}-win-x64.zip"
             echo "- release-files/RVToolsMerge-${{ steps.get-version.outputs.version }}-win-arm64.zip"
             echo "- release-files/RVToolsMerge-${{ steps.get-version.outputs.version }}-linux-x64.zip"
             echo "- release-files/RVToolsMerge-${{ steps.get-version.outputs.version }}-osx-arm64.zip"
-            
+
             echo "Existing files in release-files directory:"
             ls -la release-files/ 2>/dev/null || echo "Directory not found or empty"
-            
+
             exit 1
           fi
 

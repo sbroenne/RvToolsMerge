@@ -1,4 +1,5 @@
 name: Build Workflow
+
 on:
   workflow_call:
     inputs:
@@ -14,174 +15,99 @@ permissions:
   actions: read
   pull-requests: read
 
+env:
+  DOTNET_VERSION: "9.0.x"
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "true"
+  DOTNET_NOLOGO: "true"
+  DOTNET_CLI_TELEMETRY_OPTOUT: "true"
+
 jobs:
-  build-windows:
-    runs-on: windows-latest
+  # Build job that runs tests and coverage using matrix strategy for all platforms
+  build-all-platforms:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            runtime: win-x64
+            name: windows-x64
+            cache-suffix: ""
+          - os: ubuntu-latest
+            runtime: linux-x64
+            name: linux-x64
+            cache-suffix: ""
+          - os: macos-latest
+            runtime: osx-arm64
+            name: macos-arm64
+            cache-suffix: ""
+          - os: windows-latest
+            runtime: win-arm64
+            name: windows-arm64
+            cache-suffix: "-arm64"
+
+    runs-on: ${{ matrix.os }}
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 9.0.x
+          dotnet-version: ${{ env.DOTNET_VERSION }}
 
       - name: Cache NuGet packages
         uses: actions/cache@v4
         with:
           path: ~/.nuget/packages
-          key: ${{ runner.os }}-nuget-${{ hashFiles('**/RVToolsMerge.csproj') }}
+          key: ${{ runner.os }}${{ matrix.cache-suffix }}-nuget-${{ hashFiles('**/*.csproj', '**/packages.lock.json') }}
           restore-keys: |
-            ${{ runner.os }}-nuget-
+            ${{ runner.os }}${{ matrix.cache-suffix }}-nuget-
 
       - name: Restore dependencies
-        run: dotnet restore
+        run: dotnet restore --runtime ${{ matrix.runtime }}
 
       - name: Build
-        run: dotnet build --configuration ${{ inputs.configuration }} --no-restore
+        run: dotnet build --configuration ${{ inputs.configuration }} --no-restore --runtime ${{ matrix.runtime }}
 
       - name: Test
-        run: dotnet test tests/RVToolsMerge.IntegrationTests/RVToolsMerge.IntegrationTests.csproj --configuration ${{ inputs.configuration }} --no-build --verbosity normal
-        
+        run: dotnet test tests/RVToolsMerge.IntegrationTests/RVToolsMerge.IntegrationTests.csproj --configuration ${{ inputs.configuration }} --no-build --verbosity normal --logger trx --results-directory TestResults
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-${{ matrix.name }}
+          path: TestResults/*.trx
+          retention-days: 7
+
+      # Coverage only runs on Windows x64 for Release builds to avoid duplication
       - name: Run tests with coverage
-        if: inputs.configuration == 'Release'
-        run: dotnet test tests/RVToolsMerge.IntegrationTests/RVToolsMerge.IntegrationTests.csproj --configuration ${{ inputs.configuration }} --no-build --collect:"XPlat Code Coverage"
-        
+        if: inputs.configuration == 'Release' && matrix.runtime == 'win-x64'
+        run: dotnet test tests/RVToolsMerge.IntegrationTests/RVToolsMerge.IntegrationTests.csproj --configuration ${{ inputs.configuration }} --no-build --collect:"XPlat Code Coverage" --results-directory TestResults
+
+      - name: Install coverage report generator
+        if: inputs.configuration == 'Release' && matrix.runtime == 'win-x64'
+        run: dotnet tool install -g dotnet-reportgenerator-globaltool
+
       - name: Generate coverage report
-        if: inputs.configuration == 'Release'
-        run: |
-          dotnet tool install -g dotnet-reportgenerator-globaltool
-          reportgenerator -reports:tests/**/coverage.cobertura.xml -targetdir:coverage-report -reporttypes:Html
-        
+        if: inputs.configuration == 'Release' && matrix.runtime == 'win-x64'
+        run: reportgenerator -reports:TestResults/**/coverage.cobertura.xml -targetdir:coverage-report -reporttypes:Html
+
       - name: Upload coverage report
-        if: inputs.configuration == 'Release'
+        if: inputs.configuration == 'Release' && matrix.runtime == 'win-x64'
         uses: actions/upload-artifact@v4
         with:
-          name: code-coverage-report-windows
+          name: code-coverage-report
           path: coverage-report
-          retention-days: 7
-        
+          retention-days: 30
+
       - name: Publish
-        if: inputs.configuration == 'Release'
-        run: dotnet publish src/RVToolsMerge/RVToolsMerge.csproj -c Release -r win-x64 --self-contained true --no-restore
-        
-      - name: Upload artifact
-        if: inputs.configuration == 'Release'
+        run: dotnet publish src/RVToolsMerge/RVToolsMerge.csproj --configuration Release --runtime ${{ matrix.runtime }} --self-contained true --no-restore --output publish
+
+      - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: rvtoolsmerge-windows-x64
-          path: src/RVToolsMerge/bin/Release/net9.0/win-x64/publish/
-          retention-days: 7
-  build-linux:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 9.0.x
-
-      - name: Cache NuGet packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.nuget/packages
-          key: ${{ runner.os }}-nuget-${{ hashFiles('**/RVToolsMerge.csproj') }}
-          restore-keys: |
-            ${{ runner.os }}-nuget-
-
-      - name: Restore dependencies
-        run: dotnet restore
-
-      - name: Build
-        run: dotnet build --configuration ${{ inputs.configuration }} --no-restore
-
-      - name: Test
-        run: dotnet test tests/RVToolsMerge.IntegrationTests/RVToolsMerge.IntegrationTests.csproj --configuration ${{ inputs.configuration }} --no-build --verbosity normal
-        
-      - name: Publish
-        if: inputs.configuration == 'Release'
-        run: dotnet publish src/RVToolsMerge/RVToolsMerge.csproj -c Release -r linux-x64 --self-contained true --no-restore
-        
-      - name: Upload artifact
-        if: inputs.configuration == 'Release'
-        uses: actions/upload-artifact@v4
-        with:
-          name: rvtoolsmerge-linux-x64
-          path: src/RVToolsMerge/bin/Release/net9.0/linux-x64/publish/
-          retention-days: 7
-  build-windows-arm:
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 9.0.x
-
-      - name: Cache NuGet packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.nuget/packages
-          key: ${{ runner.os }}-arm-nuget-${{ hashFiles('**/RVToolsMerge.csproj') }}
-          restore-keys: |
-            ${{ runner.os }}-arm-nuget-
-
-      - name: Restore dependencies
-        run: dotnet restore -r win-arm64
-
-      - name: Build
-        run: dotnet build --configuration ${{ inputs.configuration }} --no-restore
-
-      - name: Test
-        run: dotnet test tests/RVToolsMerge.IntegrationTests/RVToolsMerge.IntegrationTests.csproj --configuration ${{ inputs.configuration }} --no-build --verbosity normal -r win-arm64
-        
-      - name: Publish
-        if: inputs.configuration == 'Release'
-        run: dotnet publish src/RVToolsMerge/RVToolsMerge.csproj -c Release -r win-arm64 --self-contained true
-        
-      - name: Upload artifact
-        if: inputs.configuration == 'Release'
-        uses: actions/upload-artifact@v4
-        with:
-          name: rvtoolsmerge-windows-arm64
-          path: src/RVToolsMerge/bin/Release/net9.0/win-arm64/publish/
-          retention-days: 7
-  build-macos-arm:
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 9.0.x
-
-      - name: Cache NuGet packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.nuget/packages
-          key: ${{ runner.os }}-nuget-${{ hashFiles('**/RVToolsMerge.csproj') }}
-          restore-keys: |
-            ${{ runner.os }}-nuget-
-
-      - name: Restore dependencies
-        run: dotnet restore
-
-      - name: Build
-        run: dotnet build --configuration ${{ inputs.configuration }} --no-restore
-
-      - name: Test
-        run: dotnet test tests/RVToolsMerge.IntegrationTests/RVToolsMerge.IntegrationTests.csproj --configuration ${{ inputs.configuration }} --no-build --verbosity normal
-        
-      - name: Publish
-        if: inputs.configuration == 'Release'
-        run: dotnet publish src/RVToolsMerge/RVToolsMerge.csproj -c Release -r osx-arm64 --self-contained true --no-restore
-        
-      - name: Upload artifact
-        if: inputs.configuration == 'Release'
-        uses: actions/upload-artifact@v4
-        with:
-          name: rvtoolsmerge-macos-arm64
-          path: src/RVToolsMerge/bin/Release/net9.0/osx-arm64/publish/
-          retention-days: 7
+          name: rvtoolsmerge-${{ matrix.name }}
+          path: publish/
+          retention-days: 30
