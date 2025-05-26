@@ -3,23 +3,31 @@ name: Release
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to release (without v prefix)'
+        description: "Version to release (without v prefix)"
         required: true
         type: string
 
 permissions:
-  contents: write  # Needed for creating releases and uploading artifacts
+  contents: write
+  actions: read
+  checks: write
+  pull-requests: read
 
 jobs:
   call-build-workflow:
     name: Build Release Artifacts
     uses: ./.github/workflows/build.yml
+    permissions:
+      contents: read
+      actions: read
+      checks: write
+      pull-requests: read
     with:
-      configuration: 'Release'
+      configuration: "Release"
 
   release:
     name: Create Release
@@ -29,12 +37,12 @@ jobs:
       contents: write
       actions: read
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Extract Version from Tag
         id: get-version
         run: |
-          # Use provided version from workflow dispatch or extract from tag
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
             VERSION="${{ github.event.inputs.version }}"
           else
@@ -43,63 +51,106 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "::notice::Creating release for version $VERSION"
 
-      - name: Download Windows x64 Artifact
+      - name: Download All Artifacts
         uses: actions/download-artifact@v4
         with:
-          name: RVToolsMerge-windows-Release
-          path: artifacts/win-x64
+          path: artifacts
 
-      - name: Download Linux x64 Artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: RVToolsMerge-linux-Release
-          path: artifacts/linux-x64
-
-      - name: Download Windows ARM64 Artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: RVToolsMerge-windows-arm64-Release
-          path: artifacts/win-arm64
-
-      - name: Download macOS ARM64 Artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: RVToolsMerge-macos-arm64-Release
-          path: artifacts/osx-arm64
-
-      - name: Create Archives
+      - name: List Downloaded Artifacts
         run: |
-          # Create artifacts directory if it doesn't exist
-          mkdir -p artifacts
-          cd artifacts
+          echo "Downloaded artifacts:"
+          find artifacts -type f -name "*" | head -20
+          echo "Directory structure:"
+          find artifacts -type d | head -10
 
-          # Function to create archives with error handling
+      - name: Create Release Archives
+        id: create-archives
+        run: |
+          mkdir -p release-files
+          created_files=""
+
+          # Function to create archive if directory exists and has files
           create_archive() {
             local platform=$1
-            local version=$2
-            local dir_name="$platform"
-            local archive_name="RVToolsMerge-${version}-${platform}.zip"
+            local artifact_pattern=$2
+            local version=$3
 
-            if [ -d "$dir_name" ] && [ "$(ls -A "$dir_name")" ]; then
-              echo "Creating archive for $platform..."
-              zip -j "$archive_name" "$dir_name"/*
-              echo "✅ Created $archive_name"
+            echo "Looking for artifacts matching pattern: $artifact_pattern"
+
+            # Find the artifact directory
+            artifact_dir=$(find artifacts -type d -name "*$artifact_pattern*" | head -1)
+
+            if [[ -n "$artifact_dir" && -d "$artifact_dir" ]]; then
+              file_count=$(find "$artifact_dir" -type f | wc -l)
+              echo "Found artifact directory: $artifact_dir with $file_count files"
+
+              if [[ $file_count -gt 0 ]]; then
+                archive_name="RVToolsMerge-${version}-${platform}.zip"
+                echo "Creating archive: $archive_name"
+
+                cd "$artifact_dir"
+                zip -r "../../release-files/$archive_name" . -x "*.pdb"
+                cd - > /dev/null
+
+                if [[ -f "release-files/$archive_name" ]]; then
+                  echo "✅ Successfully created $archive_name"
+                  created_files="$created_files release-files/$archive_name"
+                else
+                  echo "::error::Failed to create $archive_name"
+                fi
+              else
+                echo "::warning::No files found in $artifact_dir"
+              fi
             else
-              echo "::warning::Directory for $platform is empty or not found"
-              # Create an empty file to satisfy the release step
-              touch "empty_$archive_name"
+              echo "::warning::No artifact directory found for pattern: $artifact_pattern"
             fi
           }
 
-          # Create archives for each platform
-          create_archive "win-x64" "${{ steps.get-version.outputs.version }}"
-          create_archive "win-arm64" "${{ steps.get-version.outputs.version }}"
-          create_archive "linux-x64" "${{ steps.get-version.outputs.version }}"
-          create_archive "osx-arm64" "${{ steps.get-version.outputs.version }}"
+          # Create archives for each expected platform
+          create_archive "win-x64" "windows" "${{ steps.get-version.outputs.version }}"
+          create_archive "win-arm64" "windows-arm64" "${{ steps.get-version.outputs.version }}"
+          create_archive "linux-x64" "linux" "${{ steps.get-version.outputs.version }}"
+          create_archive "osx-arm64" "macos-arm64" "${{ steps.get-version.outputs.version }}"
 
-          # List created archives
-          echo "Created the following archives:"
-          ls -la *.zip 2>/dev/null || echo "No archives were created"
+          # Output created files for the release step
+          echo "created_files=$created_files" >> $GITHUB_OUTPUT
+
+          echo "Final release files:"
+          ls -la release-files/ || echo "No release files created"
+
+      - name: Validate Release Files
+        run: |
+          if [[ -z "${{ steps.create-archives.outputs.created_files }}" ]]; then
+            echo "::error::No release files were created. Check build artifacts."
+            exit 1
+          fi
+
+          echo "Validating release files..."
+          for file in ${{ steps.create-archives.outputs.created_files }}; do
+            if [[ -f "$file" ]]; then
+              size=$(stat -c%s "$file" 2>/dev/null || stat -f%z "$file" 2>/dev/null || echo "0")
+              echo "✅ $file (${size} bytes)"
+            else
+              echo "::error::Missing file: $file"
+              exit 1
+            fi
+          done
+
+      - name: Create or Update Tag (for workflow_dispatch)
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          tag_name="v${{ github.event.inputs.version }}"
+
+          # Check if tag already exists
+          if git rev-parse "$tag_name" >/dev/null 2>&1; then
+            echo "::notice::Tag $tag_name already exists, will update release"
+          else
+            echo "::notice::Creating new tag $tag_name"
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git tag "$tag_name"
+            git push origin "$tag_name"
+          fi
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
@@ -107,22 +158,41 @@ jobs:
           name: RVToolsMerge v${{ steps.get-version.outputs.version }}
           tag_name: ${{ github.event_name == 'workflow_dispatch' && format('v{0}', github.event.inputs.version) || github.ref }}
           draft: false
-          prerelease: false
-          files: |
-            artifacts/RVToolsMerge-${{ steps.get-version.outputs.version }}-win-x64.zip
-            artifacts/RVToolsMerge-${{ steps.get-version.outputs.version }}-win-arm64.zip
-            artifacts/RVToolsMerge-${{ steps.get-version.outputs.version }}-linux-x64.zip
-            artifacts/RVToolsMerge-${{ steps.get-version.outputs.version }}-osx-arm64.zip
+          prerelease: ${{ contains(steps.get-version.outputs.version, '-') }}
+          files: ${{ steps.create-archives.outputs.created_files }}
+          fail_on_unmatched_files: true
           body: |
-            ## RVTools Excel Merge v${{ steps.get-version.outputs.version }}
+            ## RVToolsMerge v${{ steps.get-version.outputs.version }}
 
-            Please refer to the [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for details.
+            A cross-platform tool for merging and processing RVTools Excel exports from VMware environments.
 
-            ### Installation
+            ### 📥 Downloads
 
-            Download the appropriate archive for your operating system and extract it to use the application.
+            Choose the appropriate version for your operating system:
 
-            - **Windows (x64)**: RVToolsMerge-${{ steps.get-version.outputs.version }}-win-x64.zip
-            - **Windows (ARM64)**: RVToolsMerge-${{ steps.get-version.outputs.version }}-win-arm64.zip
-            - **Linux (x64)**: RVToolsMerge-${{ steps.get-version.outputs.version }}-linux-x64.zip
-            - **macOS (ARM64)**: RVToolsMerge-${{ steps.get-version.outputs.version }}-osx-arm64.zip
+            | Platform | Architecture | Download |
+            |----------|-------------|----------|
+            | Windows | x64 | RVToolsMerge-${{ steps.get-version.outputs.version }}-win-x64.zip |
+            | Windows | ARM64 | RVToolsMerge-${{ steps.get-version.outputs.version }}-win-arm64.zip |
+            | Linux | x64 | RVToolsMerge-${{ steps.get-version.outputs.version }}-linux-x64.zip |
+            | macOS | ARM64 (Apple Silicon) | RVToolsMerge-${{ steps.get-version.outputs.version }}-osx-arm64.zip |
+
+            ### 🚀 Quick Start
+
+            1. Download the archive for your platform
+            2. Extract the archive to a directory of your choice
+            3. Run the executable to start the interactive console interface
+            4. Follow the prompts to select and merge your RVTools Excel files
+
+            ### 📋 What's Changed
+
+            See the [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for detailed changes in this release.
+
+            ### 🐛 Issues & Support
+
+            If you encounter any issues, please report them on our [Issues page](https://github.com/${{ github.repository }}/issues).
+
+      - name: Cleanup
+        if: always()
+        run: |
+          rm -rf artifacts release-files
