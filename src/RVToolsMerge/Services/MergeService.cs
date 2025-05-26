@@ -104,6 +104,13 @@ public class MergeService : IMergeService
 
         // Create output file
         await CreateOutputFileAsync(outputPath, availableSheets, mergedData, commonColumns);
+        
+        // Create anonymization mapping file if anonymization is enabled
+        if (options.AnonymizeData)
+        {
+            var anonymizationMappings = _anonymizationService.GetAnonymizationMappings();
+            await CreateAnonymizationMapFileAsync(outputPath, anonymizationMappings);
+        }
 
         // Display summary
         DisplaySummary(filePaths, validFilePaths, availableSheets, mergedData, commonColumns, options);
@@ -568,6 +575,77 @@ public class MergeService : IMergeService
                     _consoleUiService.DisplayInfo("[cyan]Saving file to disk...[/]");
                     await Task.Run(() => workbook.SaveAs(outputPath));
                     outputTask.Increment(1);
+                }
+            });
+    }
+    
+    /// <summary>
+    /// Creates and saves a file containing anonymization mappings.
+    /// </summary>
+    /// <param name="outputPath">Path where the output file was saved.</param>
+    /// <param name="mappings">Dictionary of anonymization mappings.</param>
+    private async Task CreateAnonymizationMapFileAsync(
+        string outputPath,
+        Dictionary<string, Dictionary<string, string>> mappings)
+    {
+        // Generate the anonymization map file name by adding suffix to the output file name
+        string mapFilePath = _fileSystem.Path.Combine(
+            _fileSystem.Path.GetDirectoryName(outputPath) ?? string.Empty,
+            $"{_fileSystem.Path.GetFileNameWithoutExtension(outputPath)}_AnonymizationMap{_fileSystem.Path.GetExtension(outputPath)}");
+        
+        _consoleUiService.DisplayInfo("[bold]Creating anonymization mapping file...[/]");
+        
+        await _consoleUiService.Progress()
+            .AutoClear(false)
+            .Columns(
+            [
+                new TaskDescriptionColumn(),
+                new ProgressBarColumn(),
+                new PercentageColumn(),
+                new SpinnerColumn()
+            ])
+            .StartAsync(async ctx =>
+            {
+                var mappingTask = ctx.AddTask("[green]Creating anonymization mapping file[/]", maxValue: mappings.Count + 1);
+                
+                using (var workbook = new XLWorkbook())
+                {
+                    foreach (var category in mappings.Keys)
+                    {
+                        if (mappings[category].Count == 0)
+                        {
+                            mappingTask.Increment(1);
+                            continue;
+                        }
+                        
+                        var worksheet = workbook.Worksheets.Add(category);
+                        
+                        // Add headers
+                        worksheet.Cell(1, 1).Value = "Original Value";
+                        worksheet.Cell(1, 2).Value = "Anonymized Value";
+                        
+                        // Style headers
+                        var headerRow = worksheet.Row(1);
+                        headerRow.Style.Font.Bold = true;
+                        
+                        // Add data
+                        int row = 2;
+                        foreach (var entry in mappings[category])
+                        {
+                            worksheet.Cell(row, 1).Value = entry.Key;
+                            worksheet.Cell(row, 2).Value = entry.Value;
+                            row++;
+                        }
+                        
+                        // Auto-fit columns
+                        worksheet.Columns().AdjustToContents();
+                        mappingTask.Increment(1);
+                    }
+                    
+                    // Save the mapping file
+                    _consoleUiService.DisplayInfo($"[cyan]Saving anonymization mapping file to: {mapFilePath}[/]");
+                    await Task.Run(() => workbook.SaveAs(mapFilePath));
+                    mappingTask.Increment(1);
                 }
             });
     }

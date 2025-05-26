@@ -90,6 +90,23 @@ public class AnonymizationService : IAnonymizationService
             { "IP Addresses", _ipAddressMap.Count }
         };
     }
+    
+    /// <summary>
+    /// Gets all anonymization mappings from original values to anonymized values.
+    /// </summary>
+    /// <returns>Dictionary mapping category names to dictionaries of original-to-anonymized value mappings.</returns>
+    public Dictionary<string, Dictionary<string, string>> GetAnonymizationMappings()
+    {
+        return new Dictionary<string, Dictionary<string, string>>
+        {
+            { "VMs", new Dictionary<string, string>(_vmNameMap) },
+            { "DNS Names", new Dictionary<string, string>(_dnsNameMap) },
+            { "Clusters", new Dictionary<string, string>(_clusterNameMap) },
+            { "Hosts", new Dictionary<string, string>(_hostNameMap) },
+            { "Datacenters", new Dictionary<string, string>(_datacenterNameMap) },
+            { "IP Addresses", new Dictionary<string, string>(_ipAddressMap) }
+        };
+    }
 
     /// <summary>
     /// Determines if a column should be anonymized.

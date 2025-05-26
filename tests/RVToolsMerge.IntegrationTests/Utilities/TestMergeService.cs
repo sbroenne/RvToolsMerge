@@ -223,21 +223,36 @@ public class TestMergeService : IMergeService
                         if (vmColIndex >= 0)
                         {
                             string originalValue = rowData[vmColIndex].ToString() ?? "";
-                            rowData[vmColIndex] = $"VM-{Math.Abs(originalValue.GetHashCode()) % 1000:D3}";
+                            // Use the AnonymizationService to ensure mappings are stored for tests
+                            Dictionary<string, int> vmColumnIndices = new() { { "VM", vmColIndex } };
+                            rowData[vmColIndex] = _anonymizationService.AnonymizeValue(
+                                (XLCellValue)originalValue, 
+                                vmColIndex, 
+                                vmColumnIndices);
                         }
 
                         // Anonymize DNS names
                         if (dnsColIndex >= 0)
                         {
                             string originalValue = rowData[dnsColIndex].ToString() ?? "";
-                            rowData[dnsColIndex] = $"host-{Math.Abs(originalValue.GetHashCode()) % 1000:D3}.example.com";
+                            // Use the AnonymizationService to ensure mappings are stored for tests
+                            Dictionary<string, int> dnsColumnIndices = new() { { "DNS Name", dnsColIndex } };
+                            rowData[dnsColIndex] = _anonymizationService.AnonymizeValue(
+                                (XLCellValue)originalValue,
+                                dnsColIndex,
+                                dnsColumnIndices);
                         }
 
                         // Anonymize IP addresses
                         if (ipColIndex >= 0)
                         {
                             string originalValue = rowData[ipColIndex].ToString() ?? "";
-                            rowData[ipColIndex] = $"10.{Math.Abs(originalValue.GetHashCode()) % 256}.{Math.Abs(originalValue.GetHashCode() >> 8) % 256}.{Math.Abs(originalValue.GetHashCode() >> 16) % 256}";
+                            // Use the AnonymizationService to ensure mappings are stored for tests
+                            Dictionary<string, int> ipColumnIndices = new() { { "Primary IP Address", ipColIndex } };
+                            rowData[ipColIndex] = _anonymizationService.AnonymizeValue(
+                                (XLCellValue)originalValue,
+                                ipColIndex,
+                                ipColumnIndices);
                         }
                     }
                 }
@@ -246,6 +261,13 @@ public class TestMergeService : IMergeService
 
         // Create output file - no progress tracking in test mode
         await CreateOutputFileAsync(outputPath, availableSheets.ToList(), mergedData, commonColumns);
+        
+        // Create anonymization mapping file if anonymization is enabled
+        if (options.AnonymizeData)
+        {
+            var anonymizationMappings = _anonymizationService.GetAnonymizationMappings();
+            await CreateAnonymizationMapFileAsync(outputPath, anonymizationMappings);
+        }
 
         // Ensure the file was created in the mock file system
         if (!_fileSystem.File.Exists(outputPath))
@@ -645,6 +667,45 @@ public class TestMergeService : IMergeService
             catch (Exception ex)
             {
                 throw new IOException($"Error creating output file: {ex.Message}", ex);
+            }
+        });
+    }
+    
+    private async Task CreateAnonymizationMapFileAsync(
+        string outputPath,
+        Dictionary<string, Dictionary<string, string>> mappings)
+    {
+        // Generate the anonymization map file name by adding suffix to the output file name
+        string mapFilePath = _fileSystem.Path.Combine(
+            _fileSystem.Path.GetDirectoryName(outputPath) ?? string.Empty,
+            $"{_fileSystem.Path.GetFileNameWithoutExtension(outputPath)}_AnonymizationMap{_fileSystem.Path.GetExtension(outputPath)}");
+        
+        await Task.Run(() =>
+        {
+            try
+            {
+                // For tests, we'll create a simple mock file in the MockFileSystem
+                // Since we can't actually save a real Excel workbook in the mock file system
+                _fileSystem.File.WriteAllBytes(mapFilePath, new byte[1024]);
+                
+                // For testing purposes, we'll also create a test info file for the map file
+                var infoPath = mapFilePath + ".testinfo";
+                var mapInfo = new Dictionary<string, int>();
+                
+                // Record mapping counts for each category
+                foreach (var category in mappings.Keys)
+                {
+                    mapInfo[category] = mappings[category].Count;
+                }
+                
+                // Serialize map info for tests to read
+                var infoContent = string.Join(Environment.NewLine,
+                    mapInfo.Select(kv => $"{kv.Key}:{kv.Value}"));
+                _fileSystem.File.WriteAllText(infoPath, infoContent);
+            }
+            catch (Exception ex)
+            {
+                throw new IOException($"Error creating anonymization map file: {ex.Message}", ex);
             }
         });
     }

@@ -2,6 +2,8 @@ name: .NET CI - Builds only windows-latest
 
 on:
   push:
+    branches-ignore:
+      - 'main'
     paths:
       - '**.cs'
       - '**.csproj'
@@ -11,6 +13,8 @@ on:
       - '**/Directory.Build.targets'
       - '**/global.json'
   pull_request:
+    branches:
+      - 'main'
     paths:
       - '**.cs'
       - '**.csproj'
@@ -69,10 +73,12 @@ jobs:
         $coverageFile = Get-ChildItem -Path TestResults -Filter coverage.cobertura.xml -Recurse | Select-Object -First 1 -ExpandProperty FullName
         
         if ($coverageFile) {
-          reportgenerator -reports:"$coverageFile" -targetdir:".\TestResults\CoverageReport" -reporttypes:Html
+          reportgenerator -reports:"$coverageFile" -targetdir:".\TestResults\CoverageReport" -reporttypes:"Html;MarkdownSummary"
         } else {
           Write-Warning "Coverage file not found. Creating an empty report."
           New-Item -Path TestResults\CoverageReport\index.html -ItemType File -Force -Value "<html><body><h1>No coverage data available</h1></body></html>"
+          # Create a simple markdown summary when coverage file is missing
+          New-Item -Path TestResults\CoverageReport\Summary.md -ItemType File -Force -Value "## Code Coverage Summary`n`nCoverage report could not be generated. Please check the workflow run for details."
         }
 
     - name: Upload coverage report

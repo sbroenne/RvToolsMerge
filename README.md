@@ -210,6 +210,8 @@ When using the anonymization option, the following data is consistently anonymiz
 
 Anonymization maintains internal data relationships, ensuring that the same original value always maps to the same anonymized value throughout all sheets, preserving data integrity while protecting sensitive information.
 
+When anonymization is enabled, an additional Excel file is created alongside the output file with the naming pattern `<output_filename>_AnonymizationMap.xlsx`. This file contains the mapping between original values and their anonymized equivalents, which can be used later to de-anonymize the data if needed.
+
 For more details on how anonymization is implemented, see the [Column Mappings Documentation](docs/ColumnMappings.md).
 
 ### Mandatory Columns Only Mode (-M, --only-mandatory-columns)
