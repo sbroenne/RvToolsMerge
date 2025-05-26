@@ -154,16 +154,16 @@ RVToolsMerge [options] inputPath [outputFile]
 
 ### Options
 
-| Option                         | Description                                            |
-| ------------------------------ | ------------------------------------------------------ |
-| `-h, --help, /?`               | Show the help message and exit                         |
-| `-m, --ignore-missing-sheets`  | Process files even when optional sheets are missing    |
-| `-i, --skip-invalid-files`     | Skip files that don't meet validation requirements     |
-| `-a, --anonymize`              | Anonymize VM, DNS, Cluster, Host, and Datacenter names |
-| `-M, --only-mandatory-columns` | Include only mandatory columns in the output           |
-| `-s, --include-source`         | Add a 'Source File' column to track data origin        |
-| `-e, --skip-empty-values`      | Skip rows with empty values in mandatory columns       |
-| `-d, --debug`                  | Show detailed error information with stack traces      |
+| Option                         | Description                                            | Default |
+| ------------------------------ | ------------------------------------------------------ | ------- |
+| `-h, --help, /?`               | Show the help message and exit                         | N/A     |
+| `-m, --ignore-missing-sheets`  | Process files even when optional sheets are missing    | `false` |
+| `-i, --skip-invalid-files`     | Skip files that don't meet validation requirements     | `false` |
+| `-a, --anonymize`              | Anonymize VM, DNS, Cluster, Host, and Datacenter names | `false` |
+| `-M, --only-mandatory-columns` | Include only mandatory columns in the output           | `false` |
+| `-s, --include-source`         | Add a 'Source File' column to track data origin        | `false` |
+| `-e, --skip-empty-values`      | Skip rows with empty values in mandatory columns       | `false` |
+| `-d, --debug`                  | Show detailed error information with stack traces      | `false` |
 
 ### Advanced Options
 
@@ -246,24 +246,37 @@ RVToolsMerge implements robust validation to ensure data integrity:
 
 ### Validation Rules
 
--   **By default**: All required sheets with all mandatory columns must exist in all files
+-   **By default (all options disabled)**: All required sheets with all mandatory columns must exist in all files. Files that don't meet these requirements will cause the operation to fail.
 -   **With `-m` (ignore-missing-sheets)**:
     -   The vInfo sheet remains required in all files
-    -   Optional sheets (vHost, vPartition, vMemory) can be missing
-    -   Missing mandatory columns in optional sheets will cause errors unless handled by other options
+    -   Optional sheets (vHost, vPartition, vMemory) can be missing without causing failures
+    -   Missing mandatory columns in optional sheets will still cause errors unless handled by other options
 -   **With `-i` (skip-invalid-files)**:
-    -   Files without the required vInfo sheet will be skipped
+    -   Files without the required vInfo sheet will be skipped and processing will continue
     -   Files with vInfo sheet but missing mandatory vInfo columns will be skipped
     -   Files with optional sheets having missing mandatory columns will be skipped
 -   **With `-e` (skip-empty-values)**:
-    -   Rows with empty values in mandatory columns will be skipped from the output
-    -   Without this option, rows with empty mandatory values are included (default behavior)
-    -   Useful when you want to only include complete data records
+    -   Rows with empty values in mandatory columns will be excluded from the output
+    -   By default (when this option is disabled), rows with empty mandatory values are included in the output
+    -   Enable this option when you want to include only complete data records
 -   **With both `-i` and `-m` together**:
     -   Files without vInfo sheet will be skipped
     -   Files with vInfo sheet but missing mandatory vInfo columns will be skipped
     -   Files with complete vInfo sheet but missing optional sheets will be processed
     -   Files with optional sheets missing mandatory columns will be processed, but those sheets may be excluded
+
+### Default Behavior
+
+**Important**: All processing options are disabled by default. This means:
+
+-   **Strict validation**: Processing will fail if any file is missing required sheets or columns
+-   **No anonymization**: All original data values are preserved in the output
+-   **All columns included**: Both mandatory and optional columns are included when available
+-   **No source tracking**: The source file name is not added to the merged data
+-   **Empty values preserved**: Rows with empty mandatory values are included in the output
+-   **Full error reporting**: Only basic error messages are shown (use `-d` for detailed debugging)
+
+To enable any special processing behavior, you must explicitly specify the corresponding command-line options.
 
 ## Sample Files
 
@@ -278,16 +291,18 @@ These files can be used to test the application and understand the expected form
 
 If you encounter issues while using RVToolsMerge:
 
-| Issue                           | Recommended Action                                                               |
-| ------------------------------- | -------------------------------------------------------------------------------- |
-| General errors                  | Enable debug mode with `-d` to see detailed error information                    |
-| Missing sheets errors           | Use `-m` to ignore missing optional sheets                                       |
-| Files causing validation errors | Use `-i` to skip invalid files and continue processing others                    |
-| Row count mismatches            | By default, rows with empty mandatory values are included; use `-e` to skip them |
-| Low memory issues               | Process smaller batches of files                                                 |
-| Permission errors               | Ensure you have write access to the output folder                                |
-| Excel file locked               | Close any applications that might have the file open                             |
-| Slow performance                | Check for antivirus scanning; consider excluding the working folders             |
+| Issue                           | Recommended Action                                                                        |
+| ------------------------------- | ----------------------------------------------------------------------------------------- |
+| General errors                  | Enable debug mode with `-d` to see detailed error information                             |
+| Missing sheets errors           | Use `-m` to ignore missing optional sheets (disabled by default)                          |
+| Files causing validation errors | Use `-i` to skip invalid files and continue processing others (disabled by default)       |
+| Row count mismatches            | By default, rows with empty mandatory values are included; use `-e` to exclude them       |
+| Need data protection            | Use `-a` for anonymization and `-M` for mandatory columns only (both disabled by default) |
+| Want to track data origin       | Use `-s` to include source file information (disabled by default)                         |
+| Low memory issues               | Process smaller batches of files                                                          |
+| Permission errors               | Ensure you have write access to the output folder                                         |
+| Excel file locked               | Close any applications that might have the file open                                      |
+| Slow performance                | Check for antivirus scanning; consider excluding the working folders                      |
 
 ## Technical Architecture
 

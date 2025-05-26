@@ -200,14 +200,24 @@ public class ConsoleUIService
         AnsiConsole.MarkupLine("  [yellow]-h, --help, /?[/]            Show this help message and exit.");
         AnsiConsole.MarkupLine("  [yellow]-m, --ignore-missing-sheets[/]");
         AnsiConsole.MarkupLine("                            Ignore missing optional sheets (vHost, vPartition & vMemory).");
+        AnsiConsole.MarkupLine("                            [grey]Default: disabled[/]");
         AnsiConsole.MarkupLine("  [yellow]-i, --skip-invalid-files[/]  Skip files that don't meet validation requirements.");
+        AnsiConsole.MarkupLine("                            [grey]Default: disabled[/]");
         AnsiConsole.MarkupLine("  [yellow]-a, --anonymize[/]           Anonymize VM, DNS Name, IP Address, Cluster, Host, and Datacenter names.");
+        AnsiConsole.MarkupLine("                            [grey]Default: disabled[/]");
         AnsiConsole.MarkupLine("  [yellow]-M, --only-mandatory-columns[/]");
         AnsiConsole.MarkupLine("                            Include only mandatory columns in output.");
+        AnsiConsole.MarkupLine("                            [grey]Default: disabled[/]");
         AnsiConsole.MarkupLine("  [yellow]-s, --include-source[/]      Include source file name in output.");
+        AnsiConsole.MarkupLine("                            [grey]Default: disabled[/]");
         AnsiConsole.MarkupLine("  [yellow]-e, --skip-empty-values[/]   Skip rows with empty values in mandatory columns.");
         AnsiConsole.MarkupLine("                            By default, all rows are included regardless of empty values.");
+        AnsiConsole.MarkupLine("                            [grey]Default: disabled[/]");
         AnsiConsole.MarkupLine("  [yellow]-d, --debug[/]               Show detailed error information.");
+        AnsiConsole.MarkupLine("                            [grey]Default: disabled[/]");
+        AnsiConsole.WriteLine();
+        AnsiConsole.MarkupLine("[bold yellow]Note:[/] All processing options are disabled by default. You must explicitly");
+        AnsiConsole.MarkupLine("      enable features by specifying the corresponding command-line options.");
         AnsiConsole.WriteLine();
     }
 
