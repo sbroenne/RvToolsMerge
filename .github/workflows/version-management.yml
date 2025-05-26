@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       versionType:
-        description: 'Type of version increment'
+        description: "Type of version increment"
         required: true
-        default: 'patch'
+        default: "patch"
         type: choice
         options:
           - major
@@ -147,14 +147,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Auto-Approve PR
-        run: |
-          # Automatically approve the PR to meet repository approval requirements
-          # This is needed in repositories with branch protection rules requiring approvals
-          gh pr review ${{ steps.create-pr.outputs.pr_number }} --approve
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Auto-Merge PR
         run: |
           # Attempt to automatically merge the PR with retry logic
@@ -207,6 +199,3 @@ jobs:
           fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-
-
