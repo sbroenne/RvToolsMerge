@@ -102,7 +102,7 @@ public class ValidationService : IValidationService
                 issues.Add(new ValidationIssue(
                     fileName,
                     true,
-                    $"'vInfo' sheet is missing mandatory column(s): {String.Join(", ", missingColumns)}"
+                    $"'vInfo' sheet is missing mandatory column(s): {string.Join(", ", missingColumns)}"
                 ));
                 return false;
             }
@@ -189,7 +189,7 @@ public class ValidationService : IValidationService
                     issues.Add(new ValidationIssue(
                         fileName,
                         false,
-                        $"Sheet '{sheetName}' has missing column(s): {String.Join(", ", missingColumns)}. This sheet may be excluded from processing."
+                        $"Sheet '{sheetName}' has missing column(s): {string.Join(", ", missingColumns)}. This sheet may be excluded from processing."
                     ));
                 }
                 else
@@ -199,7 +199,7 @@ public class ValidationService : IValidationService
                     issues.Add(new ValidationIssue(
                         fileName,
                         true,
-                        $"Sheet '{sheetName}' is missing mandatory column(s): {String.Join(", ", missingColumns)}"
+                        $"Sheet '{sheetName}' is missing mandatory column(s): {string.Join(", ", missingColumns)}"
                     ));
                 }
             }
@@ -217,7 +217,7 @@ public class ValidationService : IValidationService
         return mandatoryColumnIndices.Any(idx =>
             idx >= 0 &&
             (EqualityComparer<XLCellValue>.Default.Equals(rowData[idx], default) ||
-             String.IsNullOrWhiteSpace(rowData[idx].ToString()))
+             string.IsNullOrWhiteSpace(rowData[idx].ToString()))
         );
     }
 }

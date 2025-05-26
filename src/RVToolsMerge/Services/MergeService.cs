@@ -212,7 +212,7 @@ public class MergeService : IMergeService
                     .Select(error => $"• {error}")
                     .ToList();
 
-                string details = String.Join("\n", errorDetails);
+                string details = string.Join("\n", errorDetails);
 
                 table.AddRow(
                     $"[cyan]{filename}[/]",
@@ -590,7 +590,7 @@ public class MergeService : IMergeService
     {
         // Generate the anonymization map file name by adding suffix to the output file name
         string mapFilePath = _fileSystem.Path.Combine(
-            _fileSystem.Path.GetDirectoryName(outputPath) ?? String.Empty,
+            _fileSystem.Path.GetDirectoryName(outputPath) ?? string.Empty,
             $"{_fileSystem.Path.GetFileNameWithoutExtension(outputPath)}_AnonymizationMap{_fileSystem.Path.GetExtension(outputPath)}");
         
         _consoleUiService.DisplayInfo("[bold]Creating anonymization mapping file...[/]");

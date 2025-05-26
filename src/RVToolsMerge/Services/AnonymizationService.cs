@@ -137,7 +137,7 @@ public class AnonymizationService : IAnonymizationService
         string prefix)
     {
         var lookupValue = originalValue.ToString();
-        if (String.IsNullOrWhiteSpace(lookupValue))
+        if (string.IsNullOrWhiteSpace(lookupValue))
         {
             return originalValue; // Return original value if empty
         }

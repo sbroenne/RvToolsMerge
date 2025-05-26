@@ -105,7 +105,7 @@ RVToolsMerge is a tool for combining and processing multiple RVTools exports fro
 -   Utilize C# attributes effectively (e.g., `[Required]`, `[JsonProperty]`)
 -   Use interpolated strings (`$"..."`) rather than string concatenation
 -   Prefer pattern-based `switch` expressions over traditional `switch` statements
--   use string.Join instead of string.join
+-   Use lowercase `string` for type declarations and static method calls (`string.Join`, `string.IsNullOrEmpty`, `string.Empty`) following Microsoft's C# coding conventions
 -   Use minimal APIs where appropriate for simple endpoints
 -   Leverage source generators when applicable
 -   Prefer `IOptions<T>` pattern for configuration
