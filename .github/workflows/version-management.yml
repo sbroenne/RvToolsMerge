@@ -238,10 +238,9 @@ jobs:
       - name: Get Version from Previous Job
         id: get-version
         run: |
-          # Get the version that was created in the bump-version job
-          CURRENT_VERSION=$(grep -o '<Version>[^<]*' src/RVToolsMerge/RVToolsMerge.csproj | sed 's/<Version>//')
-          echo "version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
-          echo "::notice::Creating release for version $CURRENT_VERSION"
+          # Use the version output from the bump-version job instead of reading from csproj
+          echo "version=${{ needs.bump-version.outputs.new_version }}" >> $GITHUB_OUTPUT
+          echo "::notice::Creating release for version ${{ needs.bump-version.outputs.new_version }}"
 
       - name: Download All Artifacts
         uses: actions/download-artifact@v4
