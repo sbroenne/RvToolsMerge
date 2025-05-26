@@ -4,11 +4,7 @@ on:
   workflow_run:
     workflows: 
       - "CodeQL"
-      - "Vulnerability Scan"
       - "Dependency Review"
-      - "Secret Scanning Push Protection"
-      - "NuGet Vulnerability Scan"
-      - "License Compliance"
     types:
       - completed
 

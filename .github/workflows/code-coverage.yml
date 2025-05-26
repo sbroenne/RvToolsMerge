@@ -7,12 +7,6 @@ on:
       - "**.cs"
       - "**.csproj"
       - "**.sln"
-  pull_request:
-    branches: [main]
-    paths:
-      - "**.cs"
-      - "**.csproj"
-      - "**.sln"
   workflow_dispatch:
     inputs:
       fullReport:
