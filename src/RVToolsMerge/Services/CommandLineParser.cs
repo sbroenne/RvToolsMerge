@@ -64,6 +64,9 @@ public class CommandLineParser : ICommandLineParser
                 case "-d" or "--debug":
                     options.DebugMode = true;
                     break;
+                case "-z" or "--azure-migrate":
+                    options.EnableAzureMigrateValidation = true;
+                    break;
                 case "-s" or "--include-source":
                     options.IncludeSourceFileName = true;
                     break;

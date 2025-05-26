@@ -62,44 +62,39 @@ public class MergeService : IMergeService
         MergeOptions options,
         List<ValidationIssue> validationIssues)
     {
-        // Validate input parameters
         ValidateInputParameters(filePaths);
 
-        // Track which files to process (all by default)
-        var validFilePaths = new List<string>(filePaths);
+        // Copy the list to allow modification if we need to remove invalid files
+        var validFilePaths = filePaths.ToList();
 
-        // Track which sheets exist in all files
-        var availableSheets = new List<string>(SheetConfiguration.RequiredSheets);
-
-        // Dictionary to store merged data for each sheet - using XLCellValue arrays to preserve data types
-        var mergedData = new Dictionary<string, List<XLCellValue[]>>();
-
-        // Dictionary to store common columns for each sheet
-        var commonColumns = new Dictionary<string, List<string>>();
-
-        // Dictionary to store column indices for anonymization
-        var anonymizeColumnIndices = new Dictionary<string, Dictionary<string, int>>();
-
-        // Validate files first
+        // Validate files and process issues
         await ValidateFilesAsync(validFilePaths, options, validationIssues);
 
-        // Display validation issues
-        DisplayValidationIssues(validationIssues);
-
-        // Check if we have valid files to process
         if (validFilePaths.Count == 0)
         {
-            throw new FileValidationException("No valid files to process.");
+            throw new NoValidFilesException("No valid files to process after validation.");
         }
 
-        // Analyze columns in each sheet
-        await AnalyzeColumnsAsync(validFilePaths, availableSheets, options, commonColumns);
+        // Determine available sheets
+        var availableSheets = await AnalyzeSheetsAsync(validFilePaths, options);
 
-        // Setup anonymization indices
-        SetupAnonymizationIndices(availableSheets, options, commonColumns, anonymizeColumnIndices);
+        if (availableSheets.Count == 0)
+        {
+            throw new NoValidSheetsException("No valid sheets found across the input files.");
+        }
+
+        // Create a dictionary to store merged data (sheet name -> rows)
+        var mergedData = new Dictionary<string, List<XLCellValue[]>>();
+
+        // Create a dictionary to store common columns across all files (sheet name -> column names)
+        var commonColumns = await IdentifyCommonColumnsAsync(validFilePaths, availableSheets, options);
+
+        // Setup anonymization column indices if enabled
+        var anonymizeColumnIndices = SetupAnonymizationColumnIndices(commonColumns, options);
 
         // Extract data from files
-        await ExtractDataFromFilesAsync(validFilePaths, availableSheets, options, commonColumns,
+        Dictionary<string, AzureMigrateValidationResult>? azureMigrateResults = null;
+        azureMigrateResults = await ExtractDataFromFilesAsync(validFilePaths, availableSheets, options, commonColumns,
             anonymizeColumnIndices, mergedData, validationIssues);
 
         // Create output file
@@ -110,6 +105,19 @@ public class MergeService : IMergeService
         {
             var anonymizationMappings = _anonymizationService.GetAnonymizationMappings();
             await CreateAnonymizationMapFileAsync(outputPath, anonymizationMappings);
+        }
+
+        // Create failed validation file if Azure Migrate validation is enabled
+        if (options.EnableAzureMigrateValidation && azureMigrateResults != null && azureMigrateResults["vInfo"].TotalFailedRows > 0)
+        {
+            string failedValidationFilePath = _fileSystem.Path.Combine(
+                _fileSystem.Path.GetDirectoryName(outputPath) ?? string.Empty,
+                _fileSystem.Path.GetFileNameWithoutExtension(outputPath) + "_FailedAzureMigrateValidation.xlsx");
+            
+            await CreateAzureMigrateFailedValidationFileAsync(failedValidationFilePath, azureMigrateResults, commonColumns);
+            
+            // Display Azure Migrate validation statistics
+            DisplayAzureMigrateValidationStatistics(azureMigrateResults, failedValidationFilePath);
         }
 
         // Display summary
@@ -151,20 +159,28 @@ public class MergeService : IMergeService
                 ])
                 .Start(ctx =>
                 {
-                    // Create a validation task
-                    var validationTask = ctx.AddTask("[green]Validating files[/]", maxValue: validFilePaths.Count);
+                    var validationTask = ctx.AddTask("[green]Validating input files[/]", maxValue: validFilePaths.Count);
 
                     for (int i = validFilePaths.Count - 1; i >= 0; i--)
                     {
                         string filePath = validFilePaths[i];
+                        bool isValid = _validationService.ValidateFile(filePath, options.IgnoreMissingOptionalSheets, validationIssues);
 
-                        bool isValid = _validationService.ValidateFile(
-                            filePath,
-                            options.IgnoreMissingOptionalSheets,
-                            validationIssues);
+                        if (!isValid && !options.SkipInvalidFiles)
+                        {
+                            // If file is not valid and we're not skipping invalid files, throw an exception
+                            var issues = validationIssues
+                                .Where(issue => issue.FileName == _fileSystem.Path.GetFileName(filePath) && issue.Skipped)
+                                .Select(issue => $"  - {issue.ValidationError}")
+                                .ToList();
+
+                            var errorMessage = $"Invalid file found: {_fileSystem.Path.GetFileName(filePath)}{Environment.NewLine}{string.Join(Environment.NewLine, issues)}";
+                            throw new InvalidFileException(errorMessage);
+                        }
 
                         if (!isValid && options.SkipInvalidFiles)
                         {
+                            // Remove invalid file if skipping is enabled
                             validFilePaths.RemoveAt(i);
                         }
 
@@ -177,83 +193,115 @@ public class MergeService : IMergeService
     /// <summary>
     /// Displays validation issues in a formatted table.
     /// </summary>
-    /// <param name="validationIssues">List of validation issues to display.</param>
+    /// <param name="validationIssues">The list of validation issues to display.</param>
     private void DisplayValidationIssues(List<ValidationIssue> validationIssues)
     {
         if (validationIssues.Count > 0)
         {
-            _consoleUiService.WriteLine();
-            _consoleUiService.WriteRule("[yellow]Validation Issues[/]", "grey");
-
-            // Group issues by filename
-            var groupedIssues = validationIssues
-                .GroupBy(issue => issue.FileName)
-                .OrderBy(group => group.Key)
-                .ToList();
-
-            var table = new Table();
-            table.AddColumn(new TableColumn("File Name").LeftAligned());
-            table.AddColumn(new TableColumn("Status").Centered());
-            table.AddColumn(new TableColumn("Details").LeftAligned());
-
-            foreach (var group in groupedIssues)
-            {
-                var filename = group.Key;
-                var fileIssues = group.ToList();
-
-                // Determine the overall status for this file
-                bool anySkipped = fileIssues.Any(issue => issue.Skipped);
-                string status = anySkipped ? "[yellow]Skipped[/]" : "[green]Processed with warning[/]";
-
-                // Combine all validation errors for this file
-                var errorDetails = fileIssues
-                    .Select(issue => issue.ValidationError)
-                    .Distinct()
-                    .Select(error => $"• {error}")
-                    .ToList();
-
-                string details = string.Join("\n", errorDetails);
-
-                table.AddRow(
-                    $"[cyan]{filename}[/]",
-                    status,
-                    $"[grey]{details}[/]"
-                );
-            }
-            table.Border(TableBorder.Rounded);
-            _consoleUiService.Write(table);
-            _consoleUiService.WriteLine();
-
-            int totalFiles = groupedIssues.Count;
-            int totalIssues = validationIssues.Count;
-            _consoleUiService.MarkupLineInterpolated($"[yellow]Total of {totalIssues} validation issues across {totalFiles} files.[/]");
-            _consoleUiService.WriteLine();
+            _consoleUiService.DisplayValidationIssues(validationIssues);
         }
     }
 
     /// <summary>
-    /// Analyzes columns in each sheet to determine common columns across all files.
+    /// Analyzes input files to determine which sheets are available across all files.
     /// </summary>
     /// <param name="validFilePaths">List of valid file paths to analyze.</param>
-    /// <param name="availableSheets">List of available sheets to analyze.</param>
     /// <param name="options">Merge options.</param>
-    /// <param name="commonColumns">Dictionary to populate with common columns for each sheet.</param>
-    private async Task AnalyzeColumnsAsync(
-        List<string> validFilePaths,
-        List<string> availableSheets,
-        MergeOptions options,
-        Dictionary<string, List<string>> commonColumns)
+    /// <returns>A list of available sheet names.</returns>
+    private async Task<List<string>> AnalyzeSheetsAsync(List<string> validFilePaths, MergeOptions options)
     {
-        _consoleUiService.DisplayInfo("[bold]Analyzing columns...[/]");
+        _consoleUiService.DisplayInfo("[bold]Analyzing input files...[/]");
+
+        // Collect sheet names from all files
+        var sheetsInFiles = new Dictionary<string, HashSet<string>>();
 
         await Task.Run(() =>
         {
-            // First determine what columns are available across all files for each sheet
+            _consoleUiService.Progress()
+                .AutoClear(false)
+                .Columns(
+                [
+                    new TaskDescriptionColumn(),
+                    new ProgressBarColumn(),
+                    new PercentageColumn(),
+                    new SpinnerColumn()
+                ])
+                .Start(ctx =>
+                {
+                    var analysisTask = ctx.AddTask("[green]Analyzing sheets[/]", maxValue: validFilePaths.Count);
+
+                    foreach (var filePath in validFilePaths)
+                    {
+                        try
+                        {
+                            using var workbook = new XLWorkbook(filePath);
+                            var fileSheets = new HashSet<string>();
+
+                            foreach (var worksheet in workbook.Worksheets)
+                            {
+                                fileSheets.Add(worksheet.Name);
+                            }
+
+                            sheetsInFiles[filePath] = fileSheets;
+                        }
+                        catch (IOException ioEx)
+                        {
+                            // On Linux, provide more verbose error information for filesystem issues
+                            _consoleUiService.MarkupLineInterpolated($"[yellow]Warning:[/] IO issue with file '{_fileSystem.Path.GetFileName(filePath)}': {ioEx.Message}");
+                        }
+                        analysisTask.Increment(1);
+                    }
+                });
+        });
+
+        // Check if vInfo is present in all files - it's required
+        var allFilesHaveRequiredSheets = sheetsInFiles.Values.All(sheets => sheets.Contains("vInfo"));
+        if (!allFilesHaveRequiredSheets)
+        {
+            throw new MissingRequiredSheetException("Some files are missing the required 'vInfo' sheet.");
+        }
+
+        // Find sheets that are available in at least one file
+        var availableSheets = new List<string>();
+        foreach (var sheetName in SheetConfiguration.RequiredSheets)
+        {
+            if (sheetsInFiles.Values.Any(sheets => sheets.Contains(sheetName)))
+            {
+                availableSheets.Add(sheetName);
+            }
+        }
+
+        // Apply ignoring missing sheets if requested
+        var sheetsToReturn = options.IgnoreMissingOptionalSheets
+            ? availableSheets
+            : SheetConfiguration.RequiredSheets.ToList();
+
+        _consoleUiService.MarkupLineInterpolated($"[cyan]Found sheets:[/] {string.Join(", ", sheetsToReturn)}");
+        return sheetsToReturn;
+    }
+
+    /// <summary>
+    /// Identifies columns that are common across all files for each sheet.
+    /// </summary>
+    /// <param name="validFilePaths">List of valid file paths to analyze.</param>
+    /// <param name="availableSheets">List of available sheet names.</param>
+    /// <param name="options">Merge options.</param>
+    /// <returns>A dictionary mapping sheet names to lists of common column names.</returns>
+    private async Task<Dictionary<string, List<string>>> IdentifyCommonColumnsAsync(
+        List<string> validFilePaths,
+        List<string> availableSheets,
+        MergeOptions options)
+    {
+        _consoleUiService.DisplayInfo("[bold]Identifying common columns...[/]");
+
+        var commonColumns = new Dictionary<string, List<string>>();
+
+        await Task.Run(() =>
+        {
             foreach (var sheetName in availableSheets)
             {
-                var allFileColumns = new List<List<string>>();
+                var allFileColumns = new List<HashSet<string>>();
 
-                // First analyze all files to collect column information
                 _consoleUiService.Progress()
                     .AutoClear(false)
                     .Columns(
@@ -265,24 +313,21 @@ public class MergeService : IMergeService
                     ])
                     .Start(ctx =>
                     {
-                        // Create main task for analysis
-                        var fileAnalysisTask = ctx.AddTask($"[cyan]Analyzing '{sheetName}' sheet[/]", maxValue: validFilePaths.Count);
+                        var fileAnalysisTask = ctx.AddTask($"[cyan]Analyzing '{sheetName}' columns[/]", maxValue: validFilePaths.Count);
 
                         foreach (var filePath in validFilePaths)
                         {
                             try
                             {
-                                using (var workbook = new XLWorkbook(filePath))
+                                using var workbook = new XLWorkbook(filePath);
+                                if (_excelService.SheetExists(workbook, sheetName))
                                 {
-                                    if (_excelService.SheetExists(workbook, sheetName))
-                                    {
-                                        var worksheet = workbook.Worksheet(sheetName);
-                                        var columnNames = _excelService.GetColumnNames(worksheet);
-                                        allFileColumns.Add(columnNames);
-                                    }
+                                    var worksheet = workbook.Worksheet(sheetName);
+                                    var columnNames = _excelService.GetColumnNames(worksheet);
+                                    allFileColumns.Add(new HashSet<string>(columnNames));
                                 }
                             }
-                            catch (IOException ioEx) when (options.DebugMode)
+                            catch (IOException ioEx)
                             {
                                 // On Linux, provide more verbose error information for filesystem issues
                                 _consoleUiService.MarkupLineInterpolated($"[yellow]Warning:[/] IO issue with file '{_fileSystem.Path.GetFileName(filePath)}': {ioEx.Message}");
@@ -295,102 +340,146 @@ public class MergeService : IMergeService
                 if (options.OnlyMandatoryColumns && SheetConfiguration.MandatoryColumns.TryGetValue(sheetName, out var mandatoryColumns))
                 {
                     var columnsInAllFiles = allFileColumns.Count > 0
-                        ? allFileColumns.Aggregate((a, b) => a.Intersect(b).ToList())
+                        ? allFileColumns.Aggregate((current, next) => new HashSet<string>(current.Intersect(next)))
+                            .Where(col => mandatoryColumns.Contains(col))
+                            .ToList()
                         : [];
 
-                    foreach (var col in mandatoryColumns)
+                    // Make sure at least mandatory columns are included
+                    var mandatoryColumnsInAllFiles = new List<string>();
+                    foreach (var column in mandatoryColumns)
                     {
-                        if (!columnsInAllFiles.Contains(col))
+                        if (allFileColumns.All(fileColumns => fileColumns.Contains(column)))
                         {
-                            _consoleUiService.MarkupLineInterpolated($"[yellow]Warning:[/] Mandatory column '[cyan]{col}[/]' for sheet '[green]{sheetName}[/]' is missing from common columns.");
+                            mandatoryColumnsInAllFiles.Add(column);
                         }
                     }
 
-                    commonColumns[sheetName] = columnsInAllFiles.Intersect(mandatoryColumns).ToList();
+                    // Use only the mandatory columns that are present in all files
+                    commonColumns[sheetName] = mandatoryColumnsInAllFiles;
                 }
                 else
                 {
-                    // Find columns that exist in all files for this sheet
+                    // Find columns that are present in all files
                     var columnsInAllFiles = allFileColumns.Count > 0
-                        ? allFileColumns.Aggregate((a, b) => a.Intersect(b).ToList())
+                        ? allFileColumns.Aggregate((current, next) => new HashSet<string>(current.Intersect(next))).ToList()
                         : [];
-
-                    // If includeSourceFileName option is enabled, prepare to add source file column
-                    if (options.IncludeSourceFileName)
-                    {
-                        const string sourceFileColumnName = "Source File";
-                        // Add source file column if it doesn't already exist
-                        if (!columnsInAllFiles.Contains(sourceFileColumnName))
-                        {
-                            columnsInAllFiles.Add(sourceFileColumnName);
-                        }
-                    }
 
                     commonColumns[sheetName] = columnsInAllFiles;
                 }
             }
         });
+
+        // Add source file column if the option is enabled
+        if (options.IncludeSourceFileName)
+        {
+            foreach (var sheetName in availableSheets)
+            {
+                commonColumns[sheetName].Add("Source File");
+            }
+        }
+
+        foreach (var sheetName in availableSheets)
+        {
+            _consoleUiService.MarkupLineInterpolated($"[cyan]Common columns in '{sheetName}':[/] {commonColumns[sheetName].Count}");
+        }
+
+        return commonColumns;
     }
 
     /// <summary>
     /// Sets up anonymization column indices for each sheet.
     /// </summary>
-    /// <param name="availableSheets">List of available sheets.</param>
-    /// <param name="options">Merge options.</param>
     /// <param name="commonColumns">Dictionary of common columns for each sheet.</param>
-    /// <param name="anonymizeColumnIndices">Dictionary to populate with anonymization indices.</param>
-    private void SetupAnonymizationIndices(
-        List<string> availableSheets,
-        MergeOptions options,
+    /// <param name="options">Merge options.</param>
+    /// <returns>Dictionary mapping sheet names to dictionaries of column names to indices for anonymization.</returns>
+    private Dictionary<string, Dictionary<string, int>> SetupAnonymizationColumnIndices(
         Dictionary<string, List<string>> commonColumns,
-        Dictionary<string, Dictionary<string, int>> anonymizeColumnIndices)
+        MergeOptions options)
     {
-        if (!options.AnonymizeData)
+        var anonymizeColumnIndices = new Dictionary<string, Dictionary<string, int>>();
+
+        if (options.AnonymizeData)
         {
-            return;
+            foreach (var sheetName in commonColumns.Keys)
+            {
+                var sheetAnonymizeCols = new Dictionary<string, int>();
+
+                // For vInfo sheet
+                if (sheetName == "vInfo")
+                {
+                    AddColumnToAnonymize(commonColumns, sheetName, "VM", sheetAnonymizeCols);
+                    AddColumnToAnonymize(commonColumns, sheetName, "DNS Name", sheetAnonymizeCols);
+                    AddColumnToAnonymize(commonColumns, sheetName, "Cluster", sheetAnonymizeCols);
+                    AddColumnToAnonymize(commonColumns, sheetName, "Host", sheetAnonymizeCols);
+                    AddColumnToAnonymize(commonColumns, sheetName, "Datacenter", sheetAnonymizeCols);
+                    AddColumnToAnonymize(commonColumns, sheetName, "Primary IP Address", sheetAnonymizeCols);
+                    // Anonymize network columns
+                    for (int i = 1; i <= 8; i++)
+                    {
+                        AddColumnToAnonymize(commonColumns, sheetName, $"Network #{i}", sheetAnonymizeCols);
+                    }
+                }
+                // For vHost sheet
+                else if (sheetName == "vHost")
+                {
+                    AddColumnToAnonymize(commonColumns, sheetName, "Host", sheetAnonymizeCols);
+                    AddColumnToAnonymize(commonColumns, sheetName, "Cluster", sheetAnonymizeCols);
+                    AddColumnToAnonymize(commonColumns, sheetName, "Datacenter", sheetAnonymizeCols);
+                }
+                // For vPartition sheet
+                else if (sheetName == "vPartition")
+                {
+                    AddColumnToAnonymize(commonColumns, sheetName, "VM", sheetAnonymizeCols);
+                }
+                // For vMemory sheet
+                else if (sheetName == "vMemory")
+                {
+                    AddColumnToAnonymize(commonColumns, sheetName, "VM", sheetAnonymizeCols);
+                }
+
+                if (sheetAnonymizeCols.Count > 0)
+                {
+                    anonymizeColumnIndices[sheetName] = sheetAnonymizeCols;
+                }
+            }
         }
 
-        foreach (var sheetName in availableSheets)
+        return anonymizeColumnIndices;
+    }
+
+    /// <summary>
+    /// Adds a column to the anonymization index if it exists in the common columns.
+    /// </summary>
+    /// <param name="commonColumns">Dictionary of common columns for each sheet.</param>
+    /// <param name="sheetName">The name of the sheet containing the column.</param>
+    /// <param name="columnName">The name of the column to anonymize.</param>
+    /// <param name="anonymizeColumns">Dictionary to add the column index to.</param>
+    private static void AddColumnToAnonymize(
+        Dictionary<string, List<string>> commonColumns,
+        string sheetName,
+        string columnName,
+        Dictionary<string, int> anonymizeColumns)
+    {
+        int index = commonColumns[sheetName].IndexOf(columnName);
+        if (index >= 0)
         {
-            anonymizeColumnIndices[sheetName] = [];
-
-            // VM Name
-            int vmColIndex = commonColumns[sheetName].IndexOf("VM");
-            if (vmColIndex >= 0) anonymizeColumnIndices[sheetName]["VM"] = vmColIndex;
-
-            // DNS Name
-            int dnsColIndex = commonColumns[sheetName].IndexOf("DNS Name");
-            if (dnsColIndex >= 0) anonymizeColumnIndices[sheetName]["DNS Name"] = dnsColIndex;
-
-            // Cluster Name
-            int clusterColIndex = commonColumns[sheetName].IndexOf("Cluster");
-            if (clusterColIndex >= 0) anonymizeColumnIndices[sheetName]["Cluster"] = clusterColIndex;
-
-            // Host Name
-            int hostColIndex = commonColumns[sheetName].IndexOf("Host");
-            if (hostColIndex >= 0) anonymizeColumnIndices[sheetName]["Host"] = hostColIndex;
-
-            // Datacenter Name
-            int datacenterColIndex = commonColumns[sheetName].IndexOf("Datacenter");
-            if (datacenterColIndex >= 0) anonymizeColumnIndices[sheetName]["Datacenter"] = datacenterColIndex;
-
-            // IP Address
-            int ipAddressColIndex = commonColumns[sheetName].IndexOf("Primary IP Address");
-            if (ipAddressColIndex >= 0) anonymizeColumnIndices[sheetName]["Primary IP Address"] = ipAddressColIndex;
+            anonymizeColumns[columnName] = index;
         }
     }
 
     /// <summary>
-    /// Extracts data from all valid files for each sheet.
+    /// Extracts data from all valid files and merges it.
     /// </summary>
-    /// <param name="validFilePaths">List of valid file paths to extract data from.</param>
-    /// <param name="availableSheets">List of available sheets to process.</param>
+    /// <param name="validFilePaths">List of valid file paths to process.</param>
+    /// <param name="availableSheets">List of available sheets to include.</param>
     /// <param name="options">Merge options.</param>
     /// <param name="commonColumns">Dictionary of common columns for each sheet.</param>
-    /// <param name="anonymizeColumnIndices">Dictionary of anonymization indices.</param>
+    /// <param name="anonymizeColumnIndices">Dictionary of column indices to anonymize.</param>
     /// <param name="mergedData">Dictionary to populate with merged data.</param>
     /// <param name="validationIssues">List to store validation issues.</param>
-    private async Task ExtractDataFromFilesAsync(
+    /// <param name="azureMigrateResults">Output parameter for Azure Migrate validation results.</param>
+    private async Task<Dictionary<string, AzureMigrateValidationResult>?> ExtractDataFromFilesAsync(
         List<string> validFilePaths,
         List<string> availableSheets,
         MergeOptions options,
@@ -405,6 +494,23 @@ public class MergeService : IMergeService
         if (options.AnonymizeData)
         {
             _consoleUiService.DisplayInfo("[yellow]Anonymization enabled[/] - VM, DNS Name, Cluster, Host, and Datacenter names will be anonymized.");
+        }
+
+        // Display Azure Migrate validation message if enabled
+        if (options.EnableAzureMigrateValidation)
+        {
+            _consoleUiService.DisplayInfo("[yellow]Azure Migrate validation enabled[/] - Additional validation rules will be applied and rows that fail will be moved to a separate file.");
+        }
+
+        // Create a dictionary to store Azure Migrate validation results if enabled
+        Dictionary<string, AzureMigrateValidationResult>? azureMigrateValidationResults = null;
+        if (options.EnableAzureMigrateValidation)
+        {
+            azureMigrateValidationResults = new Dictionary<string, AzureMigrateValidationResult>();
+            foreach (var sheetName in availableSheets)
+            {
+                azureMigrateValidationResults[sheetName] = new AzureMigrateValidationResult();
+            }
         }
 
         await Task.Run(() =>
@@ -428,6 +534,18 @@ public class MergeService : IMergeService
                         ];
 
                         var sheetTask = ctx.AddTask($"[cyan]Processing '{sheetName}'[/]", maxValue: validFilePaths.Count);
+
+                        // For Azure Migrate validation of vInfo sheet, track unique VM UUIDs
+                        HashSet<string>? seenVmUuids = null;
+                        int vmUuidIndex = -1;
+                        int osConfigIndex = -1;
+                        
+                        if (options.EnableAzureMigrateValidation && sheetName == "vInfo")
+                        {
+                            seenVmUuids = new HashSet<string>();
+                            vmUuidIndex = commonColumns[sheetName].IndexOf("VM UUID");
+                            osConfigIndex = commonColumns[sheetName].IndexOf("OS according to the configuration file");
+                        }
 
                         foreach (var filePath in validFilePaths)
                         {
@@ -509,7 +627,70 @@ public class MergeService : IMergeService
                                     rowData[sourceFileColumnIndex] = _fileSystem.Path.GetFileName(filePath);
                                 }
 
-                                mergedData[sheetName].Add(rowData);
+                                // Perform Azure Migrate validation if enabled
+                                bool skipRowDueToAzureMigrateValidation = false;
+                                if (options.EnableAzureMigrateValidation && sheetName == "vInfo" && azureMigrateValidationResults != null)
+                                {
+                                    var validationResult = azureMigrateValidationResults["vInfo"];
+                                    
+                                    // Check if we've reached the VM count limit
+                                    if (validationResult.VmCountLimitReached)
+                                    {
+                                        skipRowDueToAzureMigrateValidation = true;
+                                    }
+                                    else
+                                    {
+                                        // Validate the row for Azure Migrate
+                                        var failureReason = _validationService.ValidateRowForAzureMigrate(
+                                            rowData, 
+                                            vmUuidIndex, 
+                                            osConfigIndex, 
+                                            seenVmUuids!, 
+                                            validationResult.TotalVmsProcessed);
+
+                                        if (failureReason != null)
+                                        {
+                                            // Add to failed rows and skip
+                                            validationResult.FailedRows.Add(new AzureMigrateValidationFailure(rowData, failureReason.Value));
+                                            
+                                            // Update counts based on failure reason
+                                            switch (failureReason.Value)
+                                            {
+                                                case AzureMigrateValidationFailureReason.MissingVmUuid:
+                                                    validationResult.MissingVmUuidCount++;
+                                                    break;
+                                                case AzureMigrateValidationFailureReason.MissingOsConfiguration:
+                                                    validationResult.MissingOsConfigurationCount++;
+                                                    break;
+                                                case AzureMigrateValidationFailureReason.DuplicateVmUuid:
+                                                    validationResult.DuplicateVmUuidCount++;
+                                                    break;
+                                                case AzureMigrateValidationFailureReason.VmCountExceeded:
+                                                    validationResult.VmCountExceededCount++;
+                                                    validationResult.VmCountLimitReached = true;
+                                                    
+                                                    // Warn user that VM count limit has been reached
+                                                    validationIssues.Add(new ValidationIssue(
+                                                        fileName,
+                                                        false,
+                                                        "VM count limit of 20,000 has been reached for Azure Migrate. Additional VMs will not be included."
+                                                    ));
+                                                    break;
+                                            }
+                                            skipRowDueToAzureMigrateValidation = true;
+                                        }
+                                        else
+                                        {
+                                            // Row passed validation, increment VM count
+                                            validationResult.TotalVmsProcessed++;
+                                        }
+                                    }
+                                }
+
+                                if (!skipRowDueToAzureMigrateValidation)
+                                {
+                                    mergedData[sheetName].Add(rowData);
+                                }
                             }
 
                             sheetTask.Increment(1);
@@ -517,6 +698,9 @@ public class MergeService : IMergeService
                     }
                 });
         });
+        
+        // Return the Azure Migrate validation results
+        return options.EnableAzureMigrateValidation ? azureMigrateValidationResults : null;
     }
 
     /// <summary>
@@ -584,17 +768,14 @@ public class MergeService : IMergeService
     /// </summary>
     /// <param name="outputPath">Path where the output file was saved.</param>
     /// <param name="mappings">Dictionary of anonymization mappings.</param>
-    private async Task CreateAnonymizationMapFileAsync(
-        string outputPath,
-        Dictionary<string, Dictionary<string, string>> mappings)
+    private async Task CreateAnonymizationMapFileAsync(string outputPath, Dictionary<string, Dictionary<string, string>> mappings)
     {
-        // Generate the anonymization map file name by adding suffix to the output file name
         string mapFilePath = _fileSystem.Path.Combine(
             _fileSystem.Path.GetDirectoryName(outputPath) ?? string.Empty,
-            $"{_fileSystem.Path.GetFileNameWithoutExtension(outputPath)}_AnonymizationMap{_fileSystem.Path.GetExtension(outputPath)}");
-        
+            _fileSystem.Path.GetFileNameWithoutExtension(outputPath) + "_AnonymizationMapping.xlsx");
+
         _consoleUiService.DisplayInfo("[bold]Creating anonymization mapping file...[/]");
-        
+
         await _consoleUiService.Progress()
             .AutoClear(false)
             .Columns(
@@ -651,67 +832,191 @@ public class MergeService : IMergeService
     }
 
     /// <summary>
+    /// Creates and saves a file containing rows that failed Azure Migrate validation.
+    /// </summary>
+    /// <param name="failedValidationFilePath">Path where the failed validation file will be saved.</param>
+    /// <param name="azureMigrateResults">Dictionary of Azure Migrate validation results.</param>
+    /// <param name="commonColumns">Dictionary of common columns for each sheet.</param>
+    private async Task CreateAzureMigrateFailedValidationFileAsync(
+        string failedValidationFilePath,
+        Dictionary<string, AzureMigrateValidationResult> azureMigrateResults,
+        Dictionary<string, List<string>> commonColumns)
+    {
+        _consoleUiService.DisplayInfo("[bold]Creating Azure Migrate failed validation file...[/]");
+
+        await _consoleUiService.Progress()
+            .AutoClear(false)
+            .Columns(
+            [
+                new TaskDescriptionColumn(),
+                new ProgressBarColumn(),
+                new PercentageColumn(),
+                new SpinnerColumn()
+            ])
+            .StartAsync(async ctx =>
+            {
+                var outputTask = ctx.AddTask("[yellow]Creating failed validation file[/]", maxValue: azureMigrateResults.Count + 1);
+
+                using (var workbook = new XLWorkbook())
+                {
+                    foreach (var sheetName in azureMigrateResults.Keys)
+                    {
+                        var validationResult = azureMigrateResults[sheetName];
+                        
+                        if (validationResult.FailedRows.Count == 0)
+                        {
+                            outputTask.Increment(1);
+                            continue;
+                        }
+                        
+                        var worksheet = workbook.Worksheets.Add(sheetName);
+                        
+                        // Write headers
+                        for (int col = 0; col < commonColumns[sheetName].Count; col++)
+                        {
+                            worksheet.Cell(1, col + 1).Value = commonColumns[sheetName][col];
+                        }
+                        
+                        // Add failure reason column
+                        worksheet.Cell(1, commonColumns[sheetName].Count + 1).Value = "Failure Reason";
+                        
+                        // Style headers
+                        var headerRow = worksheet.Row(1);
+                        headerRow.Style.Font.Bold = true;
+                        
+                        // Write data rows
+                        int row = 2;
+                        foreach (var failedRow in validationResult.FailedRows)
+                        {
+                            // Write row data
+                            for (int col = 0; col < failedRow.RowData.Length; col++)
+                            {
+                                worksheet.Cell(row, col + 1).Value = failedRow.RowData[col];
+                            }
+                            
+                            // Write failure reason
+                            string failureReason = GetFailureReasonDescription(failedRow.Reason);
+                            worksheet.Cell(row, commonColumns[sheetName].Count + 1).Value = failureReason;
+                            
+                            row++;
+                        }
+                        
+                        // Auto-fit columns
+                        worksheet.Columns().AdjustToContents();
+                        outputTask.Increment(1);
+                    }
+                    
+                    // Save the file
+                    _consoleUiService.DisplayInfo($"[cyan]Saving failed validation file to: {failedValidationFilePath}[/]");
+                    await Task.Run(() => workbook.SaveAs(failedValidationFilePath));
+                    outputTask.Increment(1);
+                }
+            });
+    }
+    
+    /// <summary>
+    /// Displays Azure Migrate validation statistics.
+    /// </summary>
+    /// <param name="azureMigrateResults">Dictionary of Azure Migrate validation results.</param>
+    /// <param name="failedValidationFilePath">Path to the failed validation file.</param>
+    private void DisplayAzureMigrateValidationStatistics(
+        Dictionary<string, AzureMigrateValidationResult> azureMigrateResults,
+        string failedValidationFilePath)
+    {
+        var vInfoResults = azureMigrateResults["vInfo"];
+        
+        // Create a table for validation statistics
+        var table = new Table();
+        table.Border(TableBorder.Rounded);
+        table.Expand();
+        
+        // Add columns
+        table.AddColumn("Validation Issue");
+        table.AddColumn(new TableColumn("Count").Centered());
+        
+        // Add data rows
+        table.AddRow("[yellow]Missing VM UUID[/]", vInfoResults.MissingVmUuidCount.ToString());
+        table.AddRow("[yellow]Missing OS Configuration[/]", vInfoResults.MissingOsConfigurationCount.ToString());
+        table.AddRow("[yellow]Duplicate VM UUID[/]", vInfoResults.DuplicateVmUuidCount.ToString());
+        
+        if (vInfoResults.VmCountLimitReached)
+        {
+            table.AddRow("[red]VM Count Limit Exceeded[/]", vInfoResults.VmCountExceededCount.ToString());
+        }
+        
+        table.AddRow("[green]Total VMs Processed[/]", vInfoResults.TotalVmsProcessed.ToString());
+        table.AddRow("[red]Total Failed Rows[/]", vInfoResults.TotalFailedRows.ToString());
+        
+        _consoleUiService.WriteLine();
+        _consoleUiService.DisplayInfo("[bold yellow]Azure Migrate Validation Results[/]");
+        _consoleUiService.Write(table);
+        
+        _consoleUiService.MarkupLineInterpolated($"[cyan]Failed rows saved to: {_fileSystem.Path.GetFileName(failedValidationFilePath)}[/]");
+        _consoleUiService.WriteLine();
+    }
+    
+    /// <summary>
+    /// Gets a human-readable description for a validation failure reason.
+    /// </summary>
+    /// <param name="reason">The validation failure reason.</param>
+    /// <returns>A description of the failure reason.</returns>
+    private string GetFailureReasonDescription(AzureMigrateValidationFailureReason reason)
+    {
+        return reason switch
+        {
+            AzureMigrateValidationFailureReason.MissingVmUuid => "Missing VM UUID",
+            AzureMigrateValidationFailureReason.MissingOsConfiguration => "Missing OS Configuration",
+            AzureMigrateValidationFailureReason.DuplicateVmUuid => "Duplicate VM UUID",
+            AzureMigrateValidationFailureReason.VmCountExceeded => "VM Count Limit Exceeded (20,000 VMs maximum)",
+            _ => "Unknown validation failure"
+        };
+    }
+
+    /// <summary>
     /// Displays a summary of the merge operation.
     /// </summary>
-    /// <param name="filePaths">Original array of file paths.</param>
-    /// <param name="validFilePaths">List of valid file paths that were processed.</param>
-    /// <param name="availableSheets">List of available sheets that were included.</param>
-    /// <param name="mergedData">Dictionary of merged data for each sheet.</param>
-    /// <param name="commonColumns">Dictionary of common columns for each sheet.</param>
-    /// <param name="options">Merge options.</param>
+    /// <param name="originalFilePaths">The original file paths.</param>
+    /// <param name="validFilePaths">The valid file paths after validation.</param>
+    /// <param name="availableSheets">The available sheets included in the merge.</param>
+    /// <param name="mergedData">The merged data.</param>
+    /// <param name="commonColumns">The common columns for each sheet.</param>
+    /// <param name="options">The merge options used.</param>
     private void DisplaySummary(
-        string[] filePaths,
+        string[] originalFilePaths,
         List<string> validFilePaths,
         List<string> availableSheets,
         Dictionary<string, List<XLCellValue[]>> mergedData,
         Dictionary<string, List<string>> commonColumns,
         MergeOptions options)
     {
-        var summaryTable = new Table();
-        summaryTable.AddColumn(new TableColumn("Category").LeftAligned());
-        summaryTable.AddColumn(new TableColumn("Details").RightAligned());
-        summaryTable.AddRow("[cyan]Files Processed[/]", $"[green]{validFilePaths.Count}[/] of [green]{filePaths.Length}[/]");
-        summaryTable.AddRow("[cyan]Sheets Included[/]", $"[green]{availableSheets.Count}[/]");
+        _consoleUiService.WriteLine();
+        _consoleUiService.WriteRule("Summary", "cyan");
 
-        int totalRows = 0;
+        int totalFiles = originalFilePaths.Length;
+        int skippedFiles = totalFiles - validFilePaths.Count;
+        int totalSheets = availableSheets.Count;
+
+        _consoleUiService.MarkupLineInterpolated($"[bold]Files:[/] Processed {validFilePaths.Count} valid files (skipped {skippedFiles} invalid files)");
+        _consoleUiService.MarkupLineInterpolated($"[bold]Sheets:[/] Included {totalSheets} sheets ({string.Join(", ", availableSheets)})");
+
+        // Display per-sheet stats
+        _consoleUiService.WriteLine();
+        var table = new Table();
+        table.AddColumn("Sheet");
+        table.AddColumn("Rows");
+        table.AddColumn("Columns");
+
         foreach (var sheetName in availableSheets)
         {
-            int rowCount = mergedData[sheetName].Count - 1; // Subtract 1 for header row
-            int colCount = commonColumns.TryGetValue(sheetName, out var cols) ? cols.Count : 0;
-            totalRows += rowCount;
-            summaryTable.AddRow(
-                $"[yellow]{sheetName}[/] rows",
-                $"[green]{rowCount}[/] ([grey]{colCount} columns[/])"
+            table.AddRow(
+                $"[cyan]{sheetName}[/]",
+                $"{mergedData[sheetName].Count - 1}", // -1 to exclude header row
+                $"{commonColumns[sheetName].Count}"
             );
         }
-        summaryTable.Border(TableBorder.Rounded);
-        _consoleUiService.Write(summaryTable);
 
-        DisplayAnonymizationSummary(options);
-    }
-
-    /// <summary>
-    /// Displays a summary of anonymization if enabled.
-    /// </summary>
-    /// <param name="options">Merge options.</param>
-    private void DisplayAnonymizationSummary(MergeOptions options)
-    {
-        if (options.AnonymizeData)
-        {
-            _consoleUiService.WriteLine();
-            _consoleUiService.WriteRule("[yellow]Anonymization Summary[/]", "grey");
-            var table = new Table();
-            table.AddColumn(new TableColumn("Category").Centered());
-            table.AddColumn(new TableColumn("Count").Centered());
-
-            var stats = _anonymizationService.GetAnonymizationStatistics();
-            foreach (var kvp in stats)
-            {
-                table.AddRow($"[cyan]{kvp.Key}[/]", $"[green]{kvp.Value}[/]");
-            }
-
-            table.Border(TableBorder.Rounded);
-            _consoleUiService.Write(table);
-        }
+        table.Border(TableBorder.Rounded);
+        _consoleUiService.Write(table);
+        _consoleUiService.WriteLine();
     }
 }

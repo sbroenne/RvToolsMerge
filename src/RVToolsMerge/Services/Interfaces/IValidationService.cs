@@ -31,4 +31,20 @@ public interface IValidationService
     /// <param name="mandatoryColumnIndices">Indices of mandatory columns.</param>
     /// <returns>True if any mandatory column has an empty value; otherwise, false.</returns>
     bool HasEmptyMandatoryValues(XLCellValue[] rowData, List<int> mandatoryColumnIndices);
+
+    /// <summary>
+    /// Validates a row against Azure Migrate requirements.
+    /// </summary>
+    /// <param name="rowData">The row data to validate.</param>
+    /// <param name="vmUuidIndex">Index of the VM UUID column.</param>
+    /// <param name="osConfigIndex">Index of the OS Configuration column.</param>
+    /// <param name="seenVmUuids">Set of VM UUIDs already seen (for uniqueness check).</param>
+    /// <param name="vmCount">Current VM count (for limit check).</param>
+    /// <returns>Null if validation passed, or a failure reason if validation failed.</returns>
+    AzureMigrateValidationFailureReason? ValidateRowForAzureMigrate(
+        XLCellValue[] rowData,
+        int vmUuidIndex,
+        int osConfigIndex,
+        HashSet<string> seenVmUuids,
+        int vmCount);
 }

@@ -66,6 +66,7 @@ public class ConsoleUIService
         optionsTable.AddRow("[yellow]--include-source[/]", FormatOptionStatus(options.IncludeSourceFileName));
         optionsTable.AddRow("[yellow]--skip-empty-values[/]", FormatOptionStatus(options.SkipRowsWithEmptyMandatoryValues));
         optionsTable.AddRow("[yellow]--debug[/]", FormatOptionStatus(options.DebugMode));
+        optionsTable.AddRow("[yellow]--azure-migrate[/]", FormatOptionStatus(options.EnableAzureMigrateValidation));
 
         return optionsTable;
     }
@@ -215,6 +216,11 @@ public class ConsoleUIService
         AnsiConsole.MarkupLine("                            [grey]Default: disabled[/]");
         AnsiConsole.MarkupLine("  [yellow]-d, --debug[/]               Show detailed error information.");
         AnsiConsole.MarkupLine("                            [grey]Default: disabled[/]");
+        AnsiConsole.MarkupLine("  [yellow]-z, --azure-migrate[/]       Enable Azure Migrate validation rules.");
+        AnsiConsole.MarkupLine("                            Validates VM UUID and OS values, ensures VM UUIDs are unique,");
+        AnsiConsole.MarkupLine("                            and enforces a limit of 20,000 VMs. Rows that fail validation");
+        AnsiConsole.MarkupLine("                            are moved to a separate file.");
+        AnsiConsole.MarkupLine("                            [grey]Default: disabled[/]");
         AnsiConsole.WriteLine();
         AnsiConsole.MarkupLine("[bold yellow]Note:[/] All processing options are disabled by default. You must explicitly");
         AnsiConsole.MarkupLine("      enable features by specifying the corresponding command-line options.");
@@ -235,6 +241,7 @@ public class ConsoleUIService
         AnsiConsole.MarkupLine($"  [cyan]{appName}[/] [yellow]-M[/] C:\\RVTools\\Data C:\\Reports\\Mandatory_Columns.xlsx");
         AnsiConsole.MarkupLine($"  [cyan]{appName}[/] [yellow]-a -M -s[/] C:\\RVTools\\Data C:\\Reports\\Complete_Analysis.xlsx");
         AnsiConsole.MarkupLine($"  [cyan]{appName}[/] [yellow]-e[/] C:\\RVTools\\Data C:\\Reports\\Skip_Empty_Values.xlsx");
+        AnsiConsole.MarkupLine($"  [cyan]{appName}[/] [yellow]-z[/] C:\\RVTools\\Data C:\\Reports\\Azure_Migrate_Ready.xlsx");
         AnsiConsole.WriteLine();
     }
 

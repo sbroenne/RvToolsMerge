@@ -61,4 +61,11 @@ public class MergeOptions
     /// Default is false.
     /// </summary>
     public bool DebugMode { get; set; } = false;
+
+    /// <summary>
+    /// Gets or sets a value indicating whether to enable Azure Migrate validation rules.
+    /// When true, additional validation will be performed and a separate file will be created for rows that fail validation.
+    /// Default is false.
+    /// </summary>
+    public bool EnableAzureMigrateValidation { get; set; } = false;
 }

@@ -166,6 +166,7 @@ RVToolsMerge [options] inputPath [outputFile]
 | `-M, --only-mandatory-columns` | Include only mandatory columns in the output           | `false` |
 | `-s, --include-source`         | Add a 'Source File' column to track data origin        | `false` |
 | `-e, --skip-empty-values`      | Skip rows with empty values in mandatory columns       | `false` |
+| `-z, --azure-migrate`          | Enable Azure Migrate validation requirements           | `false` |
 | `-d, --debug`                  | Show detailed error information with stack traces      | `false` |
 
 ### Advanced Options
@@ -191,6 +192,9 @@ RVToolsMerge.exe -s C:\RVTools\Exports
 
 :: Skip rows with empty mandatory values
 RVToolsMerge.exe -e C:\RVTools\Exports
+
+:: Enable Azure Migrate validation
+RVToolsMerge.exe -z C:\RVTools\Exports C:\Reports\AzureMigrationReady.xlsx
 
 :: Combine multiple options
 RVToolsMerge.exe -a -M -s -e C:\RVTools\Exports C:\Reports\Complete_Analysis.xlsx
@@ -242,6 +246,50 @@ RVToolsMerge -a -M -s /path/to/inputs /path/to/output.xlsx
 ```
 
 This produces a streamlined report with only essential columns containing fully anonymized data while preserving all analytical value and relationships between data points. The `-s` option adds source tracking for better data lineage.
+
+## Azure Migrate Validation (-z, --azure-migrate)
+
+RVToolsMerge provides validation support for Azure Migrate requirements to ensure your VMware inventory data can be successfully imported into Azure Migrate.
+
+### Azure Migrate Validation Features
+
+When using the Azure Migrate validation option, RVToolsMerge:
+
+-   Validates that VM UUIDs are present and not null for all VMs
+-   Validates that OS configuration data is present and not null
+-   Ensures VM UUIDs are unique across all entries (no duplicates)
+-   Enforces the Azure Migrate limit of 20,000 VMs
+
+### Validation Results and Reporting
+
+-   Rows that fail validation are exported to a separate Excel file with the naming pattern `<output_filename>_FailedAzureMigrateValidation.xlsx`
+-   The console displays detailed validation statistics including:
+    -   Count of rows with missing VM UUIDs
+    -   Count of rows with missing OS configurations
+    -   Count of rows with duplicate VM UUIDs
+    -   Count of rows excluded due to VM limit
+    -   Total count of failed validations
+
+### Usage Example
+
+```
+RVToolsMerge -z /path/to/inputs /path/to/output.xlsx
+```
+
+This option is especially useful when:
+
+-   Preparing VMware inventory data for Azure migration assessments
+-   Pre-validating RVTools exports before uploading to Azure Migrate
+-   Identifying problematic VM records that would fail Azure Migrate import
+-   Ensuring your migration assessment includes all critical VMs
+
+For maximum preparation before uploading to Azure Migrate, consider combining with other options:
+
+```
+RVToolsMerge -z -s -e /path/to/inputs /path/to/azure_migrate_ready.xlsx
+```
+
+This validates for Azure Migrate requirements, includes source file tracking, and skips rows with empty mandatory values.
 
 ## Validation Behavior and Error Handling
 
@@ -301,6 +349,7 @@ If you encounter issues while using RVToolsMerge:
 | Files causing validation errors | Use `-i` to skip invalid files and continue processing others (disabled by default)       |
 | Row count mismatches            | By default, rows with empty mandatory values are included; use `-e` to exclude them       |
 | Need data protection            | Use `-a` for anonymization and `-M` for mandatory columns only (both disabled by default) |
+| Preparing for Azure migration   | Use `-z` to validate against Azure Migrate requirements (disabled by default)            |
 | Want to track data origin       | Use `-s` to include source file information (disabled by default)                         |
 | Low memory issues               | Process smaller batches of files                                                          |
 | Permission errors               | Ensure you have write access to the output folder                                         |
