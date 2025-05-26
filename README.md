@@ -83,6 +83,7 @@ Each sheet has specific required columns that must be present for proper process
 
 #### vInfo Sheet (Required)
 
+-   VM UUID
 -   Template
 -   SRM Placeholder
 -   Powerstate
@@ -108,6 +109,7 @@ Each sheet has specific required columns that must be present for proper process
 
 #### vPartition Sheet (Optional)
 
+-   VM UUID
 -   VM
 -   Disk
 -   Capacity MiB
@@ -115,6 +117,7 @@ Each sheet has specific required columns that must be present for proper process
 
 #### vMemory Sheet (Optional)
 
+-   VM UUID
 -   VM
 -   Size MiB
 -   Reservation

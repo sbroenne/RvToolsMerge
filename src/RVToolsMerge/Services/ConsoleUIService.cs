@@ -250,7 +250,7 @@ public class ConsoleUIService
         table.AddRow(
             "[green]vInfo[/]",
             "[bold green]Required[/]",
-            "Template, SRM Placeholder, Powerstate, [bold]VM[/], [bold]CPUs[/], [bold]Memory[/], [bold]In Use MiB[/], [bold]OS according to the configuration file[/]"
+            "[bold]VM UUID[/], Template, SRM Placeholder, Powerstate, [bold]VM[/], [bold]CPUs[/], [bold]Memory[/], [bold]In Use MiB[/], [bold]OS according to the configuration file[/]"
         );
         table.AddRow(
             "[cyan]vHost[/]",
@@ -260,12 +260,12 @@ public class ConsoleUIService
         table.AddRow(
             "[cyan]vPartition[/]",
             "[yellow]Optional[/]",
-            "[bold]VM[/], [bold]Disk[/], [bold]Capacity MiB[/], [bold]Consumed MiB[/]"
+            "[bold]VM UUID[/], [bold]VM[/], [bold]Disk[/], [bold]Capacity MiB[/], [bold]Consumed MiB[/]"
         );
         table.AddRow(
             "[cyan]vMemory[/]",
             "[yellow]Optional[/]",
-            "[bold]VM[/], [bold]Size MiB[/], [bold]Reservation[/]"
+            "[bold]VM UUID[/], [bold]VM[/], [bold]Size MiB[/], [bold]Reservation[/]"
         );
         table.Border(TableBorder.Rounded);
         AnsiConsole.Write(table);

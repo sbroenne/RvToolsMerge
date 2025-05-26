@@ -7,6 +7,7 @@ The application standardizes column names across different RVTools exports. Belo
 | Original Column Name  | Standardized Name                      |
 | --------------------- | -------------------------------------- |
 | vInfoVMName           | VM                                     |
+| vInfoUUID             | VM UUID                                |
 | vInfoPowerstate       | Powerstate                             |
 | vInfoTemplate         | Template                               |
 | vInfoGuestHostName    | DNS Name                               |
@@ -42,7 +43,6 @@ The application standardizes column names across different RVTools exports. Belo
 | vHostvSANFaultDomainName | vSAN Fault Domain Name |
 | vHostCpuModel            | CPU Model              |
 | vHostCpuMhz              | Speed                  |
-| vHostNumCPU              | # CPU                  |
 | vHostNumCpu              | # CPU                  |
 | vHostCoresPerCPU         | Cores per CPU          |
 | vHostNumCpuCores         | # Cores                |
@@ -58,6 +58,7 @@ The application standardizes column names across different RVTools exports. Belo
 | --------------------- | ----------------- |
 | vPartitionDisk        | Disk              |
 | vPartitionVMName      | VM                |
+| vPartitionUUID        | VM UUID           |
 | vPartitionConsumedMiB | Consumed MiB      |
 | vPartitionCapacityMiB | Capacity MiB      |
 
@@ -66,6 +67,7 @@ The application standardizes column names across different RVTools exports. Belo
 | Original Column Name | Standardized Name |
 | -------------------- | ----------------- |
 | vMemoryVMName        | VM                |
+| vMemoryUUID          | VM UUID           |
 | vMemorySizeMiB       | Size MiB          |
 | vMemoryReservation   | Reservation       |
 
@@ -89,12 +91,14 @@ When anonymization is enabled, the following fields are anonymized with a consis
 When anonymization is enabled, an additional Excel file is created alongside the output file. This file, named `<output_filename>_AnonymizationMap.xlsx`, contains separate worksheets for each type of anonymized data (VMs, DNS Names, Clusters, Hosts, Datacenters, and IP Addresses).
 
 Each worksheet contains two columns:
+
 1. **Original Value** - The original value before anonymization
 2. **Anonymized Value** - The corresponding anonymized value
 
 This mapping file can be used to:
-- De-anonymize data later if needed for specific analysis
-- Verify which specific entities were anonymized
-- Understand the mapping between real and anonymized identifiers
+
+-   De-anonymize data later if needed for specific analysis
+-   Verify which specific entities were anonymized
+-   Understand the mapping between real and anonymized identifiers
 
 The file is only created when the `-a` or `--anonymize` option is used.
