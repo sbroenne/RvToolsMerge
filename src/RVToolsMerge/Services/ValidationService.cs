@@ -220,4 +220,59 @@ public class ValidationService : IValidationService
              string.IsNullOrWhiteSpace(rowData[idx].ToString()))
         );
     }
+
+    /// <summary>
+    /// Validates a row against Azure Migrate requirements.
+    /// </summary>
+    /// <param name="rowData">The row data to validate.</param>
+    /// <param name="vmUuidIndex">Index of the VM UUID column.</param>
+    /// <param name="osConfigIndex">Index of the OS Configuration column.</param>
+    /// <param name="seenVmUuids">Set of VM UUIDs already seen (for uniqueness check).</param>
+    /// <param name="vmCount">Current VM count (for limit check).</param>
+    /// <returns>Null if validation passed, or a failure reason if validation failed.</returns>
+    public AzureMigrateValidationFailureReason? ValidateRowForAzureMigrate(
+        XLCellValue[] rowData,
+        int vmUuidIndex,
+        int osConfigIndex,
+        HashSet<string> seenVmUuids,
+        int vmCount)
+    {
+        // Check VM count limit
+        if (vmCount >= 20000)
+        {
+            return AzureMigrateValidationFailureReason.VmCountExceeded;
+        }
+
+        // Check for missing VM UUID
+        if (vmUuidIndex >= 0 && 
+            (EqualityComparer<XLCellValue>.Default.Equals(rowData[vmUuidIndex], default) ||
+             string.IsNullOrWhiteSpace(rowData[vmUuidIndex].ToString())))
+        {
+            return AzureMigrateValidationFailureReason.MissingVmUuid;
+        }
+
+        // Check for missing OS Configuration
+        if (osConfigIndex >= 0 && 
+            (EqualityComparer<XLCellValue>.Default.Equals(rowData[osConfigIndex], default) ||
+             string.IsNullOrWhiteSpace(rowData[osConfigIndex].ToString())))
+        {
+            return AzureMigrateValidationFailureReason.MissingOsConfiguration;
+        }
+
+        // Check for duplicate VM UUID
+        if (vmUuidIndex >= 0)
+        {
+            string vmUuid = rowData[vmUuidIndex].ToString() ?? string.Empty;
+            if (!string.IsNullOrWhiteSpace(vmUuid))
+            {
+                if (seenVmUuids.Contains(vmUuid))
+                {
+                    return AzureMigrateValidationFailureReason.DuplicateVmUuid;
+                }
+                seenVmUuids.Add(vmUuid);
+            }
+        }
+
+        return null;
+    }
 }

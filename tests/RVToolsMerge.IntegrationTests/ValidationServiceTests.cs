@@ -193,4 +193,124 @@ public class ValidationServiceTests : IntegrationTestBase
         // The method should filter out negative indices and just check the valid ones
         Assert.False(result);
     }
+
+    /// <summary>
+    /// Tests that ValidateRowForAzureMigrate correctly identifies rows with missing VM UUID.
+    /// </summary>
+    [Fact]
+    public void ValidateRowForAzureMigrate_MissingVmUuid_ReturnsFailure()
+    {
+        // Arrange
+        var rowData = new XLCellValue[]
+        {
+            "VM01",                     // VM Name - index 0
+            XLCellValue.FromObject(null), // VM UUID - index 1 - NULL
+            "Windows"                   // OS - index 2
+        };
+        var seenVmUuids = new HashSet<string>();
+        var vmCount = 0;
+
+        // Act
+        var result = ValidationService.ValidateRowForAzureMigrate(rowData, 1, 2, seenVmUuids, vmCount);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(AzureMigrateValidationFailureReason.MissingVmUuid, result);
+    }
+
+    /// <summary>
+    /// Tests that ValidateRowForAzureMigrate correctly identifies rows with missing OS configuration.
+    /// </summary>
+    [Fact]
+    public void ValidateRowForAzureMigrate_MissingOsConfig_ReturnsFailure()
+    {
+        // Arrange
+        var rowData = new XLCellValue[]
+        {
+            "VM01",                     // VM Name - index 0
+            "vm-uuid",                  // VM UUID - index 1
+            XLCellValue.FromObject(null)  // OS - index 2 - NULL
+        };
+        var seenVmUuids = new HashSet<string>();
+        var vmCount = 0;
+
+        // Act
+        var result = ValidationService.ValidateRowForAzureMigrate(rowData, 1, 2, seenVmUuids, vmCount);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(AzureMigrateValidationFailureReason.MissingOsConfiguration, result);
+    }
+
+    /// <summary>
+    /// Tests that ValidateRowForAzureMigrate correctly identifies rows with duplicate VM UUID.
+    /// </summary>
+    [Fact]
+    public void ValidateRowForAzureMigrate_DuplicateVmUuid_ReturnsFailure()
+    {
+        // Arrange
+        var rowData = new XLCellValue[]
+        {
+            "VM01",     // VM Name - index 0
+            "vm-uuid",  // VM UUID - index 1
+            "Windows"   // OS - index 2
+        };
+        var seenVmUuids = new HashSet<string> { "vm-uuid" };
+        var vmCount = 1;
+
+        // Act
+        var result = ValidationService.ValidateRowForAzureMigrate(rowData, 1, 2, seenVmUuids, vmCount);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(AzureMigrateValidationFailureReason.DuplicateVmUuid, result);
+    }
+
+    /// <summary>
+    /// Tests that ValidateRowForAzureMigrate correctly identifies when VM count exceeds the limit.
+    /// </summary>
+    [Fact]
+    public void ValidateRowForAzureMigrate_VmCountExceeded_ReturnsFailure()
+    {
+        // Arrange
+        var rowData = new XLCellValue[]
+        {
+            "VM01",     // VM Name - index 0
+            "vm-uuid",  // VM UUID - index 1
+            "Windows"   // OS - index 2
+        };
+        var seenVmUuids = new HashSet<string>();
+        var vmCount = 20000; // At limit
+
+        // Act
+        var result = ValidationService.ValidateRowForAzureMigrate(rowData, 1, 2, seenVmUuids, vmCount);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(AzureMigrateValidationFailureReason.VmCountExceeded, result);
+    }
+
+    /// <summary>
+    /// Tests that ValidateRowForAzureMigrate returns null for valid rows.
+    /// </summary>
+    [Fact]
+    public void ValidateRowForAzureMigrate_ValidRow_ReturnsNull()
+    {
+        // Arrange
+        var rowData = new XLCellValue[]
+        {
+            "VM01",     // VM Name - index 0
+            "vm-uuid",  // VM UUID - index 1
+            "Windows"   // OS - index 2
+        };
+        var seenVmUuids = new HashSet<string>();
+        var vmCount = 1;
+
+        // Act
+        var result = ValidationService.ValidateRowForAzureMigrate(rowData, 1, 2, seenVmUuids, vmCount);
+
+        // Assert
+        Assert.Null(result);
+        Assert.Contains("vm-uuid", seenVmUuids);
+    }
 }
