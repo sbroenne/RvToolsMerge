@@ -247,9 +247,15 @@ jobs:
       - name: List Downloaded Artifacts
         run: |
           echo "Downloaded artifacts:"
-          find artifacts -type f -name "*" | head -20
+          find artifacts -type f | sort
           echo "Directory structure:"
-          find artifacts -type d | head -10
+          find artifacts -type d | sort
+          
+          echo "Artifact directories with file counts:"
+          for dir in $(find artifacts -mindepth 1 -maxdepth 1 -type d); do
+            count=$(find "$dir" -type f | wc -l)
+            echo "$dir: $count files"
+          done
 
       - name: Create Release Archives
         id: create-archives
@@ -288,9 +294,14 @@ jobs:
                 fi
               else
                 echo "::warning::No files found in $artifact_dir"
+                # List artifact directory structure for debugging
+                echo "Artifact directory contents:"
+                find "$artifact_dir" -type d | sort
               fi
             else
               echo "::warning::No artifact directory found with name: $artifact_name"
+              echo "Available artifact directories:"
+              find artifacts -type d -mindepth 1 -maxdepth 1 | sort
             fi
           }
 
@@ -310,6 +321,17 @@ jobs:
         run: |
           if [[ -z "${{ steps.create-archives.outputs.created_files }}" ]]; then
             echo "::error::No release files were created. Check build artifacts."
+            
+            # Diagnostic info for missing files
+            echo "Expected files:"
+            echo "- release-files/RVToolsMerge-${{ steps.get-version.outputs.version }}-win-x64.zip"
+            echo "- release-files/RVToolsMerge-${{ steps.get-version.outputs.version }}-win-arm64.zip"
+            echo "- release-files/RVToolsMerge-${{ steps.get-version.outputs.version }}-linux-x64.zip"
+            echo "- release-files/RVToolsMerge-${{ steps.get-version.outputs.version }}-osx-arm64.zip"
+            
+            echo "Existing files in release-files directory:"
+            ls -la release-files/ 2>/dev/null || echo "Directory not found or empty"
+            
             exit 1
           fi
 
