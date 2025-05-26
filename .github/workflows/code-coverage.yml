@@ -76,7 +76,7 @@ jobs:
           if [ "${{ github.event.inputs.fullReport }}" == "true" ]; then
             reporttypes="Html;HtmlSummary;Cobertura;Badges;MarkdownSummary;JsonSummary"
           else
-            reporttypes="Html;HtmlSummary;Cobertura;Badges"
+            reporttypes="Html;HtmlSummary;Cobertura;Badges;MarkdownSummary"
           fi
 
           # Generate report
