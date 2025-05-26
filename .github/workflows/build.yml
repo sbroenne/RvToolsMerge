@@ -41,6 +41,36 @@ jobs:
 
       - name: Test
         run: dotnet test tests/RVToolsMerge.IntegrationTests/RVToolsMerge.IntegrationTests.csproj --configuration ${{ inputs.configuration }} --no-build --verbosity normal
+        
+      - name: Run tests with coverage
+        if: inputs.configuration == 'Release'
+        run: dotnet test tests/RVToolsMerge.IntegrationTests/RVToolsMerge.IntegrationTests.csproj --configuration ${{ inputs.configuration }} --no-build --collect:"XPlat Code Coverage"
+        
+      - name: Generate coverage report
+        if: inputs.configuration == 'Release'
+        run: |
+          dotnet tool install -g dotnet-reportgenerator-globaltool
+          reportgenerator -reports:tests/**/coverage.cobertura.xml -targetdir:coverage-report -reporttypes:Html
+        
+      - name: Upload coverage report
+        if: inputs.configuration == 'Release'
+        uses: actions/upload-artifact@v4
+        with:
+          name: code-coverage-report-windows
+          path: coverage-report
+          retention-days: 7
+        
+      - name: Publish
+        if: inputs.configuration == 'Release'
+        run: dotnet publish src/RVToolsMerge/RVToolsMerge.csproj -c Release -r win-x64 --self-contained true --no-restore
+        
+      - name: Upload artifact
+        if: inputs.configuration == 'Release'
+        uses: actions/upload-artifact@v4
+        with:
+          name: rvtoolsmerge-windows-x64
+          path: src/RVToolsMerge/bin/Release/net9.0/win-x64/publish/
+          retention-days: 7
   build-linux:
     runs-on: ubuntu-latest
     steps:
@@ -67,6 +97,18 @@ jobs:
 
       - name: Test
         run: dotnet test tests/RVToolsMerge.IntegrationTests/RVToolsMerge.IntegrationTests.csproj --configuration ${{ inputs.configuration }} --no-build --verbosity normal
+        
+      - name: Publish
+        if: inputs.configuration == 'Release'
+        run: dotnet publish src/RVToolsMerge/RVToolsMerge.csproj -c Release -r linux-x64 --self-contained true --no-restore
+        
+      - name: Upload artifact
+        if: inputs.configuration == 'Release'
+        uses: actions/upload-artifact@v4
+        with:
+          name: rvtoolsmerge-linux-x64
+          path: src/RVToolsMerge/bin/Release/net9.0/linux-x64/publish/
+          retention-days: 7
   build-windows-arm:
     runs-on: windows-latest
     steps:
@@ -93,6 +135,18 @@ jobs:
 
       - name: Test
         run: dotnet test tests/RVToolsMerge.IntegrationTests/RVToolsMerge.IntegrationTests.csproj --configuration ${{ inputs.configuration }} --no-build --verbosity normal
+        
+      - name: Publish
+        if: inputs.configuration == 'Release'
+        run: dotnet publish src/RVToolsMerge/RVToolsMerge.csproj -c Release -r win-arm64 --self-contained true --no-restore
+        
+      - name: Upload artifact
+        if: inputs.configuration == 'Release'
+        uses: actions/upload-artifact@v4
+        with:
+          name: rvtoolsmerge-windows-arm64
+          path: src/RVToolsMerge/bin/Release/net9.0/win-arm64/publish/
+          retention-days: 7
   build-macos-arm:
     runs-on: macos-latest
     steps:
@@ -119,3 +173,15 @@ jobs:
 
       - name: Test
         run: dotnet test tests/RVToolsMerge.IntegrationTests/RVToolsMerge.IntegrationTests.csproj --configuration ${{ inputs.configuration }} --no-build --verbosity normal
+        
+      - name: Publish
+        if: inputs.configuration == 'Release'
+        run: dotnet publish src/RVToolsMerge/RVToolsMerge.csproj -c Release -r osx-arm64 --self-contained true --no-restore
+        
+      - name: Upload artifact
+        if: inputs.configuration == 'Release'
+        uses: actions/upload-artifact@v4
+        with:
+          name: rvtoolsmerge-macos-arm64
+          path: src/RVToolsMerge/bin/Release/net9.0/osx-arm64/publish/
+          retention-days: 7
