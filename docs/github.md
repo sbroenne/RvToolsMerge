@@ -12,7 +12,6 @@ The following GitHub Actions workflows are configured:
 -   **dotnet.yml**: Continuous integration for .NET 9 code changes, including Excel processing tests
 -   **labeler.yml**: Automatically adds labels to pull requests based on affected components (UI, Excel processing, VMware data)
 -   **release.yml**: Creates releases with platform-specific artifacts for Windows, Linux, and macOS
--   **security-alert-notification.yml**: Sends notifications for security alerts, prioritized by severity and impact
 -   **version-management.yml**: Manages semantic versioning for the project with automated version bumps
 -   **excel-tests.yml**: Tests Excel file operations using sample RVTools exports
 

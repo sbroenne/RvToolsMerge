@@ -147,24 +147,24 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Auto-Merge PR
+      - name: Auto-Squash-Merge PR
         run: |
-          # Attempt to automatically merge the PR with retry logic
+          # Attempt to automatically squash-merge the PR with retry logic
           # Some repositories may have required checks that need to complete
           # before merging is allowed, so we retry a few times with delays
           RETRIES=3
           RETRY_DELAY=300  # 5 minutes between retry attempts
 
           for i in $(seq 1 $RETRIES); do
-            echo "Attempting to merge PR (attempt $i of $RETRIES)..."
-            if gh pr merge ${{ steps.create-pr.outputs.pr_number }} --merge --delete-branch; then
-              echo "::notice::PR ${{ steps.create-pr.outputs.pr_number }} auto-merged successfully."
+            echo "Attempting to squash-merge PR (attempt $i of $RETRIES)..."
+            if gh pr merge ${{ steps.create-pr.outputs.pr_number }} --squash --delete-branch; then
+              echo "::notice::PR ${{ steps.create-pr.outputs.pr_number }} auto-squash-merged successfully."
               break
             else
               if [ $i -eq $RETRIES ]; then
-                echo "::warning::Failed to auto-merge PR after $RETRIES attempts. PR may need manual attention."
+                echo "::warning::Failed to auto-squash-merge PR after $RETRIES attempts. PR may need manual attention."
               else
-                echo "Merge attempt failed, waiting $RETRY_DELAY seconds before retrying..."
+                echo "Squash-merge attempt failed, waiting $RETRY_DELAY seconds before retrying..."
                 sleep $RETRY_DELAY
               fi
             fi
@@ -173,6 +173,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create and Checkout Version Tag
+        if: ${{ success() }}
         run: |
           # Wait a moment for the merge to complete
           # This small delay helps ensure the merge operation has fully completed
