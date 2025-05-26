@@ -5,8 +5,8 @@ on:
       configuration:
         required: false
         type: string
-        default: 'Debug'
-        description: 'Build configuration (Debug/Release)'
+        default: "Debug"
+        description: "Build configuration (Debug/Release)"
 
 permissions:
   contents: read
@@ -18,254 +18,130 @@ jobs:
   build-windows:
     runs-on: windows-latest
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: 9.0.x
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
 
-    - name: Cache NuGet packages
-      uses: actions/cache@v4
-      with:
-        path: ~/.nuget/packages
-        key: ${{ runner.os }}-nuget-${{ hashFiles('**/RVToolsMerge.csproj') }}
-        restore-keys: |
-          ${{ runner.os }}-nuget-
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/RVToolsMerge.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
 
-    - name: Restore dependencies
-      run: dotnet restore
+      - name: Restore dependencies
+        run: dotnet restore
 
-    - name: Build
-      run: dotnet build --configuration ${{ inputs.configuration }} --no-restore
+      - name: Build
+        run: dotnet build --configuration ${{ inputs.configuration }} --no-restore
 
-    - name: Test with coverage
-      run: dotnet test tests/RVToolsMerge.IntegrationTests/RVToolsMerge.IntegrationTests.csproj --configuration ${{ inputs.configuration }} --no-build --verbosity normal
+      - name: Test
+        run: dotnet test tests/RVToolsMerge.IntegrationTests/RVToolsMerge.IntegrationTests.csproj --configuration ${{ inputs.configuration }} --no-build --verbosity normal
 
-    - name: Install ReportGenerator
-      run: dotnet tool install -g dotnet-reportgenerator-globaltool
+      - name: Install ReportGenerator
+        run: dotnet tool install -g dotnet-reportgenerator-globaltool
 
-    - name: Generate code coverage report
-      run: |
-        # Create directories if they don't exist
-        mkdir -p TestResults\Coverage
-        mkdir -p TestResults\CoverageReport
-        
-        # Find coverage file (handle case where path might be different)
-        $coverageFile = Get-ChildItem -Path TestResults -Filter coverage.cobertura.xml -Recurse | Select-Object -First 1 -ExpandProperty FullName
-        
-        if ($coverageFile) {
-          reportgenerator -reports:"$coverageFile" -targetdir:".\TestResults\CoverageReport" -reporttypes:Html
-        } else {
-          Write-Warning "Coverage file not found. Creating an empty report."
-          New-Item -Path TestResults\CoverageReport\index.html -ItemType File -Force -Value "<html><body><h1>No coverage data available</h1></body></html>"
-        }
+      - name: Generate code coverage report
+        run: |
+          # Create directories if they don't exist
+          mkdir -p TestResults\Coverage
+          mkdir -p TestResults\CoverageReport
 
-    - name: Upload coverage report
-      uses: actions/upload-artifact@v4
-      with:
-        name: code-coverage-report-windows
-        path: ./TestResults/CoverageReport
-        retention-days: 7
+          # Find coverage file (handle case where path might be different)
+          $coverageFile = Get-ChildItem -Path TestResults -Filter coverage.cobertura.xml -Recurse | Select-Object -First 1 -ExpandProperty FullName
 
-    - name: Publish
-      if: ${{ inputs.configuration == 'Release' }}
-      run: dotnet publish src/RVToolsMerge/RVToolsMerge.csproj -c ${{ inputs.configuration }} -r win-x64 --self-contained true -p:PublishSingleFile=true -p:PublishTrimmed=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true
+          if ($coverageFile) {
+            reportgenerator -reports:"$coverageFile" -targetdir:".\TestResults\CoverageReport" -reporttypes:Html
+          } else {
+            Write-Warning "Coverage file not found. Creating an empty report."
+            New-Item -Path TestResults\CoverageReport\index.html -ItemType File -Force -Value "<html><body><h1>No coverage data available</h1></body></html>"
+          }
 
-    - name: Upload build artifacts
-      if: ${{ inputs.configuration == 'Release' }}
-      uses: actions/upload-artifact@v4
-      with:
-        name: RVToolsMerge-windows-${{ inputs.configuration }}
-        path: src/RVToolsMerge/bin/${{ inputs.configuration }}/net9.0/win-x64/publish/
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: code-coverage-report-windows
+          path: ./TestResults/CoverageReport
+          retention-days: 7
   build-linux:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: 9.0.x
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
 
-    - name: Cache NuGet packages
-      uses: actions/cache@v4
-      with:
-        path: ~/.nuget/packages
-        key: ${{ runner.os }}-nuget-${{ hashFiles('**/RVToolsMerge.csproj') }}
-        restore-keys: |
-          ${{ runner.os }}-nuget-
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/RVToolsMerge.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
 
-    - name: Restore dependencies
-      run: dotnet restore
+      - name: Restore dependencies
+        run: dotnet restore
 
-    - name: Build
-      run: dotnet build --configuration ${{ inputs.configuration }} --no-restore
+      - name: Build
+        run: dotnet build --configuration ${{ inputs.configuration }} --no-restore
 
-    - name: Test with coverage
-      run: dotnet test tests/RVToolsMerge.IntegrationTests/RVToolsMerge.IntegrationTests.csproj --configuration ${{ inputs.configuration }} --no-build --verbosity normal
-
-    - name: Install ReportGenerator
-      run: dotnet tool install -g dotnet-reportgenerator-globaltool
-
-    - name: Generate code coverage report
-      run: |
-        # Create directories if they don't exist
-        mkdir -p TestResults/Coverage
-        mkdir -p TestResults/CoverageReport
-        
-        # Find coverage file (handle case where path might be different)
-        coverageFile=$(find TestResults -name "coverage.cobertura.xml" -type f | head -1)
-        
-        if [ -n "$coverageFile" ]; then
-          reportgenerator -reports:"$coverageFile" -targetdir:"./TestResults/CoverageReport" -reporttypes:Html
-        else
-          echo "Warning: Coverage file not found. Creating an empty report."
-          mkdir -p TestResults/CoverageReport
-          echo "<html><body><h1>No coverage data available</h1></body></html>" > TestResults/CoverageReport/index.html
-        fi
-
-    - name: Upload coverage report
-      uses: actions/upload-artifact@v4
-      with:
-        name: code-coverage-report-linux
-        path: ./TestResults/CoverageReport
-        retention-days: 7
-
-    - name: Publish
-      if: ${{ inputs.configuration == 'Release' }}
-      run: dotnet publish src/RVToolsMerge/RVToolsMerge.csproj -c ${{ inputs.configuration }} -r linux-x64 --self-contained true -p:PublishSingleFile=true -p:PublishTrimmed=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true
-
-    - name: Upload build artifacts
-      if: ${{ inputs.configuration == 'Release' }}
-      uses: actions/upload-artifact@v4
-      with:
-        name: RVToolsMerge-linux-${{ inputs.configuration }}
-        path: src/RVToolsMerge/bin/${{ inputs.configuration }}/net9.0/linux-x64/publish/
+      - name: Test
+        run: dotnet test tests/RVToolsMerge.IntegrationTests/RVToolsMerge.IntegrationTests.csproj --configuration ${{ inputs.configuration }} --no-build --verbosity normal
   build-windows-arm:
     runs-on: windows-latest
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: 9.0.x
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
 
-    - name: Cache NuGet packages
-      uses: actions/cache@v4
-      with:
-        path: ~/.nuget/packages
-        key: ${{ runner.os }}-arm-nuget-${{ hashFiles('**/RVToolsMerge.csproj') }}
-        restore-keys: |
-          ${{ runner.os }}-arm-nuget-
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-arm-nuget-${{ hashFiles('**/RVToolsMerge.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-arm-nuget-
 
-    - name: Restore dependencies
-      run: dotnet restore
+      - name: Restore dependencies
+        run: dotnet restore
 
-    - name: Build
-      run: dotnet build --configuration ${{ inputs.configuration }} --no-restore
+      - name: Build
+        run: dotnet build --configuration ${{ inputs.configuration }} --no-restore
 
-    - name: Test with coverage
-      run: dotnet test tests/RVToolsMerge.IntegrationTests/RVToolsMerge.IntegrationTests.csproj --configuration ${{ inputs.configuration }} --no-build --verbosity normal
-
-    - name: Install ReportGenerator
-      run: dotnet tool install -g dotnet-reportgenerator-globaltool
-
-    - name: Generate code coverage report
-      run: |
-        # Create directories if they don't exist
-        mkdir -p TestResults\Coverage
-        mkdir -p TestResults\CoverageReport
-        
-        # Find coverage file (handle case where path might be different)
-        $coverageFile = Get-ChildItem -Path TestResults -Filter coverage.cobertura.xml -Recurse | Select-Object -First 1 -ExpandProperty FullName
-        
-        if ($coverageFile) {
-          reportgenerator -reports:"$coverageFile" -targetdir:".\TestResults\CoverageReport" -reporttypes:Html
-        } else {
-          Write-Warning "Coverage file not found. Creating an empty report."
-          New-Item -Path TestResults\CoverageReport\index.html -ItemType File -Force -Value "<html><body><h1>No coverage data available</h1></body></html>"
-        }
-
-    - name: Upload coverage report
-      uses: actions/upload-artifact@v4
-      with:
-        name: code-coverage-report-windows-arm
-        path: ./TestResults/CoverageReport
-        retention-days: 7
-
-    - name: Publish
-      if: ${{ inputs.configuration == 'Release' }}
-      run: dotnet publish src/RVToolsMerge/RVToolsMerge.csproj -c ${{ inputs.configuration }} -r win-arm64 --self-contained true -p:PublishSingleFile=true -p:PublishTrimmed=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true
-
-    - name: Upload build artifacts
-      if: ${{ inputs.configuration == 'Release' }}
-      uses: actions/upload-artifact@v4
-      with:
-        name: RVToolsMerge-windows-arm64-${{ inputs.configuration }}
-        path: src/RVToolsMerge/bin/${{ inputs.configuration }}/net9.0/win-arm64/publish/
+      - name: Test
+        run: dotnet test tests/RVToolsMerge.IntegrationTests/RVToolsMerge.IntegrationTests.csproj --configuration ${{ inputs.configuration }} --no-build --verbosity normal
   build-macos-arm:
     runs-on: macos-latest
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: 9.0.x
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
 
-    - name: Cache NuGet packages
-      uses: actions/cache@v4
-      with:
-        path: ~/.nuget/packages
-        key: ${{ runner.os }}-nuget-${{ hashFiles('**/RVToolsMerge.csproj') }}
-        restore-keys: |
-          ${{ runner.os }}-nuget-
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/RVToolsMerge.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
 
-    - name: Restore dependencies
-      run: dotnet restore
+      - name: Restore dependencies
+        run: dotnet restore
 
-    - name: Build
-      run: dotnet build --configuration ${{ inputs.configuration }} --no-restore
+      - name: Build
+        run: dotnet build --configuration ${{ inputs.configuration }} --no-restore
 
-    - name: Test with coverage
-      run: dotnet test tests/RVToolsMerge.IntegrationTests/RVToolsMerge.IntegrationTests.csproj --configuration ${{ inputs.configuration }} --no-build --verbosity normal
-
-    - name: Install ReportGenerator
-      run: dotnet tool install -g dotnet-reportgenerator-globaltool
-
-    - name: Generate code coverage report
-      run: |
-        # Create directories if they don't exist
-        mkdir -p TestResults/Coverage
-        mkdir -p TestResults/CoverageReport
-        
-        # Find coverage file (handle case where path might be different)
-        coverageFile=$(find TestResults -name "coverage.cobertura.xml" -type f | head -1)
-        
-        if [ -n "$coverageFile" ]; then
-          reportgenerator -reports:"$coverageFile" -targetdir:"./TestResults/CoverageReport" -reporttypes:Html
-        else
-          echo "Warning: Coverage file not found. Creating an empty report."
-          mkdir -p TestResults/CoverageReport
-          echo "<html><body><h1>No coverage data available</h1></body></html>" > TestResults/CoverageReport/index.html
-        fi
-
-    - name: Upload coverage report
-      uses: actions/upload-artifact@v4
-      with:
-        name: code-coverage-report-macos-arm
-        path: ./TestResults/CoverageReport
-        retention-days: 7
-
-    - name: Publish
-      if: ${{ inputs.configuration == 'Release' }}
-      run: dotnet publish src/RVToolsMerge/RVToolsMerge.csproj -c ${{ inputs.configuration }} -r osx-arm64 --self-contained true -p:PublishSingleFile=true -p:PublishTrimmed=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true
-
-    - name: Upload build artifacts
-      if: ${{ inputs.configuration == 'Release' }}
-      uses: actions/upload-artifact@v4
-      with:
-        name: RVToolsMerge-macos-arm64-${{ inputs.configuration }}
-        path: src/RVToolsMerge/bin/${{ inputs.configuration }}/net9.0/osx-arm64/publish/
+      - name: Test
+        run: dotnet test tests/RVToolsMerge.IntegrationTests/RVToolsMerge.IntegrationTests.csproj --configuration ${{ inputs.configuration }} --no-build --verbosity normal
