@@ -65,10 +65,10 @@ jobs:
             ${{ runner.os }}${{ matrix.cache-suffix }}-nuget-
 
       - name: Restore dependencies
-        run: dotnet restore --runtime ${{ matrix.runtime }}
+        run: dotnet restore
 
       - name: Build
-        run: dotnet build --configuration ${{ inputs.configuration }} --no-restore --runtime ${{ matrix.runtime }}
+        run: dotnet build --configuration ${{ inputs.configuration }} --no-restore
 
       - name: Test
         run: dotnet test tests/RVToolsMerge.IntegrationTests/RVToolsMerge.IntegrationTests.csproj --configuration ${{ inputs.configuration }} --no-build --verbosity normal --logger trx --results-directory TestResults
