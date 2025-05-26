@@ -28,4 +28,10 @@ public interface IAnonymizationService
     /// </summary>
     /// <returns>Dictionary with counts of anonymized items by category.</returns>
     Dictionary<string, int> GetAnonymizationStatistics();
+    
+    /// <summary>
+    /// Gets all anonymization mappings from original values to anonymized values.
+    /// </summary>
+    /// <returns>Dictionary mapping category names to dictionaries of original-to-anonymized value mappings.</returns>
+    Dictionary<string, Dictionary<string, string>> GetAnonymizationMappings();
 }

@@ -83,3 +83,18 @@ When anonymization is enabled, the following fields are anonymized with a consis
 | Datacenter | DC-East             | datacenter1       |
 
 > **Note:** These mappings help normalize column names between different versions of RVTools exports while maintaining data relationships during anonymization.
+
+### Anonymization Map File
+
+When anonymization is enabled, an additional Excel file is created alongside the output file. This file, named `<output_filename>_AnonymizationMap.xlsx`, contains separate worksheets for each type of anonymized data (VMs, DNS Names, Clusters, Hosts, Datacenters, and IP Addresses).
+
+Each worksheet contains two columns:
+1. **Original Value** - The original value before anonymization
+2. **Anonymized Value** - The corresponding anonymized value
+
+This mapping file can be used to:
+- De-anonymize data later if needed for specific analysis
+- Verify which specific entities were anonymized
+- Understand the mapping between real and anonymized identifiers
+
+The file is only created when the `-a` or `--anonymize` option is used.

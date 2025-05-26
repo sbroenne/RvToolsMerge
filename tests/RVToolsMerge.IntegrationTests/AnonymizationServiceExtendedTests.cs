@@ -167,4 +167,49 @@ public class AnonymizationServiceExtendedTests : IntegrationTestBase
         Assert.Equal(1, stats["Hosts"]);
         Assert.Equal(0, stats["Clusters"]); // Not anonymized
     }
+    
+    /// <summary>
+    /// Tests that anonymization mappings are correct after anonymization.
+    /// </summary>
+    [Fact]
+    public void GetAnonymizationMappings_AfterAnonymization_ReturnsCorrectMappings()
+    {
+        // Arrange - Use a new instance to isolate the test
+        var service = new AnonymizationService();
+        var vmColumnIndices = new Dictionary<string, int> { { "VM", 0 } };
+        var hostColumnIndices = new Dictionary<string, int> { { "Host", 0 } };
+        
+        // Original values
+        string vm1Original = "server1";
+        string vm2Original = "server2";
+        string hostOriginal = "host.example.com";
+        
+        // Act - Anonymize values
+        var vm1Anonymized = service.AnonymizeValue((XLCellValue)vm1Original, 0, vmColumnIndices);
+        var vm2Anonymized = service.AnonymizeValue((XLCellValue)vm2Original, 0, vmColumnIndices);
+        var hostAnonymized = service.AnonymizeValue((XLCellValue)hostOriginal, 0, hostColumnIndices);
+        
+        // Get mappings
+        var mappings = service.GetAnonymizationMappings();
+        
+        // Assert
+        // Check that we have VM and Host mappings
+        Assert.True(mappings.ContainsKey("VMs"));
+        Assert.True(mappings.ContainsKey("Hosts"));
+        
+        // Check VM mappings
+        Assert.Equal(2, mappings["VMs"].Count);
+        Assert.Equal(vm1Anonymized.ToString(), mappings["VMs"][vm1Original]);
+        Assert.Equal(vm2Anonymized.ToString(), mappings["VMs"][vm2Original]);
+        
+        // Check Host mappings
+        Assert.Equal(1, mappings["Hosts"].Count);
+        Assert.Equal(hostAnonymized.ToString(), mappings["Hosts"][hostOriginal]);
+        
+        // Check empty mappings
+        Assert.Equal(0, mappings["Clusters"].Count);
+        Assert.Equal(0, mappings["Datacenters"].Count);
+        Assert.Equal(0, mappings["DNS Names"].Count);
+        Assert.Equal(0, mappings["IP Addresses"].Count);
+    }
 }
