@@ -2,6 +2,8 @@ name: .NET CI - Builds only windows-latest
 
 on:
   push:
+    branches-ignore:
+      - 'main'
     paths:
       - '**.cs'
       - '**.csproj'
@@ -11,6 +13,8 @@ on:
       - '**/Directory.Build.targets'
       - '**/global.json'
   pull_request:
+    branches:
+      - 'main'
     paths:
       - '**.cs'
       - '**.csproj'
