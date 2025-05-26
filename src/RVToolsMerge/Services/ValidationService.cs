@@ -217,7 +217,7 @@ public class ValidationService : IValidationService
         return mandatoryColumnIndices.Any(idx =>
             idx >= 0 &&
             (EqualityComparer<XLCellValue>.Default.Equals(rowData[idx], default) ||
-             string.IsNullOrWhiteSpace(rowData[idx].ToString()))
+             String.IsNullOrWhiteSpace(rowData[idx].ToString()))
         );
     }
 }

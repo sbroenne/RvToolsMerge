@@ -59,7 +59,7 @@ public class ExcelService : IExcelService
         {
             var cell = headerRow.Cell(col);
             var cellValue = cell.Value.ToString();
-            if (!string.IsNullOrWhiteSpace(cellValue))
+            if (!String.IsNullOrWhiteSpace(cellValue))
             {
                 // Use the mapping if available for this sheet, otherwise keep the original name
                 var normalizedName = mapping?.GetValueOrDefault(cellValue, cellValue) ?? cellValue;
@@ -94,9 +94,9 @@ public class ExcelService : IExcelService
         {
             var cell = headerRow.Cell(fileColIndex);
             var cellValue = cell.Value;
-            if (!string.IsNullOrWhiteSpace(cellValue.ToString()))
+            if (!String.IsNullOrWhiteSpace(cellValue.ToString()))
             {
-                string originalName = cellValue.ToString() ?? string.Empty;
+                string originalName = cellValue.ToString() ?? String.Empty;
                 string mappedName = headerMapping?.GetValueOrDefault(originalName, originalName) ?? originalName;
 
                 int commonIndex = commonColumns.IndexOf(mappedName);
