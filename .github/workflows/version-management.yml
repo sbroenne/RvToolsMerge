@@ -1,4 +1,4 @@
-name: Version Management
+name: Version Management & Release
 
 on:
   workflow_dispatch:
@@ -12,6 +12,11 @@ on:
           - major
           - minor
           - patch
+      createRelease:
+        description: "Create a GitHub release after version bump"
+        required: false
+        default: true
+        type: boolean
 
 jobs:
   bump-version:
@@ -20,6 +25,8 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
+    outputs:
+      new_version: ${{ steps.calc-version.outputs.package_version }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -188,9 +195,7 @@ jobs:
           git pull origin ${{ github.ref_name }}
 
           # Create a tag with the new version in format v1.0.0
-          TAG_NAME="v${{ steps.calc-version.outputs.package_version }}"
-
-          # Check if tag already exists
+          TAG_NAME="v${{ steps.calc-version.outputs.package_version }}"          # Check if tag already exists
           if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
             echo "::warning::Tag $TAG_NAME already exists, skipping tag creation"
           else
@@ -200,3 +205,192 @@ jobs:
           fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-release:
+    name: Build Release Artifacts
+    needs: bump-version
+    if: ${{ success() && github.event.inputs.createRelease == 'true' }}
+    uses: ./.github/workflows/build.yml
+    permissions:
+      contents: read
+      actions: read
+      checks: write
+      pull-requests: read
+    with:
+      configuration: "Release"
+
+  create-release:
+    name: Create GitHub Release
+    needs: [bump-version, build-release]
+    if: ${{ success() && github.event.inputs.createRelease == 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Get Version from Previous Job
+        id: get-version
+        run: |
+          # Get the version that was created in the bump-version job
+          CURRENT_VERSION=$(grep -o '<Version>[^<]*' src/RVToolsMerge/RVToolsMerge.csproj | sed 's/<Version>//')
+          echo "version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          echo "::notice::Creating release for version $CURRENT_VERSION"
+
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: List Downloaded Artifacts
+        run: |
+          echo "Downloaded artifacts:"
+          find artifacts -type f -name "*" | head -20
+          echo "Directory structure:"
+          find artifacts -type d | head -10
+
+      - name: Create Release Archives
+        id: create-archives
+        run: |
+          mkdir -p release-files
+          created_files=""
+
+          # Function to create archive if directory exists and has files
+          create_archive() {
+            local platform=$1
+            local artifact_pattern=$2
+            local version=$3
+
+            echo "Looking for artifacts matching pattern: $artifact_pattern"
+
+            # Find the artifact directory
+            artifact_dir=$(find artifacts -type d -name "*$artifact_pattern*" | head -1)
+
+            if [[ -n "$artifact_dir" && -d "$artifact_dir" ]]; then
+              file_count=$(find "$artifact_dir" -type f | wc -l)
+              echo "Found artifact directory: $artifact_dir with $file_count files"
+
+              if [[ $file_count -gt 0 ]]; then
+                archive_name="RVToolsMerge-${version}-${platform}.zip"
+                echo "Creating archive: $archive_name"
+
+                cd "$artifact_dir"
+                zip -r "../../release-files/$archive_name" . -x "*.pdb"
+                cd - > /dev/null
+
+                if [[ -f "release-files/$archive_name" ]]; then
+                  echo "✅ Successfully created $archive_name"
+                  created_files="$created_files release-files/$archive_name"
+                else
+                  echo "::error::Failed to create $archive_name"
+                fi
+              else
+                echo "::warning::No files found in $artifact_dir"
+              fi
+            else
+              echo "::warning::No artifact directory found for pattern: $artifact_pattern"
+            fi
+          }
+
+          # Create archives for each expected platform
+          create_archive "win-x64" "windows" "${{ steps.get-version.outputs.version }}"
+          create_archive "win-arm64" "windows-arm64" "${{ steps.get-version.outputs.version }}"
+          create_archive "linux-x64" "linux" "${{ steps.get-version.outputs.version }}"
+          create_archive "osx-arm64" "macos-arm64" "${{ steps.get-version.outputs.version }}"
+
+          # Output created files for the release step
+          echo "created_files=$created_files" >> $GITHUB_OUTPUT
+
+          echo "Final release files:"
+          ls -la release-files/ || echo "No release files created"
+
+      - name: Validate Release Files
+        run: |
+          if [[ -z "${{ steps.create-archives.outputs.created_files }}" ]]; then
+            echo "::error::No release files were created. Check build artifacts."
+            exit 1
+          fi
+
+          echo "Validating release files..."
+          for file in ${{ steps.create-archives.outputs.created_files }}; do
+            if [[ -f "$file" ]]; then
+              size=$(stat -c%s "$file" 2>/dev/null || stat -f%z "$file" 2>/dev/null || echo "0")
+              echo "✅ $file (${size} bytes)"
+            else
+              echo "::error::Missing file: $file"
+              exit 1
+            fi
+          done
+
+      - name: Process Code Coverage (Windows x64 only)
+        run: |
+          echo "Processing code coverage from Windows x64 build..."
+
+          # Look for the Windows code coverage report
+          WIN_COVERAGE_DIR=$(find artifacts -type d -name "*code-coverage-report-windows*" | head -1)
+
+          if [[ -n "$WIN_COVERAGE_DIR" && -d "$WIN_COVERAGE_DIR" ]]; then
+            echo "Found Windows coverage directory: $WIN_COVERAGE_DIR"
+
+            # Create a consolidated coverage directory
+            mkdir -p release-coverage
+            cp -r "$WIN_COVERAGE_DIR"/* release-coverage/ || echo "No coverage files to copy"
+
+            echo "Code coverage processed successfully"
+          else
+            echo "::warning::Windows code coverage report not found"
+          fi
+
+      - name: Upload Code Coverage Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-code-coverage-report
+          path: release-coverage
+          retention-days: 30
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: RVToolsMerge v${{ steps.get-version.outputs.version }}
+          tag_name: v${{ steps.get-version.outputs.version }}
+          draft: false
+          prerelease: ${{ contains(steps.get-version.outputs.version, '-') }}
+          files: ${{ steps.create-archives.outputs.created_files }}
+          fail_on_unmatched_files: true
+          body: |
+            ## RVToolsMerge v${{ steps.get-version.outputs.version }}
+
+            A cross-platform tool for merging and processing RVTools Excel exports from VMware environments.
+
+            ### 📥 Downloads
+
+            Choose the appropriate version for your operating system:
+
+            | Platform | Architecture | Download |
+            |----------|-------------|----------|
+            | Windows | x64 | RVToolsMerge-${{ steps.get-version.outputs.version }}-win-x64.zip |
+            | Windows | ARM64 | RVToolsMerge-${{ steps.get-version.outputs.version }}-win-arm64.zip |
+            | Linux | x64 | RVToolsMerge-${{ steps.get-version.outputs.version }}-linux-x64.zip |
+            | macOS | ARM64 (Apple Silicon) | RVToolsMerge-${{ steps.get-version.outputs.version }}-osx-arm64.zip |
+
+            ### 🚀 Quick Start
+
+            1. Download the archive for your platform
+            2. Extract the archive to a directory of your choice
+            3. Run the executable to start the interactive console interface
+            4. Follow the prompts to select and merge your RVTools Excel files
+
+            ### 📋 What's Changed
+
+            See the [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for detailed changes in this release.
+
+            ### 🐛 Issues & Support
+
+            If you encounter any issues, please report them on our [Issues page](https://github.com/${{ github.repository }}/issues).
+
+      - name: Cleanup
+        if: always()
+        run: |
+          rm -rf artifacts release-files release-coverage

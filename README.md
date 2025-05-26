@@ -368,13 +368,13 @@ This project follows strict development standards:
 
 This project uses GitHub Actions for automated workflows:
 
-| Workflow         | Purpose                                         |
-| ---------------- | ----------------------------------------------- |
-| **Build & Test** | Validates code on every push and PR             |
-| **Code Quality** | Static analysis and test coverage               |
-| **Security**     | CodeQL scanning and vulnerability checks        |
-| **Release**      | Creates versioned releases with artifacts       |
-| **Dependencies** | Automated dependency management with Dependabot |
+| Workflow              | Purpose                                             |
+| --------------------- | --------------------------------------------------- |
+| **Build & Test**      | Validates code on every push and PR                 |
+| **Code Quality**      | Static analysis and test coverage                   |
+| **Security**          | CodeQL scanning and vulnerability checks            |
+| **Version & Release** | Manual version bumps with optional release creation |
+| **Dependencies**      | Automated dependency management with Dependabot     |
 
 Detailed CI/CD documentation is available in [CI-CD.md](/docs/CI-CD.md).
 
@@ -386,7 +386,7 @@ The project follows [Semantic Versioning](https://semver.org/):
 -   **minor** (1.0.0 → 1.1.0): New backward-compatible functionality
 -   **patch** (1.0.0 → 1.0.1): Backward-compatible bug fixes
 
-Version bumping is managed through GitHub Actions workflows.
+Version bumping and release creation are managed through a single GitHub Actions workflow that can be triggered manually. The workflow supports both version bumping only or version bumping with immediate release creation.
 
 ## Security
 
