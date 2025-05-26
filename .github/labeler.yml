@@ -1,38 +1,156 @@
 # GitHub PR Labeler Configuration
+# Automatically applies labels to PRs based on changed files
 
-# Core functionality changes
-Functionality:
+# Priority Labels
+'priority: high':
+- changed-files:
+  - any-glob-to-any-file: ['src/Core/**/*.cs', 'src/**/Security/**/*.cs', 'src/**/Data/**/*.cs']
+
+'priority: medium':
+- changed-files:
+  - any-glob-to-any-file: ['src/UI/**/*.cs', 'src/**/Services/**/*.cs']
+
+# Size Labels
+'size: small':
+- changed-files:
+  - any-glob-to-any-file: ['**/*.md', '**/*.txt', '**/*.json', '**/*.yml']
+
+'size: large':
+- changed-files:
+  - any-glob-to-any-file: ['**/*.csproj', '**/*.sln', 'src/Core/**/*.cs']
+
+# Component Labels
+'component: core':
+- changed-files:
+  - any-glob-to-any-file: ['src/Core/**/*.cs', 'src/**/Models/**/*.cs', 'src/**/Interfaces/**/*.cs']
+
+'component: ui':
+- changed-files:
+  - any-glob-to-any-file: ['src/UI/**/*.cs', 'src/**/Console/**/*.cs', 'src/**/Interactive/**/*.cs']
+
+'component: excel':
+- changed-files:
+  - any-glob-to-any-file: ['src/**/Excel/**/*.cs', 'src/**/ClosedXML/**/*.cs', 'src/**/RVTools/**/*.cs']
+
+'component: data':
+- changed-files:
+  - any-glob-to-any-file: ['src/**/Data/**/*.cs', 'src/**/Repository/**/*.cs', 'src/**/Entities/**/*.cs']
+
+# Type Labels
+'type: feature':
 - changed-files:
   - any-glob-to-any-file: ['src/**/*.cs']
   - all-globs-to-any-file: ['!src/**/*Test*.cs', '!tests/**/*.cs', '!**/*.Test.cs', '!**/*.Tests.cs']
 
-# Test-related changes
-Tests:
+'type: tests':
 - changed-files:
-  - any-glob-to-any-file: ['tests/**/*.cs', 'src/**/*Test*.cs', '**/*.Test.cs', '**/*.Tests.cs']
+  - any-glob-to-any-file:
+    - 'tests/**/*.cs'
+    - 'src/**/*Test*.cs'
+    - 'src/**/*Tests.cs'
+    - '**/*.Test.cs'
+    - '**/*.Tests.cs'
+    - '**/TestData/**/*'
 
-# Documentation updates
-Documentation:
+'type: documentation':
 - changed-files:
-  - any-glob-to-any-file: ['**/*.md', 'docs/**/*', '**/*.txt', '**/README.*', 'LICENSE']
+  - any-glob-to-any-file:
+    - '**/*.md'
+    - 'docs/**/*'
+    - '**/*.txt'
+    - '**/README.*'
+    - 'LICENSE*'
+    - '**/CHANGELOG.*'
+    - '**/CONTRIBUTING.*'
 
-# Configuration changes
-Config:
+'type: configuration':
 - changed-files:
-  - any-glob-to-any-file: ['**/*.json', '**/*.yml', '**/*.yaml', '**/*.config', '.github/**/*', '**/appsettings*.json']
+  - any-glob-to-any-file:
+    - '**/*.json'
+    - '**/*.yml'
+    - '**/*.yaml'
+    - '**/*.config'
+    - '**/appsettings*.json'
+    - '**/launchSettings.json'
+    - '**/.editorconfig'
 
-# Build system and dependencies
-Build:
+'type: build':
 - changed-files:
-  - any-glob-to-any-file: ['**/*.csproj', '**/*.sln', '**/Directory.Build.props', '**/Directory.Build.targets', '**/nuget.config', '**/global.json', '.github/workflows/**/*']
+  - any-glob-to-any-file:
+    - '**/*.csproj'
+    - '**/*.sln'
+    - '**/Directory.Build.props'
+    - '**/Directory.Build.targets'
+    - '**/nuget.config'
+    - '**/global.json'
+    - 'Dockerfile*'
+    - '.github/workflows/**/*'
 
-# Dependencies updates
-Dependencies:
+'type: dependencies':
 - changed-files:
-  - any-glob-to-any-file: ['**/packages.lock.json', '**/package.json', '**/package-lock.json', '**/yarn.lock', '**/Directory.Packages.props']
+  - any-glob-to-any-file:
+    - '**/packages.lock.json'
+    - '**/package.json'
+    - '**/package-lock.json'
+    - '**/yarn.lock'
+    - '**/Directory.Packages.props'
+    - '**/PackageReference.props'
 
-# Infrastructure changes
-Infrastructure:
+# CI/CD Labels
+'ci/cd':
 - changed-files:
-  - any-glob-to-any-file: ['.editorconfig', '.gitignore', '.gitattributes', 'azure-pipelines.yml', '.github/dependabot.yml']
+  - any-glob-to-any-file:
+    - '.github/**/*'
+    - 'azure-pipelines.yml'
+    - '.github/workflows/**/*'
+    - '.github/dependabot.yml'
+    - 'scripts/**/*'
+
+# Security Labels
+'security':
+- changed-files:
+  - any-glob-to-any-file:
+    - 'src/**/Security/**/*.cs'
+    - 'src/**/Authentication/**/*.cs'
+    - 'src/**/Authorization/**/*.cs'
+
+# Performance Labels
+'performance':
+- changed-files:
+  - any-glob-to-any-file:
+    - 'src/**/Performance/**/*.cs'
+    - 'src/**/Optimization/**/*.cs'
+    - 'src/**/Parallel/**/*.cs'
+
+# Refactoring Labels
+'refactoring':
+- changed-files:
+  - any-glob-to-any-file: ['src/**/*.cs']
+  - all-globs-to-any-file: ['!src/**/*Test*.cs', '!tests/**/*.cs']
+
+# External Dependencies
+'external-dependencies':
+- changed-files:
+  - any-glob-to-any-file:
+    - '**/packages.config'
+    - '**/paket.dependencies'
+    - '**/paket.lock'
+
+# RVTools Specific
+'rvtools-data':
+- changed-files:
+  - any-glob-to-any-file:
+    - 'src/**/RVTools/**/*.cs'
+    - 'src/**/VMware/**/*.cs'
+    - 'src/**/Export/**/*.cs'
+    - 'testdata/**/*.xlsx'
+    - 'testdata/**/*.xls'
+
+# Breaking Changes
+'breaking-change':
+- changed-files:
+  - any-glob-to-any-file:
+    - 'src/**/Interfaces/**/*.cs'
+    - 'src/**/Contracts/**/*.cs'
+    - 'src/Core/**/*.cs'
 
