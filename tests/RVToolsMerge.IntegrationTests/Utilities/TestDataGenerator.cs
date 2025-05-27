@@ -9,6 +9,7 @@
 using System.IO.Abstractions;
 using ClosedXML.Excel;
 using RVToolsMerge.Configuration;
+using System;
 
 namespace RVToolsMerge.IntegrationTests.Utilities;
 
@@ -90,6 +91,10 @@ public class TestDataGenerator
         vInfoSheet.Cell(1, 7).Value = "vInfoInUse";         // Should map to "In Use MiB"
         vInfoSheet.Cell(1, 8).Value = "vInfoOS";            // Should map to "OS according to the configuration file"
         vInfoSheet.Cell(1, 9).Value = "vInfoSRMPlaceHolder"; // Should map to "SRM Placeholder"
+        vInfoSheet.Cell(1, 10).Value = "vInfoCreateDate";   // Should map to "Creation Date"
+        vInfoSheet.Cell(1, 11).Value = "vInfoNICs";         // Should map to "NICs"
+        vInfoSheet.Cell(1, 12).Value = "vInfoNumVirtualDisks"; // Should map to "Disks"
+        vInfoSheet.Cell(1, 13).Value = "vInfoProvisioned";  // Should map to "Provisioned MiB"
 
         // Add data rows
         for (int i = 1; i <= numVMs; i++)
@@ -103,6 +108,10 @@ public class TestDataGenerator
             vInfoSheet.Cell(i + 1, 7).Value = 2048 * i;    // In Use MiB
             vInfoSheet.Cell(i + 1, 8).Value = $"Windows Server 201{i % 2 + 8}";
             vInfoSheet.Cell(i + 1, 9).Value = "FALSE";
+            vInfoSheet.Cell(i + 1, 10).Value = DateTime.Now.AddDays(-i * 10).ToShortDateString(); // Creation Date
+            vInfoSheet.Cell(i + 1, 11).Value = i % 3 + 1; // 1-3 NICs
+            vInfoSheet.Cell(i + 1, 12).Value = i % 2 + 1; // 1-2 Disks
+            vInfoSheet.Cell(i + 1, 13).Value = 8192 * i; // Provisioned MiB
         }
 
         // Add additional required sheets with alternative headers
@@ -224,6 +233,10 @@ public class TestDataGenerator
         vInfoSheet.Cell(1, 9).Value = "SRM Placeholder";
         vInfoSheet.Cell(1, 10).Value = "DNS Name";
         vInfoSheet.Cell(1, 11).Value = "Primary IP Address";
+        vInfoSheet.Cell(1, 12).Value = "Creation Date";
+        vInfoSheet.Cell(1, 13).Value = "NICs";
+        vInfoSheet.Cell(1, 14).Value = "Disks";
+        vInfoSheet.Cell(1, 15).Value = "Provisioned MiB";
 
         // Add data with items that should be anonymized
         vInfoSheet.Cell(2, 1).Value = "CONFIDENTIAL-SERVER-01";
@@ -237,6 +250,10 @@ public class TestDataGenerator
         vInfoSheet.Cell(2, 9).Value = "FALSE";
         vInfoSheet.Cell(2, 10).Value = "server01.contoso.local";
         vInfoSheet.Cell(2, 11).Value = "192.168.1.100";
+        vInfoSheet.Cell(2, 12).Value = DateTime.Now.AddDays(-30).ToShortDateString(); // Creation Date
+        vInfoSheet.Cell(2, 13).Value = 2; // NICs
+        vInfoSheet.Cell(2, 14).Value = 2; // Disks
+        vInfoSheet.Cell(2, 15).Value = 10240; // Provisioned MiB
 
         workbook.SaveAs(filePath);
         return filePath;
@@ -264,6 +281,10 @@ public class TestDataGenerator
         vInfoSheet.Cell(1, 10).Value = "Cluster";
         vInfoSheet.Cell(1, 11).Value = "Host";
         vInfoSheet.Cell(1, 12).Value = "SRM Placeholder";
+        vInfoSheet.Cell(1, 13).Value = "Creation Date";
+        vInfoSheet.Cell(1, 14).Value = "NICs";
+        vInfoSheet.Cell(1, 15).Value = "Disks";
+        vInfoSheet.Cell(1, 16).Value = "Provisioned MiB";
 
         // Add data rows
         for (int i = 1; i <= numVMs; i++)
@@ -280,6 +301,10 @@ public class TestDataGenerator
             vInfoSheet.Cell(i + 1, 10).Value = "Cluster1";
             vInfoSheet.Cell(i + 1, 11).Value = $"Host{i % 2 + 1}";
             vInfoSheet.Cell(i + 1, 12).Value = "FALSE";
+            vInfoSheet.Cell(i + 1, 13).Value = DateTime.Now.AddDays(-i * 10).ToShortDateString(); // Creation Date
+            vInfoSheet.Cell(i + 1, 14).Value = i % 3 + 1; // 1-3 NICs
+            vInfoSheet.Cell(i + 1, 15).Value = i % 2 + 1; // 1-2 Disks
+            vInfoSheet.Cell(i + 1, 16).Value = 8192 * i; // Provisioned MiB
         }
     }
 

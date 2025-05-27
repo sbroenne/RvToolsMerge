@@ -22,6 +22,9 @@ The application standardizes column names across different RVTools exports. Belo
 | vInfoOSTools          | OS according to the VMware Tools       |
 | vInfoOS               | OS according to the configuration file |
 | vInfoPrimaryIPAddress | Primary IP Address                     |
+| vInfoCreateDate       | Creation Date                          |
+| vInfoNICs             | NICs                                   |
+| vInfoNumVirtualDisks  | Disks                                  |
 | vInfoNetwork1         | Network #1                             |
 | vInfoNetwork2         | Network #2                             |
 | vInfoNetwork3         | Network #3                             |

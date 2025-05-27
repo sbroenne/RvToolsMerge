@@ -58,7 +58,10 @@ public static class SheetConfiguration
                 { "vInfoNetwork7",  "Network #7" },
                 { "vInfoNetwork8",  "Network #8" },
                 { "vInfoResourcepool",  "Resource pool" },
-                { "vInfoFolder", "Folder" }
+                { "vInfoFolder", "Folder" },
+                { "vInfoCreateDate", "Creation Date" },
+                { "vInfoNICs", "NICs" },
+                { "vInfoNumVirtualDisks", "Disks" }
             }.ToFrozenDictionary(),
 
             // vHost sheet mappings
@@ -105,7 +108,7 @@ public static class SheetConfiguration
     /// </summary>
     public static readonly FrozenDictionary<string, string[]> MandatoryColumns = new Dictionary<string, string[]>
     {
-        { "vInfo", ["VM UUID", "Template", "SRM Placeholder", "Powerstate", "VM", "CPUs", "Memory", "In Use MiB", "OS according to the configuration file"] },
+        { "vInfo", ["VM UUID", "Template", "SRM Placeholder", "Powerstate", "VM", "CPUs", "Memory", "In Use MiB", "OS according to the configuration file", "Creation Date", "NICs", "Disks", "Provisioned MiB"] },
         { "vHost", ["Host", "Datacenter", "Cluster", "CPU Model", "Speed", "# CPU", "Cores per CPU", "# Cores", "CPU usage %", "# Memory", "Memory usage %"] },
         { "vPartition", ["VM UUID", "VM", "Disk", "Capacity MiB", "Consumed MiB"] },
         { "vMemory", ["VM UUID", "VM", "Size MiB", "Reservation"] }
