@@ -208,22 +208,43 @@ jobs:
       - name: Create and Push Version Tag
         id: create-tag
         run: |
-          # Wait for merge to propagate
-          echo "Waiting for merge to complete..."
-          sleep 60
+          # Wait for merge to propagate with retry logic
+          echo "Waiting for merge to propagate..."
+          EXPECTED_VERSION="${{ needs.bump-version.outputs.new_version }}"
+          MAX_ATTEMPTS=10
+          WAIT_INTERVAL=30
 
-          # Fetch the latest changes from origin
-          git fetch origin
+          for attempt in $(seq 1 $MAX_ATTEMPTS); do
+            echo "Attempt $attempt of $MAX_ATTEMPTS: Checking for merged changes..."
 
-          # Switch to main branch and update it with the latest changes
-          git checkout main
-          git reset --hard origin/main
+            # Fetch latest changes and switch to main in one operation
+            git fetch origin main:main --force
+            git checkout main
 
-          # Pull the latest changes to ensure we have the merged PR
-          git pull origin main
+            # Verify we have the version bump in the current commit
+            CURRENT_VERSION_IN_FILE=$(grep -o '<Version>[^<]*' src/RVToolsMerge/RVToolsMerge.csproj | sed 's/<Version>//' || echo "NOT_FOUND")
+
+            echo "Expected version: $EXPECTED_VERSION"
+            echo "Version in file: $CURRENT_VERSION_IN_FILE"
+
+            if [[ "$CURRENT_VERSION_IN_FILE" == "$EXPECTED_VERSION" ]]; then
+              echo "✅ Version verification successful!"
+              break
+            elif [[ $attempt -eq $MAX_ATTEMPTS ]]; then
+              echo "::error::Version mismatch after $MAX_ATTEMPTS attempts! Expected $EXPECTED_VERSION but found $CURRENT_VERSION_IN_FILE"
+              echo "::error::The PR merge may not have completed properly or the version update was not included."
+              echo "Current commit: $(git rev-parse HEAD)"
+              echo "Recent commits:"
+              git log --oneline -5
+              exit 1
+            else
+              echo "Version not yet updated, waiting $WAIT_INTERVAL seconds before retry..."
+              sleep $WAIT_INTERVAL
+            fi
+          done
 
           # Create a tag with the new version in format v1.0.0
-          TAG_NAME="v${{ needs.bump-version.outputs.new_version }}"
+          TAG_NAME="v$EXPECTED_VERSION"
 
           # Check if tag already exists and fail if it does
           if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
@@ -232,10 +253,11 @@ jobs:
             exit 1
           fi
 
-          # Create and push the new tag
-          git tag $TAG_NAME
-          git push origin $TAG_NAME
-          echo "::notice::Created tag $TAG_NAME"
+          # Create and push the new tag in one operation
+          git tag -a "$TAG_NAME" -m "Release version $EXPECTED_VERSION"
+          git push origin "$TAG_NAME"
+
+          echo "::notice::Created and pushed tag $TAG_NAME pointing to commit $(git rev-parse HEAD)"
           echo "tag_created=true" >> $GITHUB_OUTPUT
           echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
         env:
