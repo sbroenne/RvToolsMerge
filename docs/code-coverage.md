@@ -60,7 +60,8 @@ The coverage report is generated during GitHub Actions workflows:
 
 ### Coverage Badges
 
-[![Code Coverage](https://github.com/sbroenne/RvToolsMerge/raw/gh-pages/badges/coverage.svg)](https://github.com/sbroenne/RvToolsMerge/actions/workflows/code-coverage.yml)
+[![Code Coverage](https://github.com/sbroenne/RVToolsMerge/raw/gh-pages/badges/coverage.svg)](https://github.com/sbroenne/RVToolsMerge/actions/workflows/code-coverage.yml)
+[![Alternative Coverage](https://img.shields.io/badge/coverage-check%20report-brightgreen)](https://github.com/sbroenne/RVToolsMerge/actions/workflows/code-coverage.yml)
 
 Coverage badges are automatically generated and updated when code is pushed to the main branch.
 
