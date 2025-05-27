@@ -70,12 +70,8 @@ jobs:
           $coverageFile = Get-ChildItem -Path TestResults -Filter coverage.cobertura.xml -Recurse | Select-Object -First 1 -ExpandProperty FullName
           
           if ($coverageFile) {
-            # Generate detailed report if requested
-            if ('${{ github.event.inputs.detailed_report }}' -eq 'true') {
-              reportgenerator -reports:"$coverageFile" -targetdir:".\TestResults\CoverageReport" -reporttypes:"Html;MarkdownSummary;Badges"
-            } else {
-              reportgenerator -reports:"$coverageFile" -targetdir:".\TestResults\CoverageReport" -reporttypes:"Html;MarkdownSummary;Badges"
-            }
+            # Generate report with badges
+            reportgenerator -reports:"$coverageFile" -targetdir:".\TestResults\CoverageReport" -reporttypes:"Html;MarkdownSummary;Badges"
           } else {
             Write-Warning "Coverage file not found. Creating an empty report."
             New-Item -Path TestResults\CoverageReport\index.html -ItemType File -Force -Value "<html><body><h1>No coverage data available</h1></body></html>"
