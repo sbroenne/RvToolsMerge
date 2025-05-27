@@ -108,7 +108,7 @@ public static class SheetConfiguration
     /// </summary>
     public static readonly FrozenDictionary<string, string[]> MandatoryColumns = new Dictionary<string, string[]>
     {
-        { "vInfo", ["VM UUID", "Template", "SRM Placeholder", "Powerstate", "VM", "CPUs", "Memory", "In Use MiB", "OS according to the configuration file", "Creation Date", "NICs", "Disks", "Provisioned MiB"] },
+        { "vInfo", ["VM UUID", "Template", "SRM Placeholder", "Powerstate", "VM", "CPUs", "Memory", "In Use MiB", "OS according to the configuration file"] },
         { "vHost", ["Host", "Datacenter", "Cluster", "CPU Model", "Speed", "# CPU", "Cores per CPU", "# Cores", "CPU usage %", "# Memory", "Memory usage %"] },
         { "vPartition", ["VM UUID", "VM", "Disk", "Capacity MiB", "Consumed MiB"] },
         { "vMemory", ["VM UUID", "VM", "Size MiB", "Reservation"] }
