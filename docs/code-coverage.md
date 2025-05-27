@@ -56,8 +56,7 @@ When adding new features or fixing bugs:
 
 The coverage report is generated during GitHub Actions workflows:
 
-1. **Main CI Builds**: Every PR and push to main that affects code includes code coverage reporting
-2. **Dedicated Coverage Workflow**: A standalone workflow specifically for detailed coverage reporting
+1. **Dedicated Coverage Workflow**: A standalone workflow specifically for detailed coverage reporting
 
 ### Coverage Badges
 

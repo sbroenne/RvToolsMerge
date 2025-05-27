@@ -32,7 +32,7 @@ The .NET CI workflow (`dotnet.yml`) is triggered on code changes:
 -   **Platform**: Windows
 -   **Function**:
     -   Builds the application in Debug configuration
-    -   Runs all tests with code coverage collection
+    -   Runs all tests
 
 ## Code Coverage Workflow
 
