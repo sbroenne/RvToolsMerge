@@ -942,7 +942,7 @@ public class MergeService : IMergeService
         
         if (vInfoResults.VmCountLimitReached)
         {
-            table.AddRow("[red]VM Count Limit Exceeded[/]", vInfoResults.VmCountExceededCount.ToString());
+            table.AddRow("[red]VM Count Limit Exceeded[/]", "True");
             table.AddRow("[red]Rows Not Processed Due to Limit[/]", vInfoResults.RowsSkippedAfterLimitReached.ToString());
         }
         
