@@ -391,11 +391,6 @@ public class MergeService : IMergeService
             }
         }
 
-        foreach (var sheetName in availableSheets)
-        {
-            _consoleUiService.MarkupLineInterpolated($"[cyan]Common columns in '{sheetName}':[/] {commonColumns[sheetName].Count}");
-        }
-
         return commonColumns;
     }
 
@@ -505,7 +500,7 @@ public class MergeService : IMergeService
         // Display anonymization message if enabled
         if (options.AnonymizeData)
         {
-            _consoleUiService.DisplayInfo("[yellow]Anonymization enabled[/] - VM, DNS Name, Cluster, Host, and Datacenter names will be anonymized.");
+            _consoleUiService.DisplayInfo("[yellow]Anonymization enabled[/] - VM, DNS Name, IP Addresses, Cluster, Host, and Datacenter names will be anonymized.");
         }
 
         // Display Azure Migrate validation message if enabled
@@ -830,7 +825,7 @@ public class MergeService : IMergeService
                         {
                             string fileName = fileEntry.Key;
                             var fileMap = fileEntry.Value;
-                            
+
                             foreach (var entry in fileMap)
                             {
                                 worksheet.Cell(row, 1).Value = fileName;
@@ -1040,16 +1035,16 @@ public class MergeService : IMergeService
 
         table.Border(TableBorder.Rounded);
         _consoleUiService.Write(table);
-        
+
         // Display anonymization stats if enabled
         if (options.AnonymizeData)
         {
             DisplayAnonymizationSummary();
         }
-        
+
         _consoleUiService.WriteLine();
     }
-    
+
     /// <summary>
     /// Displays a summary of anonymization statistics.
     /// </summary>
@@ -1057,50 +1052,29 @@ public class MergeService : IMergeService
     {
         _consoleUiService.WriteLine();
         _consoleUiService.WriteRule("Anonymization Summary", "yellow");
-        
+
         var anonymizationStats = _anonymizationService.GetAnonymizationStatistics();
-        
-        // Create a table to display anonymization stats by file and category
+
+        // Create a table to display anonymization totals by category
         var table = new Table();
         table.AddColumn("Category");
-        table.AddColumn("File");
-        table.AddColumn("Items Anonymized");
-        
-        // For each category (VMs, Hosts, etc.)
+        table.AddColumn("Total Items Anonymized");
+
+        // Calculate totals for each category
         foreach (var category in anonymizationStats.Keys)
         {
             var fileStats = anonymizationStats[category];
-            bool firstRow = true;
-            
-            // For each file with data in this category
-            foreach (var fileEntry in fileStats)
+            int totalForCategory = fileStats.Values.Sum();
+
+            if (totalForCategory > 0)
             {
-                if (firstRow)
-                {
-                    table.AddRow(
-                        $"[cyan]{category}[/]",
-                        $"{fileEntry.Key}",
-                        $"{fileEntry.Value}"
-                    );
-                    firstRow = false;
-                }
-                else
-                {
-                    table.AddRow(
-                        "",
-                        $"{fileEntry.Key}",
-                        $"{fileEntry.Value}"
-                    );
-                }
-            }
-            
-            // Add a blank row between categories
-            if (fileStats.Count > 0)
-            {
-                table.AddEmptyRow();
+                table.AddRow(
+                    $"[cyan]{category}[/]",
+                    totalForCategory.ToString()
+                );
             }
         }
-        
+
         table.Border(TableBorder.Rounded);
         _consoleUiService.Write(table);
     }
