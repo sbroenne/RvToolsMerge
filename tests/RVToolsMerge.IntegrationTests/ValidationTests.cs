@@ -10,6 +10,7 @@ using ClosedXML.Excel;
 using RVToolsMerge.Configuration;
 using RVToolsMerge.Exceptions;
 using RVToolsMerge.Models;
+using System;
 using Xunit;
 
 namespace RVToolsMerge.IntegrationTests;
@@ -84,7 +85,11 @@ public class ValidationTests : IntegrationTestBase
             sheet.Cell(1, 6).Value = "Memory";
             sheet.Cell(1, 7).Value = "In Use MiB";
             sheet.Cell(1, 8).Value = "OS according to the configuration file";
-            sheet.Cell(1, 9).Value = "SRM Placeholder";            // Add one data row
+            sheet.Cell(1, 9).Value = "SRM Placeholder";
+            sheet.Cell(1, 10).Value = "Creation Date";
+            sheet.Cell(1, 11).Value = "NICs";
+            sheet.Cell(1, 12).Value = "Disks";
+            sheet.Cell(1, 13).Value = "Provisioned MiB";// Add one data row
             sheet.Cell(2, 1).Value = "TestVM";
             sheet.Cell(2, 2).Value = "42008ee5-71f9-48d7-8e02-7e371f5a8b01";  // Added UUID value
             sheet.Cell(2, 3).Value = "poweredOn";
@@ -94,6 +99,10 @@ public class ValidationTests : IntegrationTestBase
             sheet.Cell(2, 7).Value = 2048;
             sheet.Cell(2, 8).Value = "Windows Server 2019";
             sheet.Cell(2, 9).Value = "FALSE";
+            sheet.Cell(2, 10).Value = DateTime.Now.AddDays(-30).ToShortDateString(); // Creation Date
+            sheet.Cell(2, 11).Value = 2; // NICs
+            sheet.Cell(2, 12).Value = 2; // Disks
+            sheet.Cell(2, 13).Value = 10240; // Provisioned MiB
 
             workbook.SaveAs(filePath);
         }
