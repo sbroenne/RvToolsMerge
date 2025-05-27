@@ -86,7 +86,7 @@ public class ValidationTests : IntegrationTestBase
             sheet.Cell(1, 7).Value = "In Use MiB";
             sheet.Cell(1, 8).Value = "OS according to the configuration file";
             sheet.Cell(1, 9).Value = "SRM Placeholder";
-            sheet.Cell(1, 10).Value = "Creation Date";
+            sheet.Cell(1, 10).Value = "Creation date";
             sheet.Cell(1, 11).Value = "NICs";
             sheet.Cell(1, 12).Value = "Disks";
             sheet.Cell(1, 13).Value = "Provisioned MiB";// Add one data row
