@@ -64,34 +64,5 @@ jobs:
       - name: Build
         run: dotnet build --configuration Debug --no-restore
 
-      - name: Test with coverage
+      - name: Test
         run: dotnet test tests/RVToolsMerge.IntegrationTests/RVToolsMerge.IntegrationTests.csproj --configuration Debug --no-build --verbosity normal
-
-      - name: Install ReportGenerator
-        run: dotnet tool install -g dotnet-reportgenerator-globaltool
-
-      - name: Generate code coverage report
-        run: |
-          # Create directories if they don't exist, using -Force to avoid errors if they already exist
-          if (-not (Test-Path -Path "TestResults\CoverageReport")) {
-            New-Item -Path "TestResults\CoverageReport" -ItemType Directory -Force
-          }
-
-          # Find coverage file (handle case where path might be different)
-          $coverageFile = Get-ChildItem -Path TestResults -Filter coverage.cobertura.xml -Recurse | Select-Object -First 1 -ExpandProperty FullName
-
-          if ($coverageFile) {
-            reportgenerator -reports:"$coverageFile" -targetdir:".\TestResults\CoverageReport" -reporttypes:"Html;MarkdownSummary"
-          } else {
-            Write-Warning "Coverage file not found. Creating an empty report."
-            New-Item -Path TestResults\CoverageReport\index.html -ItemType File -Force -Value "<html><body><h1>No coverage data available</h1></body></html>"
-            # Create a simple markdown summary when coverage file is missing
-            New-Item -Path TestResults\CoverageReport\Summary.md -ItemType File -Force -Value "## Code Coverage Summary`n`nCoverage report could not be generated. Please check the workflow run for details."
-          }
-
-      - name: Upload coverage report
-        uses: actions/upload-artifact@v4
-        with:
-          name: code-coverage-report
-          path: ./TestResults/CoverageReport
-          retention-days: 7

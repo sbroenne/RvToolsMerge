@@ -438,32 +438,6 @@ jobs:
             fi
           done
 
-      - name: Process Code Coverage (Windows x64 only)
-        run: |
-          echo "Processing code coverage from Windows x64 build..."
-
-          # Look for the code coverage report
-          WIN_COVERAGE_DIR=$(find artifacts -type d -name "*code-coverage-report*" | head -1)
-
-          if [[ -n "$WIN_COVERAGE_DIR" && -d "$WIN_COVERAGE_DIR" ]]; then
-            echo "Found coverage directory: $WIN_COVERAGE_DIR"
-
-            # Create a consolidated coverage directory
-            mkdir -p release-coverage
-            cp -r "$WIN_COVERAGE_DIR"/* release-coverage/ || echo "No coverage files to copy"
-
-            echo "Code coverage processed successfully"
-          else
-            echo "::warning::Windows code coverage report not found"
-          fi
-
-      - name: Upload Code Coverage Report
-        uses: actions/upload-artifact@v4
-        with:
-          name: release-code-coverage-report
-          path: release-coverage
-          retention-days: 30
-
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
