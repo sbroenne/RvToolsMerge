@@ -610,7 +610,8 @@ public class MergeService : IMergeService
                                         cellValue = _anonymizationService.AnonymizeValue(
                                             cellValue,
                                             mapping.CommonColumnIndex,
-                                            sheetAnonymizeCols);
+                                            sheetAnonymizeCols,
+                                            fileName);
                                     }
 
                                     // Store the value
@@ -781,7 +782,7 @@ public class MergeService : IMergeService
     /// </summary>
     /// <param name="outputPath">Path where the output file was saved.</param>
     /// <param name="mappings">Dictionary of anonymization mappings.</param>
-    private async Task CreateAnonymizationMapFileAsync(string outputPath, Dictionary<string, Dictionary<string, string>> mappings)
+    private async Task CreateAnonymizationMapFileAsync(string outputPath, Dictionary<string, Dictionary<string, Dictionary<string, string>>> mappings)
     {
         string mapFilePath = _fileSystem.Path.Combine(
             _fileSystem.Path.GetDirectoryName(outputPath) ?? string.Empty,
@@ -815,8 +816,9 @@ public class MergeService : IMergeService
                         var worksheet = workbook.Worksheets.Add(category);
 
                         // Add headers
-                        worksheet.Cell(1, 1).Value = "Original Value";
-                        worksheet.Cell(1, 2).Value = "Anonymized Value";
+                        worksheet.Cell(1, 1).Value = "File";
+                        worksheet.Cell(1, 2).Value = "Original Value";
+                        worksheet.Cell(1, 3).Value = "Anonymized Value";
 
                         // Style headers
                         var headerRow = worksheet.Row(1);
@@ -824,11 +826,18 @@ public class MergeService : IMergeService
 
                         // Add data
                         int row = 2;
-                        foreach (var entry in mappings[category])
+                        foreach (var fileEntry in mappings[category])
                         {
-                            worksheet.Cell(row, 1).Value = entry.Key;
-                            worksheet.Cell(row, 2).Value = entry.Value;
-                            row++;
+                            string fileName = fileEntry.Key;
+                            var fileMap = fileEntry.Value;
+                            
+                            foreach (var entry in fileMap)
+                            {
+                                worksheet.Cell(row, 1).Value = fileName;
+                                worksheet.Cell(row, 2).Value = entry.Key;
+                                worksheet.Cell(row, 3).Value = entry.Value;
+                                row++;
+                            }
                         }
 
                         // Auto-fit columns
@@ -1031,6 +1040,68 @@ public class MergeService : IMergeService
 
         table.Border(TableBorder.Rounded);
         _consoleUiService.Write(table);
+        
+        // Display anonymization stats if enabled
+        if (options.AnonymizeData)
+        {
+            DisplayAnonymizationSummary();
+        }
+        
         _consoleUiService.WriteLine();
+    }
+    
+    /// <summary>
+    /// Displays a summary of anonymization statistics.
+    /// </summary>
+    private void DisplayAnonymizationSummary()
+    {
+        _consoleUiService.WriteLine();
+        _consoleUiService.WriteRule("Anonymization Summary", "yellow");
+        
+        var anonymizationStats = _anonymizationService.GetAnonymizationStatistics();
+        
+        // Create a table to display anonymization stats by file and category
+        var table = new Table();
+        table.AddColumn("Category");
+        table.AddColumn("File");
+        table.AddColumn("Items Anonymized");
+        
+        // For each category (VMs, Hosts, etc.)
+        foreach (var category in anonymizationStats.Keys)
+        {
+            var fileStats = anonymizationStats[category];
+            bool firstRow = true;
+            
+            // For each file with data in this category
+            foreach (var fileEntry in fileStats)
+            {
+                if (firstRow)
+                {
+                    table.AddRow(
+                        $"[cyan]{category}[/]",
+                        $"{fileEntry.Key}",
+                        $"{fileEntry.Value}"
+                    );
+                    firstRow = false;
+                }
+                else
+                {
+                    table.AddRow(
+                        "",
+                        $"{fileEntry.Key}",
+                        $"{fileEntry.Value}"
+                    );
+                }
+            }
+            
+            // Add a blank row between categories
+            if (fileStats.Count > 0)
+            {
+                table.AddEmptyRow();
+            }
+        }
+        
+        table.Border(TableBorder.Rounded);
+        _consoleUiService.Write(table);
     }
 }

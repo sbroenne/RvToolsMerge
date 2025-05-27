@@ -15,13 +15,13 @@ namespace RVToolsMerge.Services;
 /// </summary>
 public class AnonymizationService : IAnonymizationService
 {
-    // Dictionaries for anonymization
-    private readonly Dictionary<string, string> _vmNameMap = [];
-    private readonly Dictionary<string, string> _dnsNameMap = [];
-    private readonly Dictionary<string, string> _clusterNameMap = [];
-    private readonly Dictionary<string, string> _hostNameMap = [];
-    private readonly Dictionary<string, string> _datacenterNameMap = [];
-    private readonly Dictionary<string, string> _ipAddressMap = [];
+    // Dictionaries for anonymization - mapping from filename to original value to anonymized value
+    private readonly Dictionary<string, Dictionary<string, string>> _vmNameMap = [];
+    private readonly Dictionary<string, Dictionary<string, string>> _dnsNameMap = [];
+    private readonly Dictionary<string, Dictionary<string, string>> _clusterNameMap = [];
+    private readonly Dictionary<string, Dictionary<string, string>> _hostNameMap = [];
+    private readonly Dictionary<string, Dictionary<string, string>> _datacenterNameMap = [];
+    private readonly Dictionary<string, Dictionary<string, string>> _ipAddressMap = [];
 
     // Constants for column identifiers
     private const string VmColumnName = "VM";
@@ -37,38 +37,39 @@ public class AnonymizationService : IAnonymizationService
     /// <param name="value">The original cell value.</param>
     /// <param name="currentColumnIndex">The index of the current column.</param>
     /// <param name="anonymizeColumnIndices">Dictionary mapping column names to indices for anonymization.</param>
+    /// <param name="fileName">The name of the file being processed.</param>
     /// <returns>The anonymized cell value.</returns>
-    public XLCellValue AnonymizeValue(XLCellValue value, int currentColumnIndex, Dictionary<string, int> anonymizeColumnIndices)
+    public XLCellValue AnonymizeValue(XLCellValue value, int currentColumnIndex, Dictionary<string, int> anonymizeColumnIndices, string fileName)
     {
         // VM Name
         if (ShouldAnonymizeColumn(anonymizeColumnIndices, VmColumnName, currentColumnIndex))
         {
-            return GetOrCreateAnonymizedName(value, _vmNameMap, "vm");
+            return GetOrCreateAnonymizedName(value, _vmNameMap, "vm", fileName);
         }
         // DNS Name
         else if (ShouldAnonymizeColumn(anonymizeColumnIndices, DnsNameColumnName, currentColumnIndex))
         {
-            return GetOrCreateAnonymizedName(value, _dnsNameMap, "dns");
+            return GetOrCreateAnonymizedName(value, _dnsNameMap, "dns", fileName);
         }
         // Cluster Name
         else if (ShouldAnonymizeColumn(anonymizeColumnIndices, ClusterColumnName, currentColumnIndex))
         {
-            return GetOrCreateAnonymizedName(value, _clusterNameMap, "cluster");
+            return GetOrCreateAnonymizedName(value, _clusterNameMap, "cluster", fileName);
         }
         // Host Name
         else if (ShouldAnonymizeColumn(anonymizeColumnIndices, HostColumnName, currentColumnIndex))
         {
-            return GetOrCreateAnonymizedName(value, _hostNameMap, "host");
+            return GetOrCreateAnonymizedName(value, _hostNameMap, "host", fileName);
         }
         // Datacenter Name
         else if (ShouldAnonymizeColumn(anonymizeColumnIndices, DatacenterColumnName, currentColumnIndex))
         {
-            return GetOrCreateAnonymizedName(value, _datacenterNameMap, "datacenter");
+            return GetOrCreateAnonymizedName(value, _datacenterNameMap, "datacenter", fileName);
         }
         // IP Address
         else if (ShouldAnonymizeColumn(anonymizeColumnIndices, IpAddressColumnName, currentColumnIndex))
         {
-            return GetOrCreateAnonymizedName(value, _ipAddressMap, "ip");
+            return GetOrCreateAnonymizedName(value, _ipAddressMap, "ip", fileName);
         }
         // Return original value if no anonymization is needed
         return value;
@@ -77,34 +78,76 @@ public class AnonymizationService : IAnonymizationService
     /// <summary>
     /// Gets the current anonymization statistics.
     /// </summary>
-    /// <returns>Dictionary with counts of anonymized items by category.</returns>
-    public Dictionary<string, int> GetAnonymizationStatistics()
+    /// <returns>Dictionary with counts of anonymized items by category and file.</returns>
+    public Dictionary<string, Dictionary<string, int>> GetAnonymizationStatistics()
     {
-        return new Dictionary<string, int>
+        var stats = new Dictionary<string, Dictionary<string, int>>();
+        
+        // Process VM names
+        var vmStats = new Dictionary<string, int>();
+        foreach (var fileMap in _vmNameMap)
         {
-            { "VMs", _vmNameMap.Count },
-            { "DNS Names", _dnsNameMap.Count },
-            { "Clusters", _clusterNameMap.Count },
-            { "Hosts", _hostNameMap.Count },
-            { "Datacenters", _datacenterNameMap.Count },
-            { "IP Addresses", _ipAddressMap.Count }
-        };
+            vmStats[fileMap.Key] = fileMap.Value.Count;
+        }
+        stats["VMs"] = vmStats;
+        
+        // Process DNS names
+        var dnsStats = new Dictionary<string, int>();
+        foreach (var fileMap in _dnsNameMap)
+        {
+            dnsStats[fileMap.Key] = fileMap.Value.Count;
+        }
+        stats["DNS Names"] = dnsStats;
+        
+        // Process cluster names
+        var clusterStats = new Dictionary<string, int>();
+        foreach (var fileMap in _clusterNameMap)
+        {
+            clusterStats[fileMap.Key] = fileMap.Value.Count;
+        }
+        stats["Clusters"] = clusterStats;
+        
+        // Process host names
+        var hostStats = new Dictionary<string, int>();
+        foreach (var fileMap in _hostNameMap)
+        {
+            hostStats[fileMap.Key] = fileMap.Value.Count;
+        }
+        stats["Hosts"] = hostStats;
+        
+        // Process datacenter names
+        var dcStats = new Dictionary<string, int>();
+        foreach (var fileMap in _datacenterNameMap)
+        {
+            dcStats[fileMap.Key] = fileMap.Value.Count;
+        }
+        stats["Datacenters"] = dcStats;
+        
+        // Process IP addresses
+        var ipStats = new Dictionary<string, int>();
+        foreach (var fileMap in _ipAddressMap)
+        {
+            ipStats[fileMap.Key] = fileMap.Value.Count;
+        }
+        stats["IP Addresses"] = ipStats;
+        
+        return stats;
     }
     
     /// <summary>
     /// Gets all anonymization mappings from original values to anonymized values.
     /// </summary>
-    /// <returns>Dictionary mapping category names to dictionaries of original-to-anonymized value mappings.</returns>
-    public Dictionary<string, Dictionary<string, string>> GetAnonymizationMappings()
+    /// <returns>Dictionary mapping category names to dictionaries of file names to mappings of original-to-anonymized values.</returns>
+    public Dictionary<string, Dictionary<string, Dictionary<string, string>>> GetAnonymizationMappings()
     {
-        return new Dictionary<string, Dictionary<string, string>>
+        return new Dictionary<string, Dictionary<string, Dictionary<string, string>>>
         {
-            { "VMs", new Dictionary<string, string>(_vmNameMap) },
-            { "DNS Names", new Dictionary<string, string>(_dnsNameMap) },
-            { "Clusters", new Dictionary<string, string>(_clusterNameMap) },
-            { "Hosts", new Dictionary<string, string>(_hostNameMap) },
-            { "Datacenters", new Dictionary<string, string>(_datacenterNameMap) },
-            { "IP Addresses", new Dictionary<string, string>(_ipAddressMap) }
+            { "VMs", new Dictionary<string, Dictionary<string, string>>(_vmNameMap) },
+            { "DNS Names", new Dictionary<string, Dictionary<string, string>>(_dnsNameMap) },
+            { "Clusters", new Dictionary<string, Dictionary<string, string>>(_clusterNameMap) },
+            { "Hosts", new Dictionary<string, Dictionary<string, string>>(_hostNameMap) },
+            { "Datacenters", new Dictionary<string, Dictionary<string, string>>(_datacenterNameMap) },
+            { "IP Addresses", new Dictionary<string, Dictionary<string, string>>(_ipAddressMap) }
         };
     }
 
@@ -128,13 +171,15 @@ public class AnonymizationService : IAnonymizationService
     /// Gets or creates an anonymized name for a given original value.
     /// </summary>
     /// <param name="originalValue">The original value to anonymize.</param>
-    /// <param name="nameMap">The mapping dictionary to use.</param>
+    /// <param name="fileNameMap">The mapping dictionary to use.</param>
     /// <param name="prefix">The prefix to use for anonymized names.</param>
+    /// <param name="fileName">The name of the file being processed.</param>
     /// <returns>The anonymized name.</returns>
     private static XLCellValue GetOrCreateAnonymizedName(
         XLCellValue originalValue,
-        Dictionary<string, string> nameMap,
-        string prefix)
+        Dictionary<string, Dictionary<string, string>> fileNameMap,
+        string prefix,
+        string fileName)
     {
         var lookupValue = originalValue.ToString();
         if (string.IsNullOrWhiteSpace(lookupValue))
@@ -142,9 +187,22 @@ public class AnonymizationService : IAnonymizationService
             return originalValue; // Return original value if empty
         }
 
+        // Ensure dictionary for this file exists
+        if (!fileNameMap.TryGetValue(fileName, out Dictionary<string, string>? nameMap))
+        {
+            nameMap = [];
+            fileNameMap[fileName] = nameMap;
+        }
+
         if (!nameMap.TryGetValue(lookupValue, out string? value))
         {
-            value = $"{prefix}{nameMap.Count + 1}";
+            // Use the file name as part of the seed to ensure different files 
+            // generate different anonymized values for the same original value
+            int fileNameSeed = Math.Abs(fileName.GetHashCode());
+            int counter = nameMap.Count + 1;
+            
+            // Create a unique value based on the file name seed and counter
+            value = $"{prefix}{fileNameSeed % 1000}_{counter}";
             nameMap[lookupValue] = value;
         }
         return value;
