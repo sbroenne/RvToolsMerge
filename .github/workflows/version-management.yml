@@ -256,6 +256,10 @@ jobs:
             exit 1
           fi
 
+          # Configure Git user for tag creation (required for annotated tags)
+          git config --local user.email "actions@github.com"
+          git config --local user.name "GitHub Actions"
+
           # Create and push the new tag in one operation
           git tag -a "$TAG_NAME" -m "Release version $EXPECTED_VERSION"
           git push origin "$TAG_NAME"
