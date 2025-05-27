@@ -637,6 +637,7 @@ public class MergeService : IMergeService
                                     if (validationResult.VmCountLimitReached)
                                     {
                                         skipRowDueToAzureMigrateValidation = true;
+                                        validationResult.RowsSkippedAfterLimitReached++;
                                     }
                                     else
                                     {
@@ -942,6 +943,7 @@ public class MergeService : IMergeService
         if (vInfoResults.VmCountLimitReached)
         {
             table.AddRow("[red]VM Count Limit Exceeded[/]", vInfoResults.VmCountExceededCount.ToString());
+            table.AddRow("[red]Rows Not Processed Due to Limit[/]", vInfoResults.RowsSkippedAfterLimitReached.ToString());
         }
         
         table.AddRow("[green]Total VMs Processed[/]", vInfoResults.TotalVmsProcessed.ToString());
