@@ -94,6 +94,10 @@ Each sheet has specific required columns that must be present for proper process
 -   Memory
 -   In Use MiB
 -   OS according to the configuration file
+-   Creation Date
+-   NICs
+-   Disks
+-   Provisioned MiB
 
 #### vHost Sheet (Optional)
 
