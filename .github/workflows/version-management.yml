@@ -28,7 +28,7 @@ jobs:
       actions: write
     outputs:
       new_version: ${{ steps.calc-version.outputs.package_version }}
-      tag_created: ${{ steps.create-tag.outputs.tag_created }}
+      pr_merged: ${{ steps.auto-merge.outputs.merge_success }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -189,9 +189,24 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Create and Checkout Version Tag
+  create-tag:
+    name: Create Version Tag
+    needs: bump-version
+    if: ${{ success() && needs.bump-version.outputs.pr_merged == 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      tag_created: ${{ steps.create-tag.outputs.tag_created }}
+      tag_name: ${{ steps.create-tag.outputs.tag_name }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create and Push Version Tag
         id: create-tag
-        if: ${{ steps.auto-merge.outputs.merge_success == 'true' }}
         run: |
           # Wait for merge to propagate
           echo "Waiting for merge to complete..."
@@ -200,16 +215,12 @@ jobs:
           # Fetch the latest changes from origin
           git fetch origin
 
-          # Get the current branch name for later restoration
-          CURRENT_BRANCH=$(git branch --show-current)
-          echo "Current branch: $CURRENT_BRANCH"
-
           # Switch to main branch and update it with the latest changes
           git checkout main
           git reset --hard origin/main
 
           # Create a tag with the new version in format v1.0.0
-          TAG_NAME="v${{ steps.calc-version.outputs.package_version }}"
+          TAG_NAME="v${{ needs.bump-version.outputs.new_version }}"
 
           # Check if tag already exists and fail if it does
           if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
@@ -223,18 +234,14 @@ jobs:
           git push origin $TAG_NAME
           echo "::notice::Created tag $TAG_NAME"
           echo "tag_created=true" >> $GITHUB_OUTPUT
-
-          # Return to the original branch if it still exists
-          if git show-ref --verify --quiet refs/heads/$CURRENT_BRANCH; then
-            git checkout $CURRENT_BRANCH
-          fi
+          echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build-release:
     name: Build Release Artifacts
-    needs: bump-version
-    if: ${{ success() && github.event.inputs.createRelease == 'true' && needs.bump-version.outputs.tag_created == 'true' }}
+    needs: [bump-version, create-tag]
+    if: ${{ success() && github.event.inputs.createRelease == 'true' && needs.create-tag.outputs.tag_created == 'true' }}
     uses: ./.github/workflows/build.yml
     permissions:
       contents: read
@@ -246,8 +253,8 @@ jobs:
 
   create-release:
     name: Create GitHub Release
-    needs: [bump-version, build-release]
-    if: ${{ success() && github.event.inputs.createRelease == 'true' && needs.bump-version.outputs.tag_created == 'true' }}
+    needs: [bump-version, create-tag, build-release]
+    if: ${{ success() && github.event.inputs.createRelease == 'true' && needs.create-tag.outputs.tag_created == 'true' }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -256,14 +263,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: v${{ needs.bump-version.outputs.new_version }}
+          ref: ${{ needs.create-tag.outputs.tag_name }}
 
-      - name: Get Version from Previous Job
+      - name: Get Version from Tag
         id: get-version
         run: |
-          # Use the version output from the bump-version job instead of reading from csproj
-          echo "version=${{ needs.bump-version.outputs.new_version }}" >> $GITHUB_OUTPUT
-          echo "::notice::Creating release for version ${{ needs.bump-version.outputs.new_version }}"
+          # Extract version from the tag name (remove 'v' prefix)
+          TAG_NAME="${{ needs.create-tag.outputs.tag_name }}"
+          VERSION="${TAG_NAME#v}"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "::notice::Creating release for version $VERSION from tag $TAG_NAME"
 
       - name: Download All Artifacts
         uses: actions/download-artifact@v4
@@ -339,11 +348,15 @@ jobs:
             fi
           }
 
+          # Use the version extracted from the tag (not from previous job outputs)
+          VERSION_FROM_TAG="${{ steps.get-version.outputs.version }}"
+          echo "Using version from tag: $VERSION_FROM_TAG"
+
           # Create archives for each expected platform with exact artifact names
-          create_archive "win-x64" "RVToolsMerge-win-x64" "${{ steps.get-version.outputs.version }}"
-          create_archive "win-arm64" "RVToolsMerge-win-arm64" "${{ steps.get-version.outputs.version }}"
-          create_archive "linux-x64" "RVToolsMerge-linux-x64" "${{ steps.get-version.outputs.version }}"
-          create_archive "osx-arm64" "RVToolsMerge-osx-arm64" "${{ steps.get-version.outputs.version }}"
+          create_archive "win-x64" "RVToolsMerge-win-x64" "$VERSION_FROM_TAG"
+          create_archive "win-arm64" "RVToolsMerge-win-arm64" "$VERSION_FROM_TAG"
+          create_archive "linux-x64" "RVToolsMerge-linux-x64" "$VERSION_FROM_TAG"
+          create_archive "osx-arm64" "RVToolsMerge-osx-arm64" "$VERSION_FROM_TAG"
 
           # Output created files for the release step (comma-separated for multiple files)
           echo "created_files=$created_files" >> $GITHUB_OUTPUT
@@ -356,16 +369,17 @@ jobs:
       - name: Validate Release Files
         run: |
           created_files="${{ steps.create-archives.outputs.created_files }}"
+          VERSION_FROM_TAG="${{ steps.get-version.outputs.version }}"
 
           if [[ -z "$created_files" ]]; then
             echo "::error::No release files were created. Check build artifacts."
 
-            # Diagnostic info for missing files
+            # Diagnostic info for missing files - use version from tag
             echo "Expected files:"
-            echo "- release-files/RVToolsMerge-${{ steps.get-version.outputs.version }}-win-x64.zip"
-            echo "- release-files/RVToolsMerge-${{ steps.get-version.outputs.version }}-win-arm64.zip"
-            echo "- release-files/RVToolsMerge-${{ steps.get-version.outputs.version }}-linux-x64.zip"
-            echo "- release-files/RVToolsMerge-${{ steps.get-version.outputs.version }}-osx-arm64.zip"
+            echo "- release-files/RVToolsMerge-$VERSION_FROM_TAG-win-x64.zip"
+            echo "- release-files/RVToolsMerge-$VERSION_FROM_TAG-win-arm64.zip"
+            echo "- release-files/RVToolsMerge-$VERSION_FROM_TAG-linux-x64.zip"
+            echo "- release-files/RVToolsMerge-$VERSION_FROM_TAG-osx-arm64.zip"
 
             echo "Existing files in release-files directory:"
             ls -la release-files/ 2>/dev/null || echo "Directory not found or empty"
