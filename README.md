@@ -29,18 +29,18 @@ RVToolsMerge treats security and data protection as top priorities, especially w
 
 ### Key Data Protection Features
 
--   **Complete Anonymization**: Automatically replace sensitive identifiers with generic equivalents:
+-   **Complete Anonymization**: Automatically replace sensitive identifiers with generic equivalents (per file):
 
-    -   VM names → vm1, vm2, vm3...
-    -   DNS names → dns1, dns2, dns3...
-    -   IP addresses → ip1, ip2, ip3...
-    -   Cluster names → cluster1, cluster2...
-    -   Host names → host1, host2...
-    -   Datacenter names → datacenter1, datacenter2...
+    -   VM names → vm123_1, vm456_2, vm789_3... (unique per file)
+    -   DNS names → dns123_1, dns456_2, dns789_3... (unique per file)
+    -   IP addresses → ip123_1, ip456_2, ip789_3... (unique per file)
+    -   Cluster names → cluster123_1, cluster456_2... (unique per file)
+    -   Host names → host123_1, host456_2... (unique per file)
+    -   Datacenter names → datacenter123_1, datacenter456_2... (unique per file)
 
 -   **Minimal Data Exposure**: The `--only-mandatory-columns` option limits data to essential fields only, preventing unnecessary exposure of sensitive information
 
--   **Consistent Anonymization**: Maintains relationships between data points even after anonymization (same VM names are consistently replaced with the same anonymized values across all sheets)
+-   **Consistent Anonymization**: Maintains relationships between data points with per-file anonymization (same original values within a file are consistently replaced with the same anonymized values, while the same values in different files get different anonymized values)
 
 -   **Source Tracking Control**: Optional inclusion of source file information gives you control over data lineage visibility
 
@@ -213,18 +213,20 @@ RVToolsMerge offers robust data protection features for handling sensitive infra
 
 ### Anonymization (-a, --anonymize)
 
-When using the anonymization option, the following data is consistently anonymized:
+When using the anonymization option, the following data is consistently anonymized (per file):
 
--   VM names → vm1, vm2, vm3, etc.
--   DNS names → dns1, dns2, dns3, etc.
--   IP addresses → ip1, ip2, ip3, etc.
--   Cluster names → cluster1, cluster2, cluster3, etc.
--   Host names → host1, host2, host3, etc.
--   Datacenter names → datacenter1, datacenter2, datacenter3, etc.
+-   VM names → vm123_1, vm456_2, vm789_3, etc. (unique per file)
+-   DNS names → dns123_1, dns456_2, dns789_3, etc. (unique per file)
+-   IP addresses → ip123_1, ip456_2, ip789_3, etc. (unique per file)
+-   Cluster names → cluster123_1, cluster456_2, cluster789_3, etc. (unique per file)
+-   Host names → host123_1, host456_2, host789_3, etc. (unique per file)
+-   Datacenter names → datacenter123_1, datacenter456_2, datacenter789_3, etc. (unique per file)
 
-Anonymization maintains internal data relationships, ensuring that the same original value always maps to the same anonymized value throughout all sheets, preserving data integrity while protecting sensitive information.
+Anonymization maintains internal data relationships within each file, ensuring that the same original value in a file always maps to the same anonymized value throughout all sheets in that file. Values that appear in different source files will be anonymized to different values, ensuring there's never any overlap between anonymized values from different files.
 
-When anonymization is enabled, an additional Excel file is created alongside the output file with the naming pattern `<output_filename>_AnonymizationMap.xlsx`. This file contains the mapping between original values and their anonymized equivalents, which can be used later to de-anonymize the data if needed.
+When anonymization is enabled, an additional Excel file is created alongside the output file with the naming pattern `<output_filename>_AnonymizationMap.xlsx`. This file contains the mapping between original values and their anonymized equivalents for each source file, which can be used later to de-anonymize the data if needed.
+
+After processing is complete, a summary of anonymization statistics per file is displayed, showing how many items of each type were anonymized from each source file.
 
 For more details on how anonymization is implemented, see the [Column Mappings Documentation](docs/ColumnMappings.md).
 
