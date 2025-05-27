@@ -25,8 +25,10 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
+      actions: write
     outputs:
       new_version: ${{ steps.calc-version.outputs.package_version }}
+      tag_created: ${{ steps.create-tag.outputs.tag_created }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -147,7 +149,8 @@ jobs:
             --base "${{ github.ref_name }}" \
             --head "${{ steps.create-branch.outputs.branch_name }}")
           echo "pr_url=$PR_URL" >> $GITHUB_OUTPUT
-          # Extract the PR number from the URL for use in subsequent steps          PR_NUMBER=$(echo $PR_URL | grep -o '[0-9]*$')
+          # Extract the PR number from the URL for use in subsequent steps
+          PR_NUMBER=$(echo $PR_URL | grep -o '[0-9]*$')
           echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
           echo "::notice::Created PR for version update: $PR_URL"
         env:
@@ -159,11 +162,16 @@ jobs:
           # Attempt to automatically squash-merge the PR with retry logic
           # Some repositories may have required checks that need to complete
           # before merging is allowed, so we retry a few times with delays
-          RETRIES=3
-          RETRY_DELAY=300  # 5 minutes between retry attempts
+          RETRIES=5
+          RETRY_DELAY=60  # 1 minute between retry attempts
 
           for i in $(seq 1 $RETRIES); do
             echo "Attempting to squash-merge PR (attempt $i of $RETRIES)..."
+
+            # Check if PR is mergeable first
+            PR_STATE=$(gh pr view ${{ steps.create-pr.outputs.pr_number }} --json mergeable,state --jq '.mergeable + "," + .state')
+            echo "PR state: $PR_STATE"
+
             if gh pr merge ${{ steps.create-pr.outputs.pr_number }} --squash --delete-branch; then
               echo "::notice::PR ${{ steps.create-pr.outputs.pr_number }} auto-squash-merged successfully."
               echo "merge_success=true" >> $GITHUB_OUTPUT
@@ -182,30 +190,43 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create and Checkout Version Tag
-        if: ${{ success() }}
+        id: create-tag
+        if: ${{ steps.auto-merge.outputs.merge_success == 'true' }}
         run: |
-          # Wait a moment for the merge to complete
-          # This small delay helps ensure the merge operation has fully completed
-          sleep 30
+          # Wait for merge to propagate
+          echo "Waiting for merge to complete..."
+          sleep 60
+
+          # Fetch the latest changes from origin
+          git fetch origin
+
+          # Get the current branch name for later restoration
+          CURRENT_BRANCH=$(git branch --show-current)
+          echo "Current branch: $CURRENT_BRANCH"
 
           # Switch to main branch and update it with the latest changes
           git checkout main
-          git pull origin main
-
-          # Pull the latest changes after PR merge
-          # This ensures we have the merged version update in our working directory
-          git pull origin main
+          git reset --hard origin/main
 
           # Create a tag with the new version in format v1.0.0
           TAG_NAME="v${{ steps.calc-version.outputs.package_version }}"
 
-          # Check if tag already exists
+          # Check if tag already exists and fail if it does
           if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
-            echo "::warning::Tag $TAG_NAME already exists, skipping tag creation"
-          else
-            git tag $TAG_NAME
-            git push origin $TAG_NAME
-            echo "::notice::Created tag $TAG_NAME"
+            echo "::error::Tag $TAG_NAME already exists. Cannot create duplicate version tag."
+            echo "::error::Please choose a different version or delete the existing tag first."
+            exit 1
+          fi
+
+          # Create and push the new tag
+          git tag $TAG_NAME
+          git push origin $TAG_NAME
+          echo "::notice::Created tag $TAG_NAME"
+          echo "tag_created=true" >> $GITHUB_OUTPUT
+
+          # Return to the original branch if it still exists
+          if git show-ref --verify --quiet refs/heads/$CURRENT_BRANCH; then
+            git checkout $CURRENT_BRANCH
           fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -213,7 +234,7 @@ jobs:
   build-release:
     name: Build Release Artifacts
     needs: bump-version
-    if: ${{ success() && github.event.inputs.createRelease == 'true' }}
+    if: ${{ success() && github.event.inputs.createRelease == 'true' && needs.bump-version.outputs.tag_created == 'true' }}
     uses: ./.github/workflows/build.yml
     permissions:
       contents: read
@@ -226,7 +247,7 @@ jobs:
   create-release:
     name: Create GitHub Release
     needs: [bump-version, build-release]
-    if: ${{ success() && github.event.inputs.createRelease == 'true' }}
+    if: ${{ success() && github.event.inputs.createRelease == 'true' && needs.bump-version.outputs.tag_created == 'true' }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -234,6 +255,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: v${{ needs.bump-version.outputs.new_version }}
 
       - name: Get Version from Previous Job
         id: get-version
@@ -400,7 +423,8 @@ jobs:
           prerelease: ${{ contains(steps.get-version.outputs.version, '-') }}
           files: |
             release-files/*.zip
-          fail_on_unmatched_files: false
+          fail_on_unmatched_files: true
+          generate_release_notes: true
           body: |
             ## RVToolsMerge v${{ steps.get-version.outputs.version }}
 
