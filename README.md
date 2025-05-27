@@ -259,6 +259,7 @@ When using the Azure Migrate validation option, RVToolsMerge:
 -   Validates that OS configuration data is present and not null
 -   Ensures VM UUIDs are unique across all entries (no duplicates)
 -   Enforces the Azure Migrate limit of 20,000 VMs
+-   Tracks rows that were skipped due to the VM count limit
 
 ### Validation Results and Reporting
 
@@ -268,6 +269,7 @@ When using the Azure Migrate validation option, RVToolsMerge:
     -   Count of rows with missing OS configurations
     -   Count of rows with duplicate VM UUIDs
     -   Count of rows excluded due to VM limit
+    -   Count of rows not processed (skipped) after reaching the 20,000 VM limit
     -   Total count of failed validations
 
 ### Usage Example
