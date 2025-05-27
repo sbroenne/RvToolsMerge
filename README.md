@@ -3,6 +3,7 @@
 [![.NET Build and Test](https://github.com/sbroenne/RVToolsMerge/actions/workflows/dotnet.yml/badge.svg)](https://github.com/sbroenne/RVToolsMerge/actions/workflows/dotnet.yml)
 [![Unit Tests](https://img.shields.io/github/actions/workflow/status/sbroenne/RVToolsMerge/dotnet.yml?label=tests)](https://github.com/sbroenne/RVToolsMerge/actions/workflows/dotnet.yml)
 [![Code Coverage](https://github.com/sbroenne/RVToolsMerge/raw/gh-pages/badges/coverage.svg)](https://github.com/sbroenne/RVToolsMerge/actions/workflows/code-coverage.yml)
+[![Alternative Coverage](https://img.shields.io/badge/coverage-check%20report-brightgreen)](https://github.com/sbroenne/RVToolsMerge/actions/workflows/code-coverage.yml)
 [![CodeQL](https://github.com/sbroenne/RVToolsMerge/actions/workflows/codeql.yml/badge.svg)](https://github.com/sbroenne/RVToolsMerge/actions/workflows/codeql.yml)
 [![GitHub Advanced Security](https://img.shields.io/badge/GitHub%20Advanced%20Security-enabled-brightgreen)](SECURITY.md)
 
