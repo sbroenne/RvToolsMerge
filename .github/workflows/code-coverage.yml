@@ -1,0 +1,114 @@
+name: Code Coverage Report
+
+on:
+  # Run on main branch pushes
+  push:
+    branches:
+      - main
+    paths:
+      - "**.cs"
+      - "**.csproj"
+      - "**.sln"
+      - "**/nuget.config"
+      - "**/Directory.Build.props"
+      - "**/Directory.Build.targets"
+      - "**/global.json"
+  # Allow manual triggering
+  workflow_dispatch:
+    inputs:
+      detailed_report:
+        description: 'Generate full detailed report'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  checks: write
+  actions: read
+  pull-requests: write
+
+jobs:
+  coverage:
+    name: Generate Coverage Report
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/RVToolsMerge.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Test with coverage
+        run: dotnet test tests/RVToolsMerge.IntegrationTests/RVToolsMerge.IntegrationTests.csproj --configuration Release --no-build --verbosity normal
+
+      - name: Install ReportGenerator
+        run: dotnet tool install -g dotnet-reportgenerator-globaltool
+
+      - name: Generate code coverage report
+        run: |
+          # Create directories if they don't exist
+          if (-not (Test-Path -Path "TestResults\CoverageReport")) {
+            New-Item -Path "TestResults\CoverageReport" -ItemType Directory -Force
+          }
+          
+          # Find coverage file
+          $coverageFile = Get-ChildItem -Path TestResults -Filter coverage.cobertura.xml -Recurse | Select-Object -First 1 -ExpandProperty FullName
+          
+          if ($coverageFile) {
+            # Generate detailed report if requested
+            if ('${{ github.event.inputs.detailed_report }}' -eq 'true') {
+              reportgenerator -reports:"$coverageFile" -targetdir:".\TestResults\CoverageReport" -reporttypes:"Html;MarkdownSummary;Badges"
+            } else {
+              reportgenerator -reports:"$coverageFile" -targetdir:".\TestResults\CoverageReport" -reporttypes:"Html;MarkdownSummary;Badges"
+            }
+          } else {
+            Write-Warning "Coverage file not found. Creating an empty report."
+            New-Item -Path TestResults\CoverageReport\index.html -ItemType File -Force -Value "<html><body><h1>No coverage data available</h1></body></html>"
+            New-Item -Path TestResults\CoverageReport\Summary.md -ItemType File -Force -Value "## Code Coverage Summary`n`nCoverage report could not be generated. Please check the workflow run for details."
+          }
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: code-coverage-report
+          path: ./TestResults/CoverageReport
+          retention-days: 7
+
+      - name: Create badges directory
+        if: github.ref == 'refs/heads/main'
+        run: |
+          New-Item -Path "badges" -ItemType Directory -Force
+
+      - name: Move badge to badges directory
+        if: github.ref == 'refs/heads/main'
+        run: |
+          # Find badge and copy to badges directory
+          $badge = Get-ChildItem -Path TestResults\CoverageReport -Filter "badge_linecoverage.svg" -Recurse | Select-Object -First 1 -ExpandProperty FullName
+          if ($badge) {
+            Copy-Item -Path $badge -Destination badges\coverage.svg -Force
+          } else {
+            Write-Warning "Badge file not found."
+          }
+
+      - name: Deploy to GitHub Pages
+        if: github.ref == 'refs/heads/main'
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./badges
+          keep_files: true
