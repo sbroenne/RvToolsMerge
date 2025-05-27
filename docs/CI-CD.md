@@ -21,7 +21,7 @@ The Build workflow (`build.yml`) is a reusable workflow that handles building an
 -   **Features**:
     -   Caches NuGet packages for faster builds
     -   Builds the application in the specified configuration
-    -   Runs all tests with code coverage collection
+    -   Runs all tests
     -   When building in Release mode, publishes platform-specific self-contained executables
 
 ## .NET CI Workflow
@@ -66,7 +66,6 @@ The Version Management & Release workflow (`version-management.yml`) handles sys
     8. If `createRelease` is true:
         - Builds release artifacts for all platforms
         - Creates platform-specific archives
-        - Processes code coverage from Windows x64 build only
         - Creates a GitHub Release with the archives attached
 
 ### Version Management & Release Process
@@ -89,7 +88,6 @@ The automated version management and release process follows these steps:
 11. If release creation is enabled:
     - Build release artifacts for all supported platforms (Windows x64/ARM64, Linux x64, macOS ARM64)
     - Create platform-specific ZIP archives
-    - Process code coverage report from Windows x64 build only
     - Create GitHub Release with release notes and download links
 
 ## Release Process Guide
@@ -102,7 +100,7 @@ To create a new release:
 
 ## Code Coverage in Releases
 
-Code coverage is processed only from the Windows x64 build to optimize workflow performance while maintaining comprehensive test coverage reporting. The coverage report is uploaded as a separate artifact for each release.
+Code coverage is now handled exclusively by the dedicated code-coverage.yml workflow to optimize workflow performance while maintaining comprehensive test coverage reporting.
 
 ## CI/CD Security Considerations
 

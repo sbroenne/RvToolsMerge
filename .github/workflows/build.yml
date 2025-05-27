@@ -84,26 +84,7 @@ jobs:
           path: TestResults/*.trx
           retention-days: 7
 
-      # Coverage only runs on Windows x64 for Release builds to avoid duplication
-      - name: Run tests with coverage
-        if: inputs.configuration == 'Release' && matrix.runtime == 'win-x64'
-        run: dotnet test tests/RVToolsMerge.IntegrationTests/RVToolsMerge.IntegrationTests.csproj --configuration ${{ inputs.configuration }} --no-build --collect:"XPlat Code Coverage" --results-directory TestResults
-
-      - name: Install coverage report generator
-        if: inputs.configuration == 'Release' && matrix.runtime == 'win-x64'
-        run: dotnet tool install -g dotnet-reportgenerator-globaltool
-
-      - name: Generate coverage report
-        if: inputs.configuration == 'Release' && matrix.runtime == 'win-x64'
-        run: reportgenerator -reports:TestResults/**/coverage.cobertura.xml -targetdir:coverage-report -reporttypes:Html
-
-      - name: Upload coverage report
-        if: inputs.configuration == 'Release' && matrix.runtime == 'win-x64'
-        uses: actions/upload-artifact@v4
-        with:
-          name: code-coverage-report
-          path: coverage-report
-          retention-days: 30
+# Code coverage is now handled exclusively by the dedicated code-coverage.yml workflow
 
       - name: Publish
         run: dotnet publish src/RVToolsMerge/RVToolsMerge.csproj --configuration ${{ inputs.configuration }} --runtime ${{ matrix.runtime }} --self-contained true --no-restore --output publish
