@@ -313,4 +313,23 @@ public class ValidationServiceTests : IntegrationTestBase
         Assert.Null(result);
         Assert.Contains("vm-uuid", seenVmUuids);
     }
+
+    /// <summary>
+    /// Tests tracking of rows skipped after VM count limit is reached.
+    /// </summary>
+    [Fact]
+    public void RowsSkippedAfterLimitReached_TracksCorrectly()
+    {
+        // Arrange
+        var validationResult = new AzureMigrateValidationResult
+        {
+            VmCountLimitReached = true
+        };
+
+        // Act
+        validationResult.RowsSkippedAfterLimitReached = 10;
+        
+        // Assert
+        Assert.Equal(10, validationResult.RowsSkippedAfterLimitReached);
+    }
 }

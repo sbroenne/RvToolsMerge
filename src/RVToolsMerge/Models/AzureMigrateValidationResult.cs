@@ -104,6 +104,11 @@ public class AzureMigrateValidationResult
     public bool VmCountLimitReached { get; set; }
 
     /// <summary>
+    /// Gets or sets the count of rows that were skipped (not processed) after the VM count limit was reached.
+    /// </summary>
+    public int RowsSkippedAfterLimitReached { get; set; }
+
+    /// <summary>
     /// Gets the total number of failed rows.
     /// </summary>
     public int TotalFailedRows => FailedRows.Count;
