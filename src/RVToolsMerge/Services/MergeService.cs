@@ -99,7 +99,7 @@ public class MergeService : IMergeService
 
         // Create output file
         await CreateOutputFileAsync(outputPath, availableSheets, mergedData, commonColumns);
-        
+
         // Create anonymization mapping file if anonymization is enabled
         if (options.AnonymizeData)
         {
@@ -113,9 +113,9 @@ public class MergeService : IMergeService
             string failedValidationFilePath = _fileSystem.Path.Combine(
                 _fileSystem.Path.GetDirectoryName(outputPath) ?? string.Empty,
                 _fileSystem.Path.GetFileNameWithoutExtension(outputPath) + "_FailedAzureMigrateValidation.xlsx");
-            
+
             await CreateAzureMigrateFailedValidationFileAsync(failedValidationFilePath, azureMigrateResults, commonColumns);
-            
+
             // Display Azure Migrate validation statistics
             DisplayAzureMigrateValidationStatistics(azureMigrateResults, failedValidationFilePath);
         }
@@ -146,6 +146,9 @@ public class MergeService : IMergeService
     {
         _consoleUiService.DisplayInfo("[bold]Validating files...[/]");
 
+        // First collect all validation results
+        var fileValidationResults = new List<(string FilePath, bool IsValid, List<ValidationIssue> Issues)>();
+
         await Task.Run(() =>
         {
             _consoleUiService.Progress()
@@ -161,33 +164,42 @@ public class MergeService : IMergeService
                 {
                     var validationTask = ctx.AddTask("[green]Validating input files[/]", maxValue: validFilePaths.Count);
 
-                    for (int i = validFilePaths.Count - 1; i >= 0; i--)
+                    foreach (string filePath in validFilePaths)
                     {
-                        string filePath = validFilePaths[i];
-                        bool isValid = _validationService.ValidateFile(filePath, options.IgnoreMissingOptionalSheets, validationIssues);
+                        var fileIssues = new List<ValidationIssue>();
+                        bool isValid = _validationService.ValidateFile(filePath, options.IgnoreMissingOptionalSheets, fileIssues);
 
-                        if (!isValid && !options.SkipInvalidFiles)
-                        {
-                            // If file is not valid and we're not skipping invalid files, throw an exception
-                            var issues = validationIssues
-                                .Where(issue => issue.FileName == _fileSystem.Path.GetFileName(filePath) && issue.Skipped)
-                                .Select(issue => $"  - {issue.ValidationError}")
-                                .ToList();
-
-                            var errorMessage = $"Invalid file found: {_fileSystem.Path.GetFileName(filePath)}{Environment.NewLine}{string.Join(Environment.NewLine, issues)}";
-                            throw new InvalidFileException(errorMessage);
-                        }
-
-                        if (!isValid && options.SkipInvalidFiles)
-                        {
-                            // Remove invalid file if skipping is enabled
-                            validFilePaths.RemoveAt(i);
-                        }
+                        fileValidationResults.Add((filePath, isValid, fileIssues));
+                        validationIssues.AddRange(fileIssues);
 
                         validationTask.Increment(1);
                     }
                 });
         });
+
+        // Display all validation issues together if any exist
+        DisplayValidationIssues(validationIssues);
+
+        // Now process the validation results based on options
+        for (int i = validFilePaths.Count - 1; i >= 0; i--)
+        {
+            string filePath = validFilePaths[i];
+            var validationResult = fileValidationResults.First(r => r.FilePath == filePath);
+
+            if (!validationResult.IsValid && !options.SkipInvalidFiles)
+            {
+                // If file is not valid and we're not skipping invalid files, throw an exception
+
+                var errorMessage = "At least one invalid file found. Use the -i or --skip-invalid-files option to skip invalid files.\n";
+                throw new InvalidFileException(errorMessage);
+            }
+
+            if (!validationResult.IsValid && options.SkipInvalidFiles)
+            {
+                // Remove invalid file if skipping is enabled
+                validFilePaths.RemoveAt(i);
+            }
+        }
     }
 
     /// <summary>
@@ -539,7 +551,7 @@ public class MergeService : IMergeService
                         HashSet<string>? seenVmUuids = null;
                         int vmUuidIndex = -1;
                         int osConfigIndex = -1;
-                        
+
                         if (options.EnableAzureMigrateValidation && sheetName == "vInfo")
                         {
                             seenVmUuids = new HashSet<string>();
@@ -632,7 +644,7 @@ public class MergeService : IMergeService
                                 if (options.EnableAzureMigrateValidation && sheetName == "vInfo" && azureMigrateValidationResults != null)
                                 {
                                     var validationResult = azureMigrateValidationResults["vInfo"];
-                                    
+
                                     // Check if we've reached the VM count limit
                                     if (validationResult.VmCountLimitReached)
                                     {
@@ -643,17 +655,17 @@ public class MergeService : IMergeService
                                     {
                                         // Validate the row for Azure Migrate
                                         var failureReason = _validationService.ValidateRowForAzureMigrate(
-                                            rowData, 
-                                            vmUuidIndex, 
-                                            osConfigIndex, 
-                                            seenVmUuids!, 
+                                            rowData,
+                                            vmUuidIndex,
+                                            osConfigIndex,
+                                            seenVmUuids!,
                                             validationResult.TotalVmsProcessed);
 
                                         if (failureReason != null)
                                         {
                                             // Add to failed rows and skip
                                             validationResult.FailedRows.Add(new AzureMigrateValidationFailure(rowData, failureReason.Value));
-                                            
+
                                             // Update counts based on failure reason
                                             switch (failureReason.Value)
                                             {
@@ -669,7 +681,7 @@ public class MergeService : IMergeService
                                                 case AzureMigrateValidationFailureReason.VmCountExceeded:
                                                     validationResult.VmCountExceededCount++;
                                                     validationResult.VmCountLimitReached = true;
-                                                    
+
                                                     // Warn user that VM count limit has been reached
                                                     validationIssues.Add(new ValidationIssue(
                                                         fileName,
@@ -699,7 +711,7 @@ public class MergeService : IMergeService
                     }
                 });
         });
-        
+
         // Return the Azure Migrate validation results
         return options.EnableAzureMigrateValidation ? azureMigrateValidationResults : null;
     }
@@ -763,7 +775,7 @@ public class MergeService : IMergeService
                 }
             });
     }
-    
+
     /// <summary>
     /// Creates and saves a file containing anonymization mappings.
     /// </summary>
@@ -789,7 +801,7 @@ public class MergeService : IMergeService
             .StartAsync(async ctx =>
             {
                 var mappingTask = ctx.AddTask("[green]Creating anonymization mapping file[/]", maxValue: mappings.Count + 1);
-                
+
                 using (var workbook = new XLWorkbook())
                 {
                     foreach (var category in mappings.Keys)
@@ -799,17 +811,17 @@ public class MergeService : IMergeService
                             mappingTask.Increment(1);
                             continue;
                         }
-                        
+
                         var worksheet = workbook.Worksheets.Add(category);
-                        
+
                         // Add headers
                         worksheet.Cell(1, 1).Value = "Original Value";
                         worksheet.Cell(1, 2).Value = "Anonymized Value";
-                        
+
                         // Style headers
                         var headerRow = worksheet.Row(1);
                         headerRow.Style.Font.Bold = true;
-                        
+
                         // Add data
                         int row = 2;
                         foreach (var entry in mappings[category])
@@ -818,12 +830,12 @@ public class MergeService : IMergeService
                             worksheet.Cell(row, 2).Value = entry.Value;
                             row++;
                         }
-                        
+
                         // Auto-fit columns
                         worksheet.Columns().AdjustToContents();
                         mappingTask.Increment(1);
                     }
-                    
+
                     // Save the mapping file
                     _consoleUiService.DisplayInfo($"[cyan]Saving anonymization mapping file to: {mapFilePath}[/]");
                     await Task.Run(() => workbook.SaveAs(mapFilePath));
@@ -863,28 +875,28 @@ public class MergeService : IMergeService
                     foreach (var sheetName in azureMigrateResults.Keys)
                     {
                         var validationResult = azureMigrateResults[sheetName];
-                        
+
                         if (validationResult.FailedRows.Count == 0)
                         {
                             outputTask.Increment(1);
                             continue;
                         }
-                        
+
                         var worksheet = workbook.Worksheets.Add(sheetName);
-                        
+
                         // Write headers
                         for (int col = 0; col < commonColumns[sheetName].Count; col++)
                         {
                             worksheet.Cell(1, col + 1).Value = commonColumns[sheetName][col];
                         }
-                        
+
                         // Add failure reason column
                         worksheet.Cell(1, commonColumns[sheetName].Count + 1).Value = "Failure Reason";
-                        
+
                         // Style headers
                         var headerRow = worksheet.Row(1);
                         headerRow.Style.Font.Bold = true;
-                        
+
                         // Write data rows
                         int row = 2;
                         foreach (var failedRow in validationResult.FailedRows)
@@ -894,19 +906,19 @@ public class MergeService : IMergeService
                             {
                                 worksheet.Cell(row, col + 1).Value = failedRow.RowData[col];
                             }
-                            
+
                             // Write failure reason
                             string failureReason = GetFailureReasonDescription(failedRow.Reason);
                             worksheet.Cell(row, commonColumns[sheetName].Count + 1).Value = failureReason;
-                            
+
                             row++;
                         }
-                        
+
                         // Auto-fit columns
                         worksheet.Columns().AdjustToContents();
                         outputTask.Increment(1);
                     }
-                    
+
                     // Save the file
                     _consoleUiService.DisplayInfo($"[cyan]Saving failed validation file to: {failedValidationFilePath}[/]");
                     await Task.Run(() => workbook.SaveAs(failedValidationFilePath));
@@ -914,7 +926,7 @@ public class MergeService : IMergeService
                 }
             });
     }
-    
+
     /// <summary>
     /// Displays Azure Migrate validation statistics.
     /// </summary>
@@ -925,38 +937,38 @@ public class MergeService : IMergeService
         string failedValidationFilePath)
     {
         var vInfoResults = azureMigrateResults["vInfo"];
-        
+
         // Create a table for validation statistics
         var table = new Table();
         table.Border(TableBorder.Rounded);
         table.Expand();
-        
+
         // Add columns
         table.AddColumn("Validation Issue");
         table.AddColumn(new TableColumn("Count").Centered());
-        
+
         // Add data rows
         table.AddRow("[yellow]Missing VM UUID[/]", vInfoResults.MissingVmUuidCount.ToString());
         table.AddRow("[yellow]Missing OS Configuration[/]", vInfoResults.MissingOsConfigurationCount.ToString());
         table.AddRow("[yellow]Duplicate VM UUID[/]", vInfoResults.DuplicateVmUuidCount.ToString());
-        
+
         if (vInfoResults.VmCountLimitReached)
         {
             table.AddRow("[red]VM Count Limit Exceeded[/]", "True");
             table.AddRow("[red]Rows Not Processed Due to Limit[/]", vInfoResults.RowsSkippedAfterLimitReached.ToString());
         }
-        
+
         table.AddRow("[green]Total VMs Processed[/]", vInfoResults.TotalVmsProcessed.ToString());
         table.AddRow("[red]Total Failed Rows[/]", vInfoResults.TotalFailedRows.ToString());
-        
+
         _consoleUiService.WriteLine();
         _consoleUiService.DisplayInfo("[bold yellow]Azure Migrate Validation Results[/]");
         _consoleUiService.Write(table);
-        
+
         _consoleUiService.MarkupLineInterpolated($"[cyan]Failed rows saved to: {_fileSystem.Path.GetFileName(failedValidationFilePath)}[/]");
         _consoleUiService.WriteLine();
     }
-    
+
     /// <summary>
     /// Gets a human-readable description for a validation failure reason.
     /// </summary>
