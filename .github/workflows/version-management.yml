@@ -224,6 +224,9 @@ jobs:
             git checkout main
             git reset --hard origin/main
 
+            # Ensure we're fully up to date with any recent changes
+            git pull origin main
+
             # Verify we have the version bump in the current commit
             CURRENT_VERSION_IN_FILE=$(grep -o '<Version>[^<]*' src/RVToolsMerge/RVToolsMerge.csproj | sed 's/<Version>//' || echo "NOT_FOUND")
 
@@ -267,6 +270,8 @@ jobs:
           echo "::notice::Created and pushed tag $TAG_NAME pointing to commit $(git rev-parse HEAD)"
           echo "tag_created=true" >> $GITHUB_OUTPUT
           echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build-release:
     name: Build Release Artifacts
@@ -280,6 +285,7 @@ jobs:
       pull-requests: read
     with:
       configuration: "Release"
+      ref: ${{ needs.create-tag.outputs.tag_name }}
 
   create-release:
     name: Create GitHub Release
