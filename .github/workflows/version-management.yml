@@ -217,9 +217,12 @@ jobs:
           for attempt in $(seq 1 $MAX_ATTEMPTS); do
             echo "Attempt $attempt of $MAX_ATTEMPTS: Checking for merged changes..."
 
-            # Fetch latest changes and switch to main in one operation
-            git fetch origin main:main --force
+            # Fetch latest changes from origin
+            git fetch origin
+
+            # Switch to main branch and update it with the latest changes
             git checkout main
+            git reset --hard origin/main
 
             # Verify we have the version bump in the current commit
             CURRENT_VERSION_IN_FILE=$(grep -o '<Version>[^<]*' src/RVToolsMerge/RVToolsMerge.csproj | sed 's/<Version>//' || echo "NOT_FOUND")
@@ -260,8 +263,6 @@ jobs:
           echo "::notice::Created and pushed tag $TAG_NAME pointing to commit $(git rev-parse HEAD)"
           echo "tag_created=true" >> $GITHUB_OUTPUT
           echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build-release:
     name: Build Release Artifacts
