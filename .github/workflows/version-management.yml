@@ -219,6 +219,9 @@ jobs:
           git checkout main
           git reset --hard origin/main
 
+          # Pull the latest changes to ensure we have the merged PR
+          git pull origin main
+
           # Create a tag with the new version in format v1.0.0
           TAG_NAME="v${{ needs.bump-version.outputs.new_version }}"
 
