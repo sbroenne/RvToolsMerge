@@ -8,8 +8,9 @@ RVToolsMerge uses GitHub Actions for all CI/CD pipelines. The main workflows are
 
 1. **Build and Test** - Triggered on pull requests and pushes to main branch for code changes
 2. **Version Management & Release** - Manual workflow for incrementing version numbers with automatic PR creation and optional release creation
-3. **Security Scanning** - Includes CodeQL analysis, dependency review, and vulnerability scanning
-4. **Auto Labeling** - Automatically adds labels to pull requests based on file changes
+3. **Code Coverage** - Generates code coverage reports and badges for the project
+4. **Security Scanning** - Includes CodeQL analysis, dependency review, and vulnerability scanning
+5. **Auto Labeling** - Automatically adds labels to pull requests based on file changes
 
 ## Build Workflow
 
@@ -32,6 +33,19 @@ The .NET CI workflow (`dotnet.yml`) is triggered on code changes:
 -   **Function**:
     -   Builds the application in Debug configuration
     -   Runs all tests with code coverage collection
+
+## Code Coverage Workflow
+
+The Code Coverage workflow (`code-coverage.yml`) generates detailed coverage reports and badges:
+
+-   **Trigger**: Push to main branch that modifies .NET code files or manual workflow dispatch
+-   **Platform**: Windows
+-   **Function**:
+    -   Builds the application in Release configuration
+    -   Runs all tests with code coverage collection
+    -   Generates HTML coverage reports and badges
+    -   Publishes coverage badge to GitHub Pages
+    -   Makes reports available as workflow artifacts
 
 ## Version Management & Release Workflow
 
