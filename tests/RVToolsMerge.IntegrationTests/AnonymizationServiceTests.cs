@@ -33,7 +33,7 @@ public class AnonymizationServiceTests : IntegrationTestBase
         var originalValue = (XLCellValue)"vm-webserver01";
 
         // Act
-        var result = AnonymizationService.AnonymizeValue(originalValue, 0, columnIndices);
+        var result = AnonymizationService.AnonymizeValue(originalValue, 0, columnIndices, "testfile.xlsx");
 
         // Assert
         Assert.NotEqual(originalValue, result);
@@ -54,8 +54,8 @@ public class AnonymizationServiceTests : IntegrationTestBase
         var originalValue = (XLCellValue)"vm-database01";
 
         // Act
-        var result1 = AnonymizationService.AnonymizeValue(originalValue, 0, columnIndices);
-        var result2 = AnonymizationService.AnonymizeValue(originalValue, 0, columnIndices);
+        var result1 = AnonymizationService.AnonymizeValue(originalValue, 0, columnIndices, "testfile.xlsx");
+        var result2 = AnonymizationService.AnonymizeValue(originalValue, 0, columnIndices, "testfile.xlsx");
 
         // Assert
         Assert.Equal(result1, result2);
@@ -75,7 +75,7 @@ public class AnonymizationServiceTests : IntegrationTestBase
         var originalValue = (XLCellValue)"web-server.example.com";
 
         // Act
-        var result = AnonymizationService.AnonymizeValue(originalValue, 0, columnIndices);
+        var result = AnonymizationService.AnonymizeValue(originalValue, 0, columnIndices, "testfile.xlsx");
 
         // Assert
         Assert.NotEqual(originalValue, result);
@@ -96,7 +96,7 @@ public class AnonymizationServiceTests : IntegrationTestBase
         var originalValue = (XLCellValue)"192.168.1.10";
 
         // Act
-        var result = AnonymizationService.AnonymizeValue(originalValue, 0, columnIndices);
+        var result = AnonymizationService.AnonymizeValue(originalValue, 0, columnIndices, "testfile.xlsx");
 
         // Assert
         Assert.NotEqual(originalValue, result);
@@ -117,7 +117,7 @@ public class AnonymizationServiceTests : IntegrationTestBase
         var originalValue = (XLCellValue)"Production-Cluster-01";
 
         // Act
-        var result = AnonymizationService.AnonymizeValue(originalValue, 0, columnIndices);
+        var result = AnonymizationService.AnonymizeValue(originalValue, 0, columnIndices, "testfile.xlsx");
 
         // Assert
         Assert.NotEqual(originalValue, result);
@@ -138,7 +138,7 @@ public class AnonymizationServiceTests : IntegrationTestBase
         var originalValue = (XLCellValue)"esx01.example.com";
 
         // Act
-        var result = AnonymizationService.AnonymizeValue(originalValue, 0, columnIndices);
+        var result = AnonymizationService.AnonymizeValue(originalValue, 0, columnIndices, "testfile.xlsx");
 
         // Assert
         Assert.NotEqual(originalValue, result);
@@ -159,7 +159,7 @@ public class AnonymizationServiceTests : IntegrationTestBase
         var originalValue = (XLCellValue)"London-DC-01";
 
         // Act
-        var result = AnonymizationService.AnonymizeValue(originalValue, 0, columnIndices);
+        var result = AnonymizationService.AnonymizeValue(originalValue, 0, columnIndices, "testfile.xlsx");
 
         // Assert
         Assert.NotEqual(originalValue, result);
@@ -180,7 +180,7 @@ public class AnonymizationServiceTests : IntegrationTestBase
         var originalValue = (XLCellValue)"This should not change";
 
         // Act
-        var result = AnonymizationService.AnonymizeValue(originalValue, 0, columnIndices);
+        var result = AnonymizationService.AnonymizeValue(originalValue, 0, columnIndices, "testfile.xlsx");
 
         // Assert
         Assert.Equal(originalValue, result);
@@ -212,7 +212,7 @@ public class AnonymizationServiceTests : IntegrationTestBase
         var originalValue = (XLCellValue)string.Empty;
 
         // Act
-        var result = AnonymizationService.AnonymizeValue(originalValue, 0, columnIndices);
+        var result = AnonymizationService.AnonymizeValue(originalValue, 0, columnIndices, "testfile.xlsx");
 
         // Assert
         Assert.Equal(originalValue, result);
@@ -232,7 +232,7 @@ public class AnonymizationServiceTests : IntegrationTestBase
         var originalValue = XLCellValue.FromObject(null);
 
         // Act
-        var result = AnonymizationService.AnonymizeValue(originalValue, 0, columnIndices);
+        var result = AnonymizationService.AnonymizeValue(originalValue, 0, columnIndices, "testfile.xlsx");
 
         // Assert
         Assert.Equal(originalValue, result);

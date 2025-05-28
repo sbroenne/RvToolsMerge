@@ -29,18 +29,18 @@ RVToolsMerge treats security and data protection as top priorities, especially w
 
 ### Key Data Protection Features
 
--   **Complete Anonymization**: Automatically replace sensitive identifiers with generic equivalents:
+-   **Complete Anonymization**: Automatically replace sensitive identifiers with generic equivalents (per file):
 
-    -   VM names → vm1, vm2, vm3...
-    -   DNS names → dns1, dns2, dns3...
-    -   IP addresses → ip1, ip2, ip3...
-    -   Cluster names → cluster1, cluster2...
-    -   Host names → host1, host2...
-    -   Datacenter names → datacenter1, datacenter2...
+    -   VM names → vm123_1, vm456_2, vm789_3... (unique per file)
+    -   DNS names → dns123_1, dns456_2, dns789_3... (unique per file)
+    -   IP addresses → ip123_1, ip456_2, ip789_3... (unique per file)
+    -   Cluster names → cluster123_1, cluster456_2... (unique per file)
+    -   Host names → host123_1, host456_2... (unique per file)
+    -   Datacenter names → datacenter123_1, datacenter456_2... (unique per file)
 
 -   **Minimal Data Exposure**: The `--only-mandatory-columns` option limits data to essential fields only, preventing unnecessary exposure of sensitive information
 
--   **Consistent Anonymization**: Maintains relationships between data points even after anonymization (same VM names are consistently replaced with the same anonymized values across all sheets)
+-   **Consistent Anonymization**: Maintains relationships between data points with per-file anonymization (same original values within a file are consistently replaced with the same anonymized values, while the same values in different files get different anonymized values)
 
 -   **Source Tracking Control**: Optional inclusion of source file information gives you control over data lineage visibility
 
@@ -67,67 +67,9 @@ These protection features make RVToolsMerge ideal for:
 
 ## Supported Sheets and Required Columns
 
-RVToolsMerge processes the following key sheets from RVTools exports:
+RVToolsMerge processes key sheets from RVTools exports with specific validation requirements for each sheet type.
 
-### Required and Optional Sheets
-
-| Sheet Name     | Status       | Description                                  |
-| -------------- | ------------ | -------------------------------------------- |
-| **vInfo**      | **Required** | Core VM information (CPU, memory, OS)        |
-| **vHost**      | Optional     | ESXi host configuration and performance data |
-| **vPartition** | Optional     | VM disk partition information                |
-| **vMemory**    | Optional     | VM memory configuration details              |
-
-The `vInfo` sheet must be present in all processed files. The other sheets are considered optional and can be handled according to your configuration.
-
-### Mandatory Columns by Sheet
-
-Each sheet has specific required columns that must be present for proper processing:
-
-#### vInfo Sheet (Required)
-
--   VM UUID
--   Template
--   SRM Placeholder
--   Powerstate
--   VM
--   CPUs
--   Memory
--   In Use MiB
--   OS according to the configuration file
--   Creation Date
--   NICs
--   Disks
--   Provisioned MiB
-
-#### vHost Sheet (Optional)
-
--   Host
--   Datacenter
--   Cluster
--   CPU Model
--   Speed
--   \# CPU
--   Cores per CPU
--   \# Cores
--   CPU usage %
--   \# Memory
--   Memory usage %
-
-#### vPartition Sheet (Optional)
-
--   VM UUID
--   VM
--   Disk
--   Capacity MiB
--   Consumed MiB
-
-#### vMemory Sheet (Optional)
-
--   VM UUID
--   VM
--   Size MiB
--   Reservation
+For detailed information about supported sheets and their required columns, see [Supported Sheets Documentation](docs/SupportedSheets.md).
 
 ## Column Name Mappings
 
@@ -213,18 +155,20 @@ RVToolsMerge offers robust data protection features for handling sensitive infra
 
 ### Anonymization (-a, --anonymize)
 
-When using the anonymization option, the following data is consistently anonymized:
+When using the anonymization option, the following data is consistently anonymized (per file):
 
--   VM names → vm1, vm2, vm3, etc.
--   DNS names → dns1, dns2, dns3, etc.
--   IP addresses → ip1, ip2, ip3, etc.
--   Cluster names → cluster1, cluster2, cluster3, etc.
--   Host names → host1, host2, host3, etc.
--   Datacenter names → datacenter1, datacenter2, datacenter3, etc.
+-   VM names → vm123_1, vm456_2, vm789_3, etc. (unique per file)
+-   DNS names → dns123_1, dns456_2, dns789_3, etc. (unique per file)
+-   IP addresses → ip123_1, ip456_2, ip789_3, etc. (unique per file)
+-   Cluster names → cluster123_1, cluster456_2, cluster789_3, etc. (unique per file)
+-   Host names → host123_1, host456_2, host789_3, etc. (unique per file)
+-   Datacenter names → datacenter123_1, datacenter456_2, datacenter789_3, etc. (unique per file)
 
-Anonymization maintains internal data relationships, ensuring that the same original value always maps to the same anonymized value throughout all sheets, preserving data integrity while protecting sensitive information.
+Anonymization maintains internal data relationships within each file, ensuring that the same original value in a file always maps to the same anonymized value throughout all sheets in that file. Values that appear in different source files will be anonymized to different values, ensuring there's never any overlap between anonymized values from different files.
 
-When anonymization is enabled, an additional Excel file is created alongside the output file with the naming pattern `<output_filename>_AnonymizationMap.xlsx`. This file contains the mapping between original values and their anonymized equivalents, which can be used later to de-anonymize the data if needed.
+When anonymization is enabled, an additional Excel file is created alongside the output file with the naming pattern `<output_filename>_AnonymizationMap.xlsx`. This file contains the mapping between original values and their anonymized equivalents for each source file, which can be used later to de-anonymize the data if needed.
+
+After processing is complete, a summary of anonymization statistics per file is displayed, showing how many items of each type were anonymized from each source file.
 
 For more details on how anonymization is implemented, see the [Column Mappings Documentation](docs/ColumnMappings.md).
 
@@ -358,7 +302,7 @@ If you encounter issues while using RVToolsMerge:
 | Files causing validation errors | Use `-i` to skip invalid files and continue processing others (disabled by default)       |
 | Row count mismatches            | By default, rows with empty mandatory values are included; use `-e` to exclude them       |
 | Need data protection            | Use `-a` for anonymization and `-M` for mandatory columns only (both disabled by default) |
-| Preparing for Azure migration   | Use `-z` to validate against Azure Migrate requirements (disabled by default)            |
+| Preparing for Azure migration   | Use `-z` to validate against Azure Migrate requirements (disabled by default)             |
 | Want to track data origin       | Use `-s` to include source file information (disabled by default)                         |
 | Low memory issues               | Process smaller batches of files                                                          |
 | Permission errors               | Ensure you have write access to the output folder                                         |

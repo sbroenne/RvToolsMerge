@@ -15,21 +15,53 @@ namespace RVToolsMerge.Services;
 /// </summary>
 public class AnonymizationService : IAnonymizationService
 {
-    // Dictionaries for anonymization
-    private readonly Dictionary<string, string> _vmNameMap = [];
-    private readonly Dictionary<string, string> _dnsNameMap = [];
-    private readonly Dictionary<string, string> _clusterNameMap = [];
-    private readonly Dictionary<string, string> _hostNameMap = [];
-    private readonly Dictionary<string, string> _datacenterNameMap = [];
-    private readonly Dictionary<string, string> _ipAddressMap = [];
+    // Dynamic mapping of column name to file-specific original-to-anonymized mappings
+    private readonly Dictionary<string, Dictionary<string, Dictionary<string, string>>> _anonymizationMaps = [];
 
-    // Constants for column identifiers
-    private const string VmColumnName = "VM";
-    private const string DnsNameColumnName = "DNS Name";
-    private const string ClusterColumnName = "Cluster";
-    private const string HostColumnName = "Host";
-    private const string DatacenterColumnName = "Datacenter";
-    private const string IpAddressColumnName = "Primary IP Address";
+    // Configuration for column identifiers - maps column name to prefix
+    private readonly Dictionary<string, string> _columnIdentifiers = new()
+    {
+        { "VM", "vm" },
+        { "DNS Name", "dns" },
+        { "Cluster", "cluster" },
+        { "Host", "host" },
+        { "Datacenter", "datacenter" },
+        { "Primary IP Address", "ip" }
+    };
+
+    /// <summary>
+    /// Adds or updates a column identifier for anonymization.
+    /// </summary>
+    /// <param name="columnName">The name of the column to anonymize.</param>
+    /// <param name="prefix">The prefix to use for anonymized values.</param>
+    public void AddColumnIdentifier(string columnName, string prefix)
+    {
+        _columnIdentifiers[columnName] = prefix;
+
+        // Initialize the mapping dictionary for this column if it doesn't exist
+        if (!_anonymizationMaps.ContainsKey(columnName))
+        {
+            _anonymizationMaps[columnName] = [];
+        }
+    }
+
+    /// <summary>
+    /// Removes a column identifier from anonymization.
+    /// </summary>
+    /// <param name="columnName">The name of the column to remove.</param>
+    public void RemoveColumnIdentifier(string columnName)
+    {
+        _columnIdentifiers.Remove(columnName);
+    }
+
+    /// <summary>
+    /// Gets all configured column identifiers.
+    /// </summary>
+    /// <returns>Dictionary mapping column names to their prefix.</returns>
+    public Dictionary<string, string> GetColumnIdentifiers()
+    {
+        return new Dictionary<string, string>(_columnIdentifiers);
+    }
 
     /// <summary>
     /// Anonymizes a cell value based on its column type.
@@ -37,104 +69,107 @@ public class AnonymizationService : IAnonymizationService
     /// <param name="value">The original cell value.</param>
     /// <param name="currentColumnIndex">The index of the current column.</param>
     /// <param name="anonymizeColumnIndices">Dictionary mapping column names to indices for anonymization.</param>
+    /// <param name="fileName">The name of the file being processed.</param>
     /// <returns>The anonymized cell value.</returns>
-    public XLCellValue AnonymizeValue(XLCellValue value, int currentColumnIndex, Dictionary<string, int> anonymizeColumnIndices)
+    public XLCellValue AnonymizeValue(XLCellValue value, int currentColumnIndex, Dictionary<string, int> anonymizeColumnIndices, string fileName)
     {
-        // VM Name
-        if (ShouldAnonymizeColumn(anonymizeColumnIndices, VmColumnName, currentColumnIndex))
+        // Find the column that matches the current index
+        foreach (var kvp in anonymizeColumnIndices)
         {
-            return GetOrCreateAnonymizedName(value, _vmNameMap, "vm");
+            if (kvp.Value == currentColumnIndex && _columnIdentifiers.TryGetValue(kvp.Key, out string? prefix))
+            {
+                return GetOrCreateAnonymizedName(value, kvp.Key, prefix, fileName);
+            }
         }
-        // DNS Name
-        else if (ShouldAnonymizeColumn(anonymizeColumnIndices, DnsNameColumnName, currentColumnIndex))
-        {
-            return GetOrCreateAnonymizedName(value, _dnsNameMap, "dns");
-        }
-        // Cluster Name
-        else if (ShouldAnonymizeColumn(anonymizeColumnIndices, ClusterColumnName, currentColumnIndex))
-        {
-            return GetOrCreateAnonymizedName(value, _clusterNameMap, "cluster");
-        }
-        // Host Name
-        else if (ShouldAnonymizeColumn(anonymizeColumnIndices, HostColumnName, currentColumnIndex))
-        {
-            return GetOrCreateAnonymizedName(value, _hostNameMap, "host");
-        }
-        // Datacenter Name
-        else if (ShouldAnonymizeColumn(anonymizeColumnIndices, DatacenterColumnName, currentColumnIndex))
-        {
-            return GetOrCreateAnonymizedName(value, _datacenterNameMap, "datacenter");
-        }
-        // IP Address
-        else if (ShouldAnonymizeColumn(anonymizeColumnIndices, IpAddressColumnName, currentColumnIndex))
-        {
-            return GetOrCreateAnonymizedName(value, _ipAddressMap, "ip");
-        }
+
         // Return original value if no anonymization is needed
         return value;
-    }
+    }    /// <summary>
+         /// Gets the current anonymization statistics.
+         /// </summary>
+         /// <returns>Dictionary with counts of anonymized items by column and file.</returns>
+    public Dictionary<string, Dictionary<string, int>> GetAnonymizationStatistics()
+    {
+        var stats = new Dictionary<string, Dictionary<string, int>>();
 
-    /// <summary>
-    /// Gets the current anonymization statistics.
-    /// </summary>
-    /// <returns>Dictionary with counts of anonymized items by category.</returns>
-    public Dictionary<string, int> GetAnonymizationStatistics()
-    {
-        return new Dictionary<string, int>
+        // Map internal column names to display names expected by tests
+        var displayNameMapping = new Dictionary<string, string>
         {
-            { "VMs", _vmNameMap.Count },
-            { "DNS Names", _dnsNameMap.Count },
-            { "Clusters", _clusterNameMap.Count },
-            { "Hosts", _hostNameMap.Count },
-            { "Datacenters", _datacenterNameMap.Count },
-            { "IP Addresses", _ipAddressMap.Count }
+            { "VM", "VMs" },
+            { "Host", "Hosts" },
+            { "Cluster", "Clusters" },
+            { "Datacenter", "Datacenters" },
+            { "DNS Name", "DNS Names" },
+            { "Primary IP Address", "IP Addresses" }
         };
-    }
-    
-    /// <summary>
-    /// Gets all anonymization mappings from original values to anonymized values.
-    /// </summary>
-    /// <returns>Dictionary mapping category names to dictionaries of original-to-anonymized value mappings.</returns>
-    public Dictionary<string, Dictionary<string, string>> GetAnonymizationMappings()
-    {
-        return new Dictionary<string, Dictionary<string, string>>
-        {
-            { "VMs", new Dictionary<string, string>(_vmNameMap) },
-            { "DNS Names", new Dictionary<string, string>(_dnsNameMap) },
-            { "Clusters", new Dictionary<string, string>(_clusterNameMap) },
-            { "Hosts", new Dictionary<string, string>(_hostNameMap) },
-            { "Datacenters", new Dictionary<string, string>(_datacenterNameMap) },
-            { "IP Addresses", new Dictionary<string, string>(_ipAddressMap) }
-        };
-    }
 
-    /// <summary>
-    /// Determines if a column should be anonymized.
-    /// </summary>
-    /// <param name="anonymizeColumnIndices">Dictionary of column indices for anonymization.</param>
-    /// <param name="columnName">The name of the column to check.</param>
-    /// <param name="currentColumnIndex">The current column index being processed.</param>
-    /// <returns>True if the column should be anonymized; otherwise, false.</returns>
-    private static bool ShouldAnonymizeColumn(
-        Dictionary<string, int> anonymizeColumnIndices,
-        string columnName,
-        int currentColumnIndex)
+        // Initialize all categories with empty dictionaries
+        foreach (var displayName in displayNameMapping.Values)
+        {
+            stats[displayName] = new Dictionary<string, int>();
+        }
+
+        // Populate with actual data
+        foreach (var columnKvp in _anonymizationMaps)
+        {
+            var displayName = displayNameMapping.TryGetValue(columnKvp.Key, out string? mapped) ? mapped : columnKvp.Key;
+            var columnStats = new Dictionary<string, int>();
+            foreach (var fileMap in columnKvp.Value)
+            {
+                columnStats[fileMap.Key] = fileMap.Value.Count;
+            }
+            stats[displayName] = columnStats;
+        }
+
+        return stats;
+    }    /// <summary>
+         /// Gets all anonymization mappings from original values to anonymized values.
+         /// </summary>
+         /// <returns>Dictionary mapping column names to dictionaries of file names to mappings of original-to-anonymized values.</returns>
+    public Dictionary<string, Dictionary<string, Dictionary<string, string>>> GetAnonymizationMappings()
     {
-        return anonymizeColumnIndices.TryGetValue(columnName, out int colIndex) &&
-               currentColumnIndex == colIndex;
+        var result = new Dictionary<string, Dictionary<string, Dictionary<string, string>>>();
+
+        // Map internal column names to display names expected by tests
+        var displayNameMapping = new Dictionary<string, string>
+        {
+            { "VM", "VMs" },
+            { "Host", "Hosts" },
+            { "Cluster", "Clusters" },
+            { "Datacenter", "Datacenters" },
+            { "DNS Name", "DNS Names" },
+            { "Primary IP Address", "IP Addresses" }
+        };
+
+        // Initialize all categories with empty dictionaries
+        foreach (var displayName in displayNameMapping.Values)
+        {
+            result[displayName] = new Dictionary<string, Dictionary<string, string>>();
+        }
+
+        // Populate with actual data
+        foreach (var columnKvp in _anonymizationMaps)
+        {
+            var displayName = displayNameMapping.TryGetValue(columnKvp.Key, out string? mapped) ? mapped : columnKvp.Key;
+            result[displayName] = new Dictionary<string, Dictionary<string, string>>(columnKvp.Value);
+        }
+
+        return result;
     }
 
     /// <summary>
     /// Gets or creates an anonymized name for a given original value.
     /// </summary>
     /// <param name="originalValue">The original value to anonymize.</param>
-    /// <param name="nameMap">The mapping dictionary to use.</param>
+    /// <param name="columnName">The column name for this anonymization.</param>
     /// <param name="prefix">The prefix to use for anonymized names.</param>
+    /// <param name="fileName">The name of the file being processed.</param>
     /// <returns>The anonymized name.</returns>
-    private static XLCellValue GetOrCreateAnonymizedName(
+    private XLCellValue GetOrCreateAnonymizedName(
         XLCellValue originalValue,
-        Dictionary<string, string> nameMap,
-        string prefix)
+        string columnName,
+        string prefix,
+        string fileName)
     {
         var lookupValue = originalValue.ToString();
         if (string.IsNullOrWhiteSpace(lookupValue))
@@ -142,9 +177,27 @@ public class AnonymizationService : IAnonymizationService
             return originalValue; // Return original value if empty
         }
 
+        // Ensure column exists in mappings
+        if (!_anonymizationMaps.TryGetValue(columnName, out Dictionary<string, Dictionary<string, string>>? columnMap))
+        {
+            columnMap = [];
+            _anonymizationMaps[columnName] = columnMap;
+        }
+
+        // Ensure dictionary for this file exists
+        if (!columnMap.TryGetValue(fileName, out Dictionary<string, string>? nameMap))
+        {
+            nameMap = [];
+            columnMap[fileName] = nameMap;
+        }
+
         if (!nameMap.TryGetValue(lookupValue, out string? value))
         {
-            value = $"{prefix}{nameMap.Count + 1}";
+            // Use the file name as part of the seed to ensure different files
+            // generate different anonymized values for the same original value
+            int fileNameSeed = Math.Abs(fileName.GetHashCode());
+            int counter = nameMap.Count + 1;            // Create a unique value based on the file name seed and counter
+            value = $"{prefix}{fileNameSeed % 1000}_{counter}";
             nameMap[lookupValue] = value;
         }
         return value;

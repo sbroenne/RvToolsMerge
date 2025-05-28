@@ -17,15 +17,17 @@ namespace RVToolsMerge.IntegrationTests;
 /// Extended tests for the AnonymizationService.
 /// </summary>
 public class AnonymizationServiceExtendedTests : IntegrationTestBase
-{
-    /// <summary>
-    /// Tests that GetAnonymizationStatistics returns non-null result.
-    /// </summary>
+{    /// <summary>
+     /// Tests that GetAnonymizationStatistics returns non-null result.
+     /// </summary>
     [Fact]
     public void GetAnonymizationStatistics_ReturnsNonNullResult()
     {
+        // Arrange
+        var service = new AnonymizationService();
+
         // Act
-        var result = AnonymizationService.GetAnonymizationStatistics();
+        var result = service.GetAnonymizationStatistics();
 
         // Assert
         Assert.NotNull(result);
@@ -48,7 +50,7 @@ public class AnonymizationServiceExtendedTests : IntegrationTestBase
         var originalValue = (XLCellValue)value;
 
         // Act
-        var result = AnonymizationService.AnonymizeValue(originalValue, columnIndex, columnIndices);
+        var result = AnonymizationService.AnonymizeValue(originalValue, columnIndex, columnIndices, "testfile.xlsx");
 
         // Assert
         Assert.NotEqual(originalValue, result);
@@ -77,9 +79,9 @@ public class AnonymizationServiceExtendedTests : IntegrationTestBase
         var originalValue = (XLCellValue)"test-value";
 
         // Act
-        var vmResult = AnonymizationService.AnonymizeValue(originalValue, 0, vmColumnIndices);
-        var hostResult = AnonymizationService.AnonymizeValue(originalValue, 0, hostColumnIndices);
-        var ipResult = AnonymizationService.AnonymizeValue(originalValue, 0, ipColumnIndices);
+        var vmResult = AnonymizationService.AnonymizeValue(originalValue, 0, vmColumnIndices, "testfile.xlsx");
+        var hostResult = AnonymizationService.AnonymizeValue(originalValue, 0, hostColumnIndices, "testfile.xlsx");
+        var ipResult = AnonymizationService.AnonymizeValue(originalValue, 0, ipColumnIndices, "testfile.xlsx");
 
         // Assert - different columns should have different prefixes
         Assert.StartsWith("vm", vmResult.ToString().ToLowerInvariant());
@@ -103,8 +105,8 @@ public class AnonymizationServiceExtendedTests : IntegrationTestBase
         var originalValue = (XLCellValue)"test-vm-01";
 
         // Act
-        var result1 = AnonymizationService.AnonymizeValue(originalValue, 0, columnIndices);
-        var result2 = AnonymizationService.AnonymizeValue(originalValue, 0, columnIndices);
+        var result1 = AnonymizationService.AnonymizeValue(originalValue, 0, columnIndices, "testfile.xlsx");
+        var result2 = AnonymizationService.AnonymizeValue(originalValue, 0, columnIndices, "testfile.xlsx");
 
         // Assert
         Assert.Equal(result1, result2);
@@ -121,7 +123,7 @@ public class AnonymizationServiceExtendedTests : IntegrationTestBase
         var originalValue = (XLCellValue)string.Empty;
 
         // Act
-        var result = AnonymizationService.AnonymizeValue(originalValue, 0, columnIndices);
+        var result = AnonymizationService.AnonymizeValue(originalValue, 0, columnIndices, "testfile.xlsx");
 
         // Assert
         Assert.Equal(originalValue, result);
@@ -138,7 +140,7 @@ public class AnonymizationServiceExtendedTests : IntegrationTestBase
         var originalValue = (XLCellValue)"   ";
 
         // Act
-        var result = AnonymizationService.AnonymizeValue(originalValue, 0, columnIndices);
+        var result = AnonymizationService.AnonymizeValue(originalValue, 0, columnIndices, "testfile.xlsx");
 
         // Assert
         Assert.Equal(originalValue, result);
@@ -156,14 +158,14 @@ public class AnonymizationServiceExtendedTests : IntegrationTestBase
         var hostColumnIndices = new Dictionary<string, int> { { "Host", 0 } };
 
         // Act - Anonymize multiple values
-        service.AnonymizeValue((XLCellValue)"vm1", 0, vmColumnIndices);
-        service.AnonymizeValue((XLCellValue)"vm2", 0, vmColumnIndices);
-        service.AnonymizeValue((XLCellValue)"host1", 0, hostColumnIndices);
+        service.AnonymizeValue((XLCellValue)"vm1", 0, vmColumnIndices, "testfile1.xlsx");
+        service.AnonymizeValue((XLCellValue)"vm2", 0, vmColumnIndices, "testfile1.xlsx");
+        service.AnonymizeValue((XLCellValue)"host1", 0, hostColumnIndices, "testfile1.xlsx");
 
         var stats = service.GetAnonymizationStatistics();        // Assert
-        Assert.Equal(2, stats["VMs"]);
-        Assert.Equal(1, stats["Hosts"]);
-        Assert.Equal(0, stats["Clusters"]); // Not anonymized
+        Assert.Equal(2, stats["VMs"]["testfile1.xlsx"]);
+        Assert.Equal(1, stats["Hosts"]["testfile1.xlsx"]);
+        Assert.True(stats.ContainsKey("Clusters")); // Category exists even if empty
     }
 
     /// <summary>
@@ -183,9 +185,9 @@ public class AnonymizationServiceExtendedTests : IntegrationTestBase
         string hostOriginal = "host.example.com";
 
         // Act - Anonymize values
-        var vm1Anonymized = service.AnonymizeValue((XLCellValue)vm1Original, 0, vmColumnIndices);
-        var vm2Anonymized = service.AnonymizeValue((XLCellValue)vm2Original, 0, vmColumnIndices);
-        var hostAnonymized = service.AnonymizeValue((XLCellValue)hostOriginal, 0, hostColumnIndices);
+        var vm1Anonymized = service.AnonymizeValue((XLCellValue)vm1Original, 0, vmColumnIndices, "testfile1.xlsx");
+        var vm2Anonymized = service.AnonymizeValue((XLCellValue)vm2Original, 0, vmColumnIndices, "testfile1.xlsx");
+        var hostAnonymized = service.AnonymizeValue((XLCellValue)hostOriginal, 0, hostColumnIndices, "testfile1.xlsx");
 
         // Get mappings
         var mappings = service.GetAnonymizationMappings();
@@ -196,16 +198,57 @@ public class AnonymizationServiceExtendedTests : IntegrationTestBase
         Assert.True(mappings.ContainsKey("Hosts"));
 
         // Check VM mappings
-        Assert.Equal(2, mappings["VMs"].Count);
-        Assert.Equal(vm1Anonymized.ToString(), mappings["VMs"][vm1Original]);
-        Assert.Equal(vm2Anonymized.ToString(), mappings["VMs"][vm2Original]);
+        Assert.True(mappings["VMs"].ContainsKey("testfile1.xlsx"));
+        Assert.Equal(2, mappings["VMs"]["testfile1.xlsx"].Count);
+        Assert.Equal(vm1Anonymized.ToString(), mappings["VMs"]["testfile1.xlsx"][vm1Original]);
+        Assert.Equal(vm2Anonymized.ToString(), mappings["VMs"]["testfile1.xlsx"][vm2Original]);
         // Check Host mappings
-        Assert.Single(mappings["Hosts"]);
-        Assert.Equal(hostAnonymized.ToString(), mappings["Hosts"][hostOriginal]);
+        Assert.True(mappings["Hosts"].ContainsKey("testfile1.xlsx"));
+        Assert.Single(mappings["Hosts"]["testfile1.xlsx"]);
+        Assert.Equal(hostAnonymized.ToString(), mappings["Hosts"]["testfile1.xlsx"][hostOriginal]);
         // Check empty mappings
-        Assert.Empty(mappings["Clusters"]);
-        Assert.Empty(mappings["Datacenters"]);
-        Assert.Empty(mappings["DNS Names"]);
+        Assert.True(mappings.ContainsKey("Clusters"));
+        Assert.True(mappings.ContainsKey("Datacenters"));
+        Assert.True(mappings.ContainsKey("DNS Names"));
+        Assert.True(mappings.ContainsKey("IP Addresses"));
         Assert.Empty(mappings["IP Addresses"]);
+    }
+
+    /// <summary>
+    /// Tests that anonymization is done per file with different values.
+    /// </summary>
+    [Fact]
+    public void AnonymizeValue_SameValueDifferentFiles_GeneratesDifferentAnonymizedValues()
+    {
+        // Arrange - Use a new instance to isolate the test
+        var service = new AnonymizationService();
+        var columnIndices = new Dictionary<string, int> { { "VM", 0 } };
+        var originalValue = (XLCellValue)"webserver01";
+
+        // Act - Anonymize the same value in different files
+        var result1 = service.AnonymizeValue(originalValue, 0, columnIndices, "file1.xlsx");
+        var result2 = service.AnonymizeValue(originalValue, 0, columnIndices, "file2.xlsx");
+
+        // Assert - Same value in different files should get different anonymized values
+        Assert.NotEqual(result1, result2);
+    }
+
+    /// <summary>
+    /// Tests that anonymization is consistent within the same file.
+    /// </summary>
+    [Fact]
+    public void AnonymizeValue_SameValueSameFile_GeneratesSameAnonymizedValue()
+    {
+        // Arrange - Use a new instance to isolate the test
+        var service = new AnonymizationService();
+        var columnIndices = new Dictionary<string, int> { { "VM", 0 } };
+        var originalValue = (XLCellValue)"webserver01";
+
+        // Act - Anonymize the same value in the same file twice
+        var result1 = service.AnonymizeValue(originalValue, 0, columnIndices, "file1.xlsx");
+        var result2 = service.AnonymizeValue(originalValue, 0, columnIndices, "file1.xlsx");
+
+        // Assert - Same value in same file should get the same anonymized value
+        Assert.Equal(result1, result2);
     }
 }

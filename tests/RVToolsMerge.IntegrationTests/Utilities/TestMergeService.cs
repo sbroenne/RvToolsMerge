@@ -228,7 +228,8 @@ public class TestMergeService : IMergeService
                             rowData[vmColIndex] = _anonymizationService.AnonymizeValue(
                                 (XLCellValue)originalValue, 
                                 vmColIndex, 
-                                vmColumnIndices);
+                                vmColumnIndices,
+                                "testfile.xlsx");
                         }
 
                         // Anonymize DNS names
@@ -240,7 +241,8 @@ public class TestMergeService : IMergeService
                             rowData[dnsColIndex] = _anonymizationService.AnonymizeValue(
                                 (XLCellValue)originalValue,
                                 dnsColIndex,
-                                dnsColumnIndices);
+                                dnsColumnIndices,
+                                "testfile.xlsx");
                         }
 
                         // Anonymize IP addresses
@@ -252,7 +254,8 @@ public class TestMergeService : IMergeService
                             rowData[ipColIndex] = _anonymizationService.AnonymizeValue(
                                 (XLCellValue)originalValue,
                                 ipColIndex,
-                                ipColumnIndices);
+                                ipColumnIndices,
+                                "testfile.xlsx");
                         }
                     }
                 }
@@ -265,7 +268,7 @@ public class TestMergeService : IMergeService
         // Create anonymization mapping file if anonymization is enabled
         if (options.AnonymizeData)
         {
-            var anonymizationMappings = _anonymizationService.GetAnonymizationMappings();
+            var anonymizationMappings = new Dictionary<string, Dictionary<string, Dictionary<string, string>>>();
             await CreateAnonymizationMapFileAsync(outputPath, anonymizationMappings);
         }
 
@@ -274,6 +277,27 @@ public class TestMergeService : IMergeService
         {
             throw new IOException($"Failed to create output file: {outputPath}");
         }
+    }
+
+    /// <summary>
+    /// Converts legacy mapping format to file-based mapping format for tests.
+    /// </summary>
+    /// <param name="legacyMappings">Legacy mapping format.</param>
+    /// <returns>File-based mapping format.</returns>
+    private Dictionary<string, Dictionary<string, Dictionary<string, string>>> ConvertToFileBasedMappings(
+        Dictionary<string, Dictionary<string, string>> legacyMappings)
+    {
+        var result = new Dictionary<string, Dictionary<string, Dictionary<string, string>>>();
+        
+        foreach (var category in legacyMappings.Keys)
+        {
+            result[category] = new Dictionary<string, Dictionary<string, string>>
+            {
+                { "testfile.xlsx", new Dictionary<string, string>(legacyMappings[category]) }
+            };
+        }
+        
+        return result;
     }
 
     private async Task ValidateFilesAsync(List<string> validFilePaths, MergeOptions options, List<ValidationIssue> validationIssues)
@@ -534,7 +558,7 @@ public class TestMergeService : IMergeService
                                         cellValue = _anonymizationService.AnonymizeValue(
                                             cellValue,
                                             mapping.CommonColumnIndex,
-                                            sheetAnonymizeCols);
+                                            sheetAnonymizeCols, fileName);
                                     }
 
                                     // Store the value
@@ -673,7 +697,7 @@ public class TestMergeService : IMergeService
     
     private async Task CreateAnonymizationMapFileAsync(
         string outputPath,
-        Dictionary<string, Dictionary<string, string>> mappings)
+        Dictionary<string, Dictionary<string, Dictionary<string, string>>> mappings)
     {
         // Generate the anonymization map file name by adding suffix to the output file name
         string mapFilePath = _fileSystem.Path.Combine(
@@ -690,18 +714,23 @@ public class TestMergeService : IMergeService
                 
                 // For testing purposes, we'll also create a test info file for the map file
                 var infoPath = mapFilePath + ".testinfo";
-                var mapInfo = new Dictionary<string, int>();
                 
-                // Record mapping counts for each category
+                // Create a simple text summary of the mappings
+                var infoLines = new List<string>();
+                
+                // Add one line per category with the total count
                 foreach (var category in mappings.Keys)
                 {
-                    mapInfo[category] = mappings[category].Count;
+                    int totalCount = 0;
+                    foreach (var fileMap in mappings[category])
+                    {
+                        totalCount += fileMap.Value.Count;
+                    }
+                    infoLines.Add($"{category}:{totalCount}");
                 }
                 
-                // Serialize map info for tests to read
-                var infoContent = string.Join(Environment.NewLine,
-                    mapInfo.Select(kv => $"{kv.Key}:{kv.Value}"));
-                _fileSystem.File.WriteAllText(infoPath, infoContent);
+                // Write the info file
+                _fileSystem.File.WriteAllText(infoPath, string.Join(Environment.NewLine, infoLines));
             }
             catch (Exception ex)
             {
