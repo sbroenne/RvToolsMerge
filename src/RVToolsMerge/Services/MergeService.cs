@@ -408,41 +408,17 @@ public class MergeService : IMergeService
 
         if (options.AnonymizeData)
         {
+            // Get configured column identifiers from the service
+            var columnIdentifiers = _anonymizationService.GetColumnIdentifiers();
+
             foreach (var sheetName in commonColumns.Keys)
             {
                 var sheetAnonymizeCols = new Dictionary<string, int>();
 
-                // For vInfo sheet
-                if (sheetName == "vInfo")
+                // Check all configured column identifiers against this sheet's columns
+                foreach (var columnName in columnIdentifiers.Keys)
                 {
-                    AddColumnToAnonymize(commonColumns, sheetName, "VM", sheetAnonymizeCols);
-                    AddColumnToAnonymize(commonColumns, sheetName, "DNS Name", sheetAnonymizeCols);
-                    AddColumnToAnonymize(commonColumns, sheetName, "Cluster", sheetAnonymizeCols);
-                    AddColumnToAnonymize(commonColumns, sheetName, "Host", sheetAnonymizeCols);
-                    AddColumnToAnonymize(commonColumns, sheetName, "Datacenter", sheetAnonymizeCols);
-                    AddColumnToAnonymize(commonColumns, sheetName, "Primary IP Address", sheetAnonymizeCols);
-                    // Anonymize network columns
-                    for (int i = 1; i <= 8; i++)
-                    {
-                        AddColumnToAnonymize(commonColumns, sheetName, $"Network #{i}", sheetAnonymizeCols);
-                    }
-                }
-                // For vHost sheet
-                else if (sheetName == "vHost")
-                {
-                    AddColumnToAnonymize(commonColumns, sheetName, "Host", sheetAnonymizeCols);
-                    AddColumnToAnonymize(commonColumns, sheetName, "Cluster", sheetAnonymizeCols);
-                    AddColumnToAnonymize(commonColumns, sheetName, "Datacenter", sheetAnonymizeCols);
-                }
-                // For vPartition sheet
-                else if (sheetName == "vPartition")
-                {
-                    AddColumnToAnonymize(commonColumns, sheetName, "VM", sheetAnonymizeCols);
-                }
-                // For vMemory sheet
-                else if (sheetName == "vMemory")
-                {
-                    AddColumnToAnonymize(commonColumns, sheetName, "VM", sheetAnonymizeCols);
+                    AddColumnToAnonymize(commonColumns, sheetName, columnName, sheetAnonymizeCols);
                 }
 
                 if (sheetAnonymizeCols.Count > 0)
@@ -800,15 +776,15 @@ public class MergeService : IMergeService
 
                 using (var workbook = new XLWorkbook())
                 {
-                    foreach (var category in mappings.Keys)
+                    foreach (var columnName in mappings.Keys)
                     {
-                        if (mappings[category].Count == 0)
+                        if (mappings[columnName].Count == 0)
                         {
                             mappingTask.Increment(1);
                             continue;
                         }
 
-                        var worksheet = workbook.Worksheets.Add(category);
+                        var worksheet = workbook.Worksheets.Add(columnName);
 
                         // Add headers
                         worksheet.Cell(1, 1).Value = "File";
@@ -821,7 +797,7 @@ public class MergeService : IMergeService
 
                         // Add data
                         int row = 2;
-                        foreach (var fileEntry in mappings[category])
+                        foreach (var fileEntry in mappings[columnName])
                         {
                             string fileName = fileEntry.Key;
                             var fileMap = fileEntry.Value;
@@ -1055,22 +1031,22 @@ public class MergeService : IMergeService
 
         var anonymizationStats = _anonymizationService.GetAnonymizationStatistics();
 
-        // Create a table to display anonymization totals by category
+        // Create a table to display anonymization totals by column
         var table = new Table();
-        table.AddColumn("Category");
+        table.AddColumn("Column");
         table.AddColumn("Total Items Anonymized");
 
-        // Calculate totals for each category
-        foreach (var category in anonymizationStats.Keys)
+        // Calculate totals for each column
+        foreach (var columnName in anonymizationStats.Keys)
         {
-            var fileStats = anonymizationStats[category];
-            int totalForCategory = fileStats.Values.Sum();
+            var fileStats = anonymizationStats[columnName];
+            int totalForColumn = fileStats.Values.Sum();
 
-            if (totalForCategory > 0)
+            if (totalForColumn > 0)
             {
                 table.AddRow(
-                    $"[cyan]{category}[/]",
-                    totalForCategory.ToString()
+                    $"[cyan]{columnName}[/]",
+                    totalForColumn.ToString()
                 );
             }
         }
