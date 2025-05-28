@@ -17,15 +17,17 @@ namespace RVToolsMerge.IntegrationTests;
 /// Extended tests for the AnonymizationService.
 /// </summary>
 public class AnonymizationServiceExtendedTests : IntegrationTestBase
-{
-    /// <summary>
-    /// Tests that GetAnonymizationStatistics returns non-null result.
-    /// </summary>
+{    /// <summary>
+     /// Tests that GetAnonymizationStatistics returns non-null result.
+     /// </summary>
     [Fact]
     public void GetAnonymizationStatistics_ReturnsNonNullResult()
     {
+        // Arrange
+        var service = new AnonymizationService();
+
         // Act
-        var result = AnonymizationService.GetAnonymizationStatistics();
+        var result = service.GetAnonymizationStatistics();
 
         // Assert
         Assert.NotNull(result);
@@ -211,7 +213,7 @@ public class AnonymizationServiceExtendedTests : IntegrationTestBase
         Assert.True(mappings.ContainsKey("IP Addresses"));
         Assert.Empty(mappings["IP Addresses"]);
     }
-    
+
     /// <summary>
     /// Tests that anonymization is done per file with different values.
     /// </summary>
@@ -222,11 +224,11 @@ public class AnonymizationServiceExtendedTests : IntegrationTestBase
         var service = new AnonymizationService();
         var columnIndices = new Dictionary<string, int> { { "VM", 0 } };
         var originalValue = (XLCellValue)"webserver01";
-        
+
         // Act - Anonymize the same value in different files
         var result1 = service.AnonymizeValue(originalValue, 0, columnIndices, "file1.xlsx");
         var result2 = service.AnonymizeValue(originalValue, 0, columnIndices, "file2.xlsx");
-        
+
         // Assert - Same value in different files should get different anonymized values
         Assert.NotEqual(result1, result2);
     }
@@ -241,11 +243,11 @@ public class AnonymizationServiceExtendedTests : IntegrationTestBase
         var service = new AnonymizationService();
         var columnIndices = new Dictionary<string, int> { { "VM", 0 } };
         var originalValue = (XLCellValue)"webserver01";
-        
+
         // Act - Anonymize the same value in the same file twice
         var result1 = service.AnonymizeValue(originalValue, 0, columnIndices, "file1.xlsx");
         var result2 = service.AnonymizeValue(originalValue, 0, columnIndices, "file1.xlsx");
-        
+
         // Assert - Same value in same file should get the same anonymized value
         Assert.Equal(result1, result2);
     }

@@ -84,40 +84,74 @@ public class AnonymizationService : IAnonymizationService
 
         // Return original value if no anonymization is needed
         return value;
-    }
-
-    /// <summary>
-    /// Gets the current anonymization statistics.
-    /// </summary>
-    /// <returns>Dictionary with counts of anonymized items by column and file.</returns>
+    }    /// <summary>
+         /// Gets the current anonymization statistics.
+         /// </summary>
+         /// <returns>Dictionary with counts of anonymized items by column and file.</returns>
     public Dictionary<string, Dictionary<string, int>> GetAnonymizationStatistics()
     {
         var stats = new Dictionary<string, Dictionary<string, int>>();
 
+        // Map internal column names to display names expected by tests
+        var displayNameMapping = new Dictionary<string, string>
+        {
+            { "VM", "VMs" },
+            { "Host", "Hosts" },
+            { "Cluster", "Clusters" },
+            { "Datacenter", "Datacenters" },
+            { "DNS Name", "DNS Names" },
+            { "Primary IP Address", "IP Addresses" }
+        };
+
+        // Initialize all categories with empty dictionaries
+        foreach (var displayName in displayNameMapping.Values)
+        {
+            stats[displayName] = new Dictionary<string, int>();
+        }
+
+        // Populate with actual data
         foreach (var columnKvp in _anonymizationMaps)
         {
+            var displayName = displayNameMapping.TryGetValue(columnKvp.Key, out string? mapped) ? mapped : columnKvp.Key;
             var columnStats = new Dictionary<string, int>();
             foreach (var fileMap in columnKvp.Value)
             {
                 columnStats[fileMap.Key] = fileMap.Value.Count;
             }
-            stats[columnKvp.Key] = columnStats;
+            stats[displayName] = columnStats;
         }
 
         return stats;
-    }
-
-    /// <summary>
-    /// Gets all anonymization mappings from original values to anonymized values.
-    /// </summary>
-    /// <returns>Dictionary mapping column names to dictionaries of file names to mappings of original-to-anonymized values.</returns>
+    }    /// <summary>
+         /// Gets all anonymization mappings from original values to anonymized values.
+         /// </summary>
+         /// <returns>Dictionary mapping column names to dictionaries of file names to mappings of original-to-anonymized values.</returns>
     public Dictionary<string, Dictionary<string, Dictionary<string, string>>> GetAnonymizationMappings()
     {
         var result = new Dictionary<string, Dictionary<string, Dictionary<string, string>>>();
 
+        // Map internal column names to display names expected by tests
+        var displayNameMapping = new Dictionary<string, string>
+        {
+            { "VM", "VMs" },
+            { "Host", "Hosts" },
+            { "Cluster", "Clusters" },
+            { "Datacenter", "Datacenters" },
+            { "DNS Name", "DNS Names" },
+            { "Primary IP Address", "IP Addresses" }
+        };
+
+        // Initialize all categories with empty dictionaries
+        foreach (var displayName in displayNameMapping.Values)
+        {
+            result[displayName] = new Dictionary<string, Dictionary<string, string>>();
+        }
+
+        // Populate with actual data
         foreach (var columnKvp in _anonymizationMaps)
         {
-            result[columnKvp.Key] = new Dictionary<string, Dictionary<string, string>>(columnKvp.Value);
+            var displayName = displayNameMapping.TryGetValue(columnKvp.Key, out string? mapped) ? mapped : columnKvp.Key;
+            result[displayName] = new Dictionary<string, Dictionary<string, string>>(columnKvp.Value);
         }
 
         return result;
@@ -162,9 +196,7 @@ public class AnonymizationService : IAnonymizationService
             // Use the file name as part of the seed to ensure different files
             // generate different anonymized values for the same original value
             int fileNameSeed = Math.Abs(fileName.GetHashCode());
-            int counter = nameMap.Count + 1;
-
-            // Create a unique value based on the file name seed and counter
+            int counter = nameMap.Count + 1;            // Create a unique value based on the file name seed and counter
             value = $"{prefix}{fileNameSeed % 1000}_{counter}";
             nameMap[lookupValue] = value;
         }
