@@ -67,67 +67,9 @@ These protection features make RVToolsMerge ideal for:
 
 ## Supported Sheets and Required Columns
 
-RVToolsMerge processes the following key sheets from RVTools exports:
+RVToolsMerge processes key sheets from RVTools exports with specific validation requirements for each sheet type.
 
-### Required and Optional Sheets
-
-| Sheet Name     | Status       | Description                                  |
-| -------------- | ------------ | -------------------------------------------- |
-| **vInfo**      | **Required** | Core VM information (CPU, memory, OS)        |
-| **vHost**      | Optional     | ESXi host configuration and performance data |
-| **vPartition** | Optional     | VM disk partition information                |
-| **vMemory**    | Optional     | VM memory configuration details              |
-
-The `vInfo` sheet must be present in all processed files. The other sheets are considered optional and can be handled according to your configuration.
-
-### Mandatory Columns by Sheet
-
-Each sheet has specific required columns that must be present for proper processing:
-
-#### vInfo Sheet (Required)
-
--   VM UUID
--   Template
--   SRM Placeholder
--   Powerstate
--   VM
--   CPUs
--   Memory
--   In Use MiB
--   OS according to the configuration file
--   Creation Date
--   NICs
--   Disks
--   Provisioned MiB
-
-#### vHost Sheet (Optional)
-
--   Host
--   Datacenter
--   Cluster
--   CPU Model
--   Speed
--   \# CPU
--   Cores per CPU
--   \# Cores
--   CPU usage %
--   \# Memory
--   Memory usage %
-
-#### vPartition Sheet (Optional)
-
--   VM UUID
--   VM
--   Disk
--   Capacity MiB
--   Consumed MiB
-
-#### vMemory Sheet (Optional)
-
--   VM UUID
--   VM
--   Size MiB
--   Reservation
+For detailed information about supported sheets and their required columns, see [Supported Sheets Documentation](docs/SupportedSheets.md).
 
 ## Column Name Mappings
 
@@ -360,7 +302,7 @@ If you encounter issues while using RVToolsMerge:
 | Files causing validation errors | Use `-i` to skip invalid files and continue processing others (disabled by default)       |
 | Row count mismatches            | By default, rows with empty mandatory values are included; use `-e` to exclude them       |
 | Need data protection            | Use `-a` for anonymization and `-M` for mandatory columns only (both disabled by default) |
-| Preparing for Azure migration   | Use `-z` to validate against Azure Migrate requirements (disabled by default)            |
+| Preparing for Azure migration   | Use `-z` to validate against Azure Migrate requirements (disabled by default)             |
 | Want to track data origin       | Use `-s` to include source file information (disabled by default)                         |
 | Low memory issues               | Process smaller batches of files                                                          |
 | Permission errors               | Ensure you have write access to the output folder                                         |
