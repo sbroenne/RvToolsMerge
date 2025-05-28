@@ -1,5 +1,5 @@
 //-----------------------------------------------------------------------
-// <copyright file="InvalidFileException.cs" company="Stefan Broenner">
+// <copyright file="CustomExceptions.cs" company="Stefan Broenner">
 //     Copyright © Stefan Broenner 2025
 //     Created by Stefan Broenner (github.com/sbroenne) and contributors
 //     Licensed under the MIT License
@@ -11,6 +11,7 @@ namespace RVToolsMerge.Exceptions;
 /// <summary>
 /// Exception thrown when a file is invalid.
 /// </summary>
+[Serializable]
 public class InvalidFileException : FileValidationException
 {
     /// <summary>
@@ -30,6 +31,7 @@ public class InvalidFileException : FileValidationException
 /// <summary>
 /// Exception thrown when no valid files are found after validation.
 /// </summary>
+[Serializable]
 public class NoValidFilesException : FileValidationException
 {
     /// <summary>
@@ -49,6 +51,7 @@ public class NoValidFilesException : FileValidationException
 /// <summary>
 /// Exception thrown when no valid sheets are found after validation.
 /// </summary>
+[Serializable]
 public class NoValidSheetsException : FileValidationException
 {
     /// <summary>
@@ -68,6 +71,7 @@ public class NoValidSheetsException : FileValidationException
 /// <summary>
 /// Exception thrown when a required sheet is missing.
 /// </summary>
+[Serializable]
 public class MissingRequiredSheetException : FileValidationException
 {
     /// <summary>

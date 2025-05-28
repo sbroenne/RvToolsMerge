@@ -11,6 +11,7 @@ namespace RVToolsMerge.Exceptions;
 /// <summary>
 /// Custom exception for file validation errors.
 /// </summary>
+[Serializable]
 public class FileValidationException : Exception
 {
     /// <summary>
