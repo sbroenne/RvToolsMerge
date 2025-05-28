@@ -13,34 +13,22 @@ jobs:
     permissions:
       # If you want to clone the repository as part of your setup steps, for example to install dependencies, you'll need the `contents: read` permission. If you don't clone the repository in your setup steps, Copilot will do this for you automatically after the steps complete.
       contents: read
+      # Required for GitHub Copilot coding agent to access GitHub code scanning results
+      security-events: read
+      # Required for accessing Actions workflow runs and artifacts
+      actions: read
 
-    # Configure firewall allowlist for .NET hosts and additional project requirements
+    # Configure firewall allowlist for .NET development and GitHub operations
     env:
       COPILOT_AGENT_FIREWALL_ALLOW_LIST_ADDITIONS: |
         api.nuget.org
         www.nuget.org
         nuget.org
         packages.nuget.org
-        dist.nuget.org
         dotnetcli.azureedge.net
         dotnetcli.blob.core.windows.net
         download.microsoft.com
         dotnetbuilds.azureedge.net
-        pkgs.dev.azure.com
-        marketplace.visualstudio.com
-        vscode.gallery.vsassets.io
-        dev.azure.com
-        vsrm.dev.azure.com
-        az792536.vo.msecnd.net
-        edge.microsoft.com
-        cdn.fwupd.org
-        crl3.digicert.com
-        crl4.digicert.com
-        ocsp.digicert.com
-        s.symcb.com
-        s.symcd.com
-        ts-crl.ws.symantec.com
-        ts-ocsp.ws.symantec.com
         www.microsoft.com
         aka.ms
         download.visualstudio.microsoft.com
@@ -70,3 +58,20 @@ jobs:
           mkdir -p TestResults/Coverage
           mkdir -p TestResults/CoverageReport
           mkdir -p TestResults/CoverageHistory
+
+      - name: Verify CodeQL configuration
+        run: |
+          echo "CodeQL configuration file exists:"
+          ls -la .github/codeql-config.yml
+          echo "Security scanning setup verified for Copilot agent access"
+
+      - name: Display repository security context
+        run: |
+          echo "Repository has the following security features configured:"
+          echo "- CodeQL analysis with security-extended and security-and-quality queries"
+          echo "- Dependency review on pull requests"
+          echo "- Code coverage reporting"
+          echo "Copilot agent permissions include:"
+          echo "- contents: read (for repository access)"
+          echo "- security-events: read (for code scanning results)"
+          echo "- actions: read (for workflow run access)"
