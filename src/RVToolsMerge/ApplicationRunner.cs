@@ -67,7 +67,7 @@ public class ApplicationRunner
 
         if (inputPath == null)
         {
-            _consoleUiService.DisplayError("Input path is required.");
+            _consoleUiService.DisplayError("Input path is required or contains invalid characters.");
             _consoleUiService.DisplayInfo("Use --help to see usage information.");
             return;
         }
@@ -117,17 +117,68 @@ public class ApplicationRunner
     }
 
     /// <summary>
+    /// Validates a path to ensure it doesn't contain directory traversal sequences.
+    /// </summary>
+    /// <param name="path">The path to validate.</param>
+    /// <returns>True if the path is safe, false otherwise.</returns>
+    private bool IsPathSafe(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return false;
+        }
+
+        // Check for directory traversal patterns
+        var normalizedPath = path.Replace('\\', '/');
+        if (normalizedPath.Contains("../") || normalizedPath.Contains("..\\") || 
+            normalizedPath.StartsWith("../") || normalizedPath.StartsWith("..\\") ||
+            normalizedPath.EndsWith("/..") || normalizedPath.EndsWith("\\..") ||
+            normalizedPath == "..")
+        {
+            return false;
+        }
+
+        // Get the full path and ensure it doesn't escape the current directory context
+        try
+        {
+            var fullPath = _fileSystem.Path.GetFullPath(path);
+            var currentDir = _fileSystem.Directory.GetCurrentDirectory();
+            
+            // For input files, we allow any valid path as long as it's not traversal
+            // For output files, this validation should be called separately
+            return !string.IsNullOrEmpty(fullPath);
+        }
+        catch
+        {
+            // If we can't get the full path, it's not safe
+            return false;
+        }
+    }
+
+    /// <summary>
     /// Validates the input path and gets the list of Excel files to process.
-    /// </summary>    /// <param name="inputPath">The input path to validate.</param>
+    /// </summary>
+    /// <param name="inputPath">The input path to validate.</param>
     /// <param name="isInputFile">Output whether the input is a file.</param>
     /// <param name="isInputDirectory">Output whether the input is a directory.</param>
     /// <param name="excelFiles">Output array of Excel files to process.</param>
     /// <returns>True if the input path is valid, false otherwise.</returns>
     private bool ValidateInputPath(string inputPath, out bool isInputFile, out bool isInputDirectory, out string[] excelFiles)
     {
+        isInputFile = false;
+        isInputDirectory = false;
+        excelFiles = Array.Empty<string>();
+
+        // First, validate the path for security issues
+        if (!IsPathSafe(inputPath))
+        {
+            _consoleUiService.MarkupLineInterpolated($"[red]Error:[/] Invalid path specified. Path traversal sequences are not allowed.");
+            _consoleUiService.DisplayInfo("Use --help to see usage information.");
+            return false;
+        }
+
         isInputFile = _fileSystem.File.Exists(inputPath);
         isInputDirectory = _fileSystem.Directory.Exists(inputPath);
-        excelFiles = Array.Empty<string>();
 
         if (!isInputFile && !isInputDirectory)
         {

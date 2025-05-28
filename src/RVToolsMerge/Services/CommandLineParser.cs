@@ -29,6 +29,41 @@ public class CommandLineParser : ICommandLineParser
     }
 
     /// <summary>
+    /// Validates a path to ensure it doesn't contain directory traversal sequences.
+    /// </summary>
+    /// <param name="path">The path to validate.</param>
+    /// <returns>True if the path is safe, false otherwise.</returns>
+    private bool IsPathSafe(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return false;
+        }
+
+        // Check for directory traversal patterns
+        var normalizedPath = path.Replace('\\', '/');
+        if (normalizedPath.Contains("../") || normalizedPath.Contains("..\\") || 
+            normalizedPath.StartsWith("../") || normalizedPath.StartsWith("..\\") ||
+            normalizedPath.EndsWith("/..") || normalizedPath.EndsWith("\\..") ||
+            normalizedPath == "..")
+        {
+            return false;
+        }
+
+        // Get the full path and ensure it's valid
+        try
+        {
+            var fullPath = _fileSystem.Path.GetFullPath(path);
+            return !string.IsNullOrEmpty(fullPath);
+        }
+        catch
+        {
+            // If we can't get the full path, it's not safe
+            return false;
+        }
+    }
+
+    /// <summary>
     /// Parses command line arguments into options and input/output paths.
     /// </summary>
     /// <param name="args">Command line arguments.</param>
@@ -77,16 +112,31 @@ public class CommandLineParser : ICommandLineParser
                     processedArgs.Add(args[i]);
                     break;
             }
-        }        // Get input path (required)
+        }
+
+        // Get input path (required)
         if (processedArgs.Count > 0)
         {
-            inputPath = processedArgs[0];
+            var candidateInputPath = processedArgs[0];
+            if (!IsPathSafe(candidateInputPath))
+            {
+                inputPath = null; // Signal invalid input
+                outputPath = null;
+                return false;
+            }
+            inputPath = candidateInputPath;
         }
 
         // Get output file path
         if (processedArgs.Count > 1)
         {
-            outputPath = processedArgs[1];
+            var candidateOutputPath = processedArgs[1];
+            if (!IsPathSafe(candidateOutputPath))
+            {
+                outputPath = null; // Signal invalid output
+                return false;
+            }
+            outputPath = candidateOutputPath;
         }
         else
         {

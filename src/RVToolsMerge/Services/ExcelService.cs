@@ -125,7 +125,8 @@ public class ExcelService : IExcelService
     {
         if (!_fileSystem.File.Exists(filePath))
         {
-            throw new FileNotFoundException($"Excel file not found: {filePath}");
+            var fileName = _fileSystem.Path.GetFileName(filePath);
+            throw new FileNotFoundException($"Excel file not found: {fileName}");
         }
 
         try
@@ -135,7 +136,8 @@ public class ExcelService : IExcelService
         }
         catch (Exception ex)
         {
-            throw new InvalidOperationException($"Error opening Excel file {filePath}: {ex.Message}", ex);
+            var fileName = _fileSystem.Path.GetFileName(filePath);
+            throw new InvalidOperationException($"Error opening Excel file '{fileName}': {ex.Message}", ex);
         }
     }
 }
