@@ -8,10 +8,10 @@ updates:
       day: "monday"
       time: "07:00"
       timezone: "Etc/UTC"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 5
     labels:
       - "dependencies"
-      - "ci-cd"
+      - "github-actions"
     commit-message:
       prefix: "ci"
     groups:
@@ -19,9 +19,9 @@ updates:
         patterns:
           - "*"
 
-  # NuGet dependencies for main project
+  # NuGet dependencies for entire solution
   - package-ecosystem: "nuget"
-    directory: "/src/RVToolsMerge/"
+    directory: "/"
     schedule:
       interval: "weekly"
       day: "monday"
@@ -33,18 +33,10 @@ updates:
       - "nuget"
     commit-message:
       prefix: "deps"
-
-  # NuGet dependencies for solution-level packages
-  - package-ecosystem: "nuget"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "07:00"
-      timezone: "Etc/UTC"
-    open-pull-requests-limit: 10
-    labels:
-      - "dependencies"
-      - "security"
-    commit-message:
-      prefix: "deps"
+    groups:
+      minor-and-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
