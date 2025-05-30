@@ -409,4 +409,56 @@ public class TestDataGenerator
             vMemorySheet.Cell(i + 1, 4).Value = i % 2 == 0 ? 2048 : 0; // Some VMs have reservations
         }
     }
+
+    /// <summary>
+    /// Creates a file with different column structure for testing merge compatibility.
+    /// </summary>
+    /// <param name="fileName">Name of the file to create.</param>
+    /// <param name="numVMs">Number of VM entries to generate.</param>
+    /// <returns>The full path to the created file.</returns>
+    public string CreateFileWithDifferentColumns(string fileName, int numVMs = 3)
+    {
+        var fullPath = _fileSystem.Path.Combine(_testDataDirectory, fileName);
+
+        using var workbook = new XLWorkbook();
+        
+        // Create vInfo sheet with different column structure
+        var vInfoSheet = workbook.AddWorksheet("vInfo");
+        
+        // Use a different set of columns - some mandatory, some different optional ones
+        vInfoSheet.Cell(1, 1).Value = "VM";                    // Mandatory
+        vInfoSheet.Cell(1, 2).Value = "VM UUID";               // Mandatory
+        vInfoSheet.Cell(1, 3).Value = "Powerstate";            // Mandatory
+        vInfoSheet.Cell(1, 4).Value = "Template";              // Mandatory
+        vInfoSheet.Cell(1, 5).Value = "CPUs";                  // Mandatory
+        vInfoSheet.Cell(1, 6).Value = "Memory";                // Mandatory
+        vInfoSheet.Cell(1, 7).Value = "In Use MiB";           // Mandatory
+        vInfoSheet.Cell(1, 8).Value = "OS according to the configuration file"; // Mandatory
+        vInfoSheet.Cell(1, 9).Value = "Different Column 1";    // Different optional column
+        vInfoSheet.Cell(1, 10).Value = "Different Column 2";   // Different optional column
+        vInfoSheet.Cell(1, 11).Value = "Unique Column";        // Unique to this file
+
+        // Add data rows
+        for (int i = 1; i <= numVMs; i++)
+        {
+            vInfoSheet.Cell(i + 1, 1).Value = $"DifferentVM{i:D2}";
+            vInfoSheet.Cell(i + 1, 2).Value = $"99008ee5-71f9-48d7-8e02-7e371f5a8b{i:D2}"; // Different VM UUID
+            vInfoSheet.Cell(i + 1, 3).Value = "poweredOn";
+            vInfoSheet.Cell(i + 1, 4).Value = "FALSE";
+            vInfoSheet.Cell(i + 1, 5).Value = 4;
+            vInfoSheet.Cell(i + 1, 6).Value = 8192;
+            vInfoSheet.Cell(i + 1, 7).Value = 4096;
+            vInfoSheet.Cell(i + 1, 8).Value = "Ubuntu 20.04";
+            vInfoSheet.Cell(i + 1, 9).Value = $"Value {i}";
+            vInfoSheet.Cell(i + 1, 10).Value = $"Another Value {i}";
+            vInfoSheet.Cell(i + 1, 11).Value = $"Unique {i}";
+        }
+
+        // Save using memory stream and file system
+        var stream = new MemoryStream();
+        workbook.SaveAs(stream);
+        _fileSystem.File.WriteAllBytes(fullPath, stream.ToArray());
+
+        return fullPath;
+    }
 }
