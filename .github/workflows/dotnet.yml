@@ -1,12 +1,10 @@
 name: .NET CI - Builds only windows-latest
 
 on:
-  # Trigger on push events only for non-main branches and when PR isn't created yet
+  # Trigger on push events only for non-main branches
   push:
     branches-ignore:
       - "main"
-      # Skip push events for branches with active PRs to prevent duplicate runs
-      - "refs/pull/**"
     paths:
       - "**.cs"
       - "**.csproj"
