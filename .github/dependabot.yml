@@ -19,22 +19,6 @@ updates:
     commit-message:
       prefix: "ci"
       include: "scope"
-
-  # Maintain dependencies for NuGet packages
-  - package-ecosystem: "nuget"
-    directory: "/src/RVToolsMerge/"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "07:00"
-      timezone: Etc/UTC
-    open-pull-requests-limit: 10
-    labels:
-      - "dependencies"
-      - "nuget"
-    commit-message:
-      prefix: "deps"
-      include: "scope"
     # Group all GitHub Actions updates together for easier management
     groups:
       github-actions:
@@ -50,7 +34,27 @@ updates:
     # Enable security alerts for GitHub Actions
     vulnerability-alerts: true
 
-  # Maintain dependencies for NuGet
+  # Maintain dependencies for NuGet packages in src/RVToolsMerge
+  - package-ecosystem: "nuget"
+    directory: "/src/RVToolsMerge/"
+    # Check for updates once a week on Monday mornings
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "07:00"
+      timezone: Etc/UTC
+    # Limit the number of open PRs to avoid overwhelming code reviewers
+    open-pull-requests-limit: 10
+    # Apply appropriate labels to NuGet dependency PRs
+    labels:
+      - "dependencies"
+      - "nuget"
+    # Use conventional commit format for better changelog generation
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+
+  # Maintain dependencies for NuGet in root
   - package-ecosystem: "nuget"
     directory: "/"
     # Check for updates once a week on Monday mornings
