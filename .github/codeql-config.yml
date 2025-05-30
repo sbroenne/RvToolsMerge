@@ -36,9 +36,12 @@ paths-ignore:
   # Generated code
   - '**/obj/**'
   - '**/bin/**'
-  # Test code (we still scan test utilities that might be used in production)
+  # Test code (exclude all test projects and test folders)
+  - 'tests/**'
+  - '**/tests/**'
   - '**/*.Test/**'
   - '**/*.Tests/**'
+  - '**/TestResults/**'
   - '**/testdata/**'
   # Third-party libraries
   - '**/lib/**'
