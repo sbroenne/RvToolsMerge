@@ -14,15 +14,10 @@ updates:
       - "ci-cd"
     commit-message:
       prefix: "ci"
-      prefix-development: "ci(dev)"
     groups:
       actions:
         patterns:
           - "*"
-        update-types:
-          - "major"
-          - "minor"
-          - "patch"
 
   # NuGet dependencies for main project
   - package-ecosystem: "nuget"
@@ -38,7 +33,6 @@ updates:
       - "nuget"
     commit-message:
       prefix: "deps"
-      prefix-development: "deps(dev)"
 
   # NuGet dependencies for solution-level packages
   - package-ecosystem: "nuget"
@@ -54,4 +48,3 @@ updates:
       - "security"
     commit-message:
       prefix: "deps"
-      prefix-development: "deps(dev)"
