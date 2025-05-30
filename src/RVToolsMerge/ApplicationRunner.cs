@@ -142,7 +142,6 @@ public class ApplicationRunner
         try
         {
             var fullPath = _fileSystem.Path.GetFullPath(path);
-            var currentDir = _fileSystem.Directory.GetCurrentDirectory();
             
             // For input files, we allow any valid path as long as it's not traversal
             // For output files, this validation should be called separately
