@@ -38,6 +38,16 @@ public class ValidationService : IValidationService
     /// <returns>True if the file is valid; otherwise, false.</returns>
     public bool ValidateFile(string filePath, bool ignoreMissingOptionalSheets, List<ValidationIssue> issues)
     {
+        if (string.IsNullOrWhiteSpace(filePath))
+        {
+            issues.Add(new ValidationIssue(
+                "Unknown",
+                true,
+                "File path cannot be null or empty."
+            ));
+            return false;
+        }
+
         string fileName = Path.GetFileName(filePath);
         bool fileIsValid = true;
 
@@ -54,14 +64,41 @@ public class ValidationService : IValidationService
                 ValidateOptionalSheets(workbook, fileName, ignoreMissingOptionalSheets, issues, ref fileIsValid);
             }
         }
-        catch (Exception ex)
+        catch (FileNotFoundException)
         {
-            // Any exception during validation means the file is invalid
             fileIsValid = false;
             issues.Add(new ValidationIssue(
                 fileName,
                 true,
-                $"Error validating file: {ex.Message}"
+                "File not found. Please verify the file path and ensure the file exists."
+            ));
+        }
+        catch (UnauthorizedAccessException)
+        {
+            fileIsValid = false;
+            issues.Add(new ValidationIssue(
+                fileName,
+                true,
+                "Access denied. Please check file permissions or ensure the file is not open in another application."
+            ));
+        }
+        catch (InvalidOperationException ex) when (ex.Message.Contains("not a valid Excel file") || ex.Message.Contains("corrupted"))
+        {
+            fileIsValid = false;
+            issues.Add(new ValidationIssue(
+                fileName,
+                true,
+                "File is not a valid Excel file or may be corrupted. Please verify the file format."
+            ));
+        }
+        catch (Exception ex)
+        {
+            // Any other exception during validation means the file is invalid
+            fileIsValid = false;
+            issues.Add(new ValidationIssue(
+                fileName,
+                true,
+                $"Unexpected error validating file: {ex.Message}"
             ));
         }
 

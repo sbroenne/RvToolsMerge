@@ -73,6 +73,13 @@ public class AnonymizationService : IAnonymizationService
     /// <returns>The anonymized cell value.</returns>
     public XLCellValue AnonymizeValue(XLCellValue value, int currentColumnIndex, Dictionary<string, int> anonymizeColumnIndices, string fileName)
     {
+        // Quick check for empty values to avoid unnecessary processing
+        var stringValue = value.ToString();
+        if (string.IsNullOrWhiteSpace(stringValue))
+        {
+            return value;
+        }
+
         // Find the column that matches the current index
         foreach (var kvp in anonymizeColumnIndices)
         {
@@ -84,7 +91,7 @@ public class AnonymizationService : IAnonymizationService
 
         // Return original value if no anonymization is needed
         return value;
-    }    /// <summary>
+    }/// <summary>
          /// Gets the current anonymization statistics.
          /// </summary>
          /// <returns>Dictionary with counts of anonymized items by column and file.</returns>
@@ -193,11 +200,12 @@ public class AnonymizationService : IAnonymizationService
 
         if (!nameMap.TryGetValue(lookupValue, out string? value))
         {
-            // Use the file name as part of the seed to ensure different files
-            // generate different anonymized values for the same original value
-            int fileNameSeed = Math.Abs(fileName.GetHashCode());
-            int counter = nameMap.Count + 1;            // Create a unique value based on the file name seed and counter
-            value = $"{prefix}{fileNameSeed % 1000}_{counter}";
+            // Use a more efficient hash-based approach for generating consistent values
+            var combinedHash = HashCode.Combine(fileName, lookupValue, columnName);
+            var fileIdentifier = Math.Abs(combinedHash) % 1000;
+            var counter = nameMap.Count + 1;
+            
+            value = $"{prefix}{fileIdentifier}_{counter}";
             nameMap[lookupValue] = value;
         }
         return value;

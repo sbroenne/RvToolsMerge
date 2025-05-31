@@ -24,6 +24,16 @@ public interface IExcelService
     bool SheetExists(XLWorkbook workbook, string sheetName);
 
     /// <summary>
+    /// Gets both column names and column mapping from a worksheet in a single pass for better performance.
+    /// </summary>
+    /// <param name="worksheet">The worksheet to extract column information from.</param>
+    /// <param name="commonColumns">The list of common column names to map to.</param>
+    /// <returns>A tuple containing the column names and column mappings.</returns>
+    (List<string> ColumnNames, List<ColumnMapping> ColumnMappings) GetColumnInformationOptimized(
+        IXLWorksheet worksheet, 
+        List<string> commonColumns);
+
+    /// <summary>
     /// Gets the column names from a worksheet.
     /// </summary>
     /// <param name="worksheet">The worksheet to extract column names from.</param>

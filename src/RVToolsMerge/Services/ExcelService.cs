@@ -40,33 +40,63 @@ public class ExcelService : IExcelService
         workbook.Worksheets.Any(sheet => sheet.Name.Equals(sheetName, StringComparison.OrdinalIgnoreCase));
 
     /// <summary>
-    /// Gets the column names from a worksheet, normalizing them using the per-sheet ColumnHeaderMapping.
+    /// Gets both column names and column mapping from a worksheet in a single pass for better performance.
     /// </summary>
-    /// <param name="worksheet">The worksheet to extract column names from.</param>
-    /// <returns>A list of normalized column names.</returns>
-    public List<string> GetColumnNames(IXLWorksheet worksheet)
+    /// <param name="worksheet">The worksheet to extract column information from.</param>
+    /// <param name="commonColumns">The list of common column names to map to.</param>
+    /// <returns>A tuple containing the column names and column mappings.</returns>
+    public (List<string> ColumnNames, List<ColumnMapping> ColumnMappings) GetColumnInformationOptimized(
+        IXLWorksheet worksheet, 
+        List<string> commonColumns)
     {
         var columnNames = new List<string>();
+        var mappings = new List<ColumnMapping>();
+        
         var headerRow = worksheet.Row(1);
         var lastColumnUsed = worksheet.LastColumnUsed();
         int lastColumn = lastColumnUsed?.ColumnNumber() ?? 1;
 
         // Use only the mapping for the current sheet, if available
         var sheetName = worksheet.Name;
-        SheetConfiguration.SheetColumnHeaderMappings.TryGetValue(sheetName, out var mapping);
+        SheetConfiguration.SheetColumnHeaderMappings.TryGetValue(sheetName, out var headerMapping);
 
         for (int col = 1; col <= lastColumn; col++)
         {
             var cell = headerRow.Cell(col);
             var cellValue = cell.Value.ToString();
+            
             if (!string.IsNullOrWhiteSpace(cellValue))
             {
-                // Use the mapping if available for this sheet, otherwise keep the original name
-                var normalizedName = mapping?.GetValueOrDefault(cellValue, cellValue) ?? cellValue;
+                // Get the normalized column name
+                var normalizedName = headerMapping?.GetValueOrDefault(cellValue, cellValue) ?? cellValue;
                 columnNames.Add(normalizedName);
+
+                // Create mapping if this column exists in common columns
+                int commonIndex = commonColumns.IndexOf(normalizedName);
+                if (commonIndex < 0 && headerMapping is not null)
+                {
+                    // If mapped name not found, try the original name from the sheet
+                    commonIndex = commonColumns.IndexOf(cellValue);
+                }
+                
+                if (commonIndex >= 0)
+                {
+                    mappings.Add(new ColumnMapping(col, commonIndex));
+                }
             }
         }
 
+        return (columnNames, mappings);
+    }
+
+    /// <summary>
+    /// Gets the column names from a worksheet, normalizing them using the per-sheet ColumnHeaderMapping.
+    /// </summary>
+    /// <param name="worksheet">The worksheet to extract column names from.</param>
+    /// <returns>A list of normalized column names.</returns>
+    public List<string> GetColumnNames(IXLWorksheet worksheet)
+    {
+        var (columnNames, _) = GetColumnInformationOptimized(worksheet, []);
         return columnNames;
     }
 
@@ -78,41 +108,8 @@ public class ExcelService : IExcelService
     /// <returns>A list of column mappings.</returns>
     public List<ColumnMapping> GetColumnMapping(IXLWorksheet worksheet, List<string> commonColumns)
     {
-        var mapping = new List<ColumnMapping>();
-        // Get the first row
-        var headerRow = worksheet.Row(1);
-        // Find the last column with data
-        var lastColumnUsed = worksheet.LastColumnUsed();
-        int lastColumn = lastColumnUsed?.ColumnNumber() ?? 1;
-
-        // Get column header mapping for this sheet, if available
-        var sheetName = worksheet.Name;
-        SheetConfiguration.SheetColumnHeaderMappings.TryGetValue(sheetName, out var headerMapping);
-
-        // Create a mapping between the file's column indices and the common column indices
-        for (int fileColIndex = 1; fileColIndex <= lastColumn; fileColIndex++)
-        {
-            var cell = headerRow.Cell(fileColIndex);
-            var cellValue = cell.Value;
-            if (!string.IsNullOrWhiteSpace(cellValue.ToString()))
-            {
-                string originalName = cellValue.ToString() ?? string.Empty;
-                string mappedName = headerMapping?.GetValueOrDefault(originalName, originalName) ?? originalName;
-
-                int commonIndex = commonColumns.IndexOf(mappedName);
-                if (commonIndex < 0 && headerMapping is not null)
-                {
-                    // If mapped name not found, try the original name from the sheet
-                    commonIndex = commonColumns.IndexOf(originalName);
-                }
-                if (commonIndex >= 0)
-                {
-                    mapping.Add(new ColumnMapping(fileColIndex, commonIndex));
-                }
-            }
-        }
-
-        return mapping;
+        var (_, mappings) = GetColumnInformationOptimized(worksheet, commonColumns);
+        return mappings;
     }
 
     /// <summary>
@@ -121,8 +118,15 @@ public class ExcelService : IExcelService
     /// <param name="filePath">The path to the Excel file to open.</param>
     /// <returns>The opened workbook.</returns>
     /// <exception cref="FileNotFoundException">Thrown when the file is not found.</exception>
+    /// <exception cref="UnauthorizedAccessException">Thrown when access to the file is denied.</exception>
+    /// <exception cref="InvalidOperationException">Thrown when the file is not a valid Excel file or is corrupted.</exception>
     public XLWorkbook OpenWorkbook(string filePath)
     {
+        if (string.IsNullOrWhiteSpace(filePath))
+        {
+            throw new ArgumentException("File path cannot be null or empty.", nameof(filePath));
+        }
+
         if (!_fileSystem.File.Exists(filePath))
         {
             var fileName = _fileSystem.Path.GetFileName(filePath);
@@ -134,10 +138,25 @@ public class ExcelService : IExcelService
             using var stream = _fileSystem.File.OpenRead(filePath);
             return new XLWorkbook(stream);
         }
+        catch (UnauthorizedAccessException ex)
+        {
+            var fileName = _fileSystem.Path.GetFileName(filePath);
+            throw new UnauthorizedAccessException($"Access denied to Excel file '{fileName}'. Please check file permissions.", ex);
+        }
+        catch (IOException ex)
+        {
+            var fileName = _fileSystem.Path.GetFileName(filePath);
+            throw new InvalidOperationException($"Error reading Excel file '{fileName}'. The file may be in use by another application or corrupted: {ex.Message}", ex);
+        }
+        catch (Exception ex) when (ex.Message.Contains("not a valid Excel file") || ex.Message.Contains("corrupted"))
+        {
+            var fileName = _fileSystem.Path.GetFileName(filePath);
+            throw new InvalidOperationException($"Excel file '{fileName}' is not a valid Excel file or may be corrupted.", ex);
+        }
         catch (Exception ex)
         {
             var fileName = _fileSystem.Path.GetFileName(filePath);
-            throw new InvalidOperationException($"Error opening Excel file '{fileName}': {ex.Message}", ex);
+            throw new InvalidOperationException($"Unexpected error opening Excel file '{fileName}': {ex.Message}", ex);
         }
     }
 }
