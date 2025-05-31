@@ -719,7 +719,23 @@ public class MergeService : IMergeService
 
                     // Save the output file
                     _consoleUiService.DisplayInfo("[cyan]Saving file to disk...[/]");
-                    await Task.Run(() => workbook.SaveAs(outputPath));
+                    await Task.Run(() => 
+                    {
+                        using var stream = new MemoryStream();
+                        workbook.SaveAs(stream);
+                        stream.Position = 0;
+                        
+                        // Ensure directory exists
+                        var directory = _fileSystem.Path.GetDirectoryName(outputPath);
+                        if (!string.IsNullOrEmpty(directory) && !_fileSystem.Directory.Exists(directory))
+                        {
+                            _fileSystem.Directory.CreateDirectory(directory);
+                        }
+                        
+                        // Write to file
+                        using var fileStream = _fileSystem.File.Create(outputPath);
+                        stream.CopyTo(fileStream);
+                    });
                     outputTask.Increment(1);
                 }
             });
@@ -795,7 +811,23 @@ public class MergeService : IMergeService
 
                     // Save the mapping file
                     _consoleUiService.DisplayInfo($"[cyan]Saving anonymization mapping file to: {mapFilePath}[/]");
-                    await Task.Run(() => workbook.SaveAs(mapFilePath));
+                    await Task.Run(() => 
+                    {
+                        using var stream = new MemoryStream();
+                        workbook.SaveAs(stream);
+                        stream.Position = 0;
+                        
+                        // Ensure directory exists
+                        var directory = _fileSystem.Path.GetDirectoryName(mapFilePath);
+                        if (!string.IsNullOrEmpty(directory) && !_fileSystem.Directory.Exists(directory))
+                        {
+                            _fileSystem.Directory.CreateDirectory(directory);
+                        }
+                        
+                        // Write to file
+                        using var fileStream = _fileSystem.File.Create(mapFilePath);
+                        stream.CopyTo(fileStream);
+                    });
                     mappingTask.Increment(1);
                 }
             });
@@ -878,7 +910,23 @@ public class MergeService : IMergeService
 
                     // Save the file
                     _consoleUiService.DisplayInfo($"[cyan]Saving failed validation file to: {failedValidationFilePath}[/]");
-                    await Task.Run(() => workbook.SaveAs(failedValidationFilePath));
+                    await Task.Run(() => 
+                    {
+                        using var stream = new MemoryStream();
+                        workbook.SaveAs(stream);
+                        stream.Position = 0;
+                        
+                        // Ensure directory exists
+                        var directory = _fileSystem.Path.GetDirectoryName(failedValidationFilePath);
+                        if (!string.IsNullOrEmpty(directory) && !_fileSystem.Directory.Exists(directory))
+                        {
+                            _fileSystem.Directory.CreateDirectory(directory);
+                        }
+                        
+                        // Write to file
+                        using var fileStream = _fileSystem.File.Create(failedValidationFilePath);
+                        stream.CopyTo(fileStream);
+                    });
                     outputTask.Increment(1);
                 }
             });
