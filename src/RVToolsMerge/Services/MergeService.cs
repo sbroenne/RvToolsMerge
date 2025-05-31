@@ -246,7 +246,7 @@ public class MergeService : IMergeService
                     {
                         try
                         {
-                            using var workbook = new XLWorkbook(filePath);
+                            using var workbook = _excelService.OpenWorkbook(filePath);
                             var fileSheets = new HashSet<string>();
 
                             foreach (var worksheet in workbook.Worksheets)
@@ -256,16 +256,44 @@ public class MergeService : IMergeService
 
                             sheetsInFiles[filePath] = fileSheets;
                         }
-                        catch (IOException ioEx)
+                        catch (FileNotFoundException)
                         {
-                            // On Linux, provide more verbose error information for filesystem issues
-                            _consoleUiService.MarkupLineInterpolated($"[yellow]Warning:[/] IO issue with file '{_fileSystem.Path.GetFileName(filePath)}': {ioEx.Message}");
+                            // File was deleted between validation and processing
+                            _consoleUiService.MarkupLineInterpolated($"[yellow]Warning:[/] File '{_fileSystem.Path.GetFileName(filePath)}' was not found during sheet analysis.");
+                        }
+                        catch (UnauthorizedAccessException)
+                        {
+                            // Access denied
+                            _consoleUiService.MarkupLineInterpolated($"[yellow]Warning:[/] Access denied to file '{_fileSystem.Path.GetFileName(filePath)}' during sheet analysis.");
+                        }
+                        catch (InvalidOperationException ex)
+                        {
+                            // Corrupted or invalid file
+                            _consoleUiService.MarkupLineInterpolated($"[yellow]Warning:[/] Error reading file '{_fileSystem.Path.GetFileName(filePath)}': {ex.Message}");
+                        }
+                        catch (Exception ex)
+                        {
+                            // Unexpected error - log and continue
+                            _consoleUiService.MarkupLineInterpolated($"[yellow]Warning:[/] Unexpected error with file '{_fileSystem.Path.GetFileName(filePath)}': {ex.Message}");
                         }
                         analysisTask.Increment(1);
                     }
                 });
         });
 
+        return ProcessSheetAnalysisResults(sheetsInFiles, options);
+    }
+
+    /// <summary>
+    /// Processes the results of sheet analysis to determine which sheets to include.
+    /// </summary>
+    /// <param name="sheetsInFiles">Dictionary mapping file paths to sets of sheet names.</param>
+    /// <param name="options">Merge options.</param>
+    /// <returns>A list of sheet names to include in the merge.</returns>
+    private List<string> ProcessSheetAnalysisResults(
+        Dictionary<string, HashSet<string>> sheetsInFiles, 
+        MergeOptions options)
+    {
         // Check if vInfo is present in all files - it's required
         var allFilesHaveRequiredSheets = sheetsInFiles.Values.All(sheets => sheets.Contains("vInfo"));
         if (!allFilesHaveRequiredSheets)
@@ -331,7 +359,7 @@ public class MergeService : IMergeService
                         {
                             try
                             {
-                                using var workbook = new XLWorkbook(filePath);
+                                using var workbook = _excelService.OpenWorkbook(filePath);
                                 if (_excelService.SheetExists(workbook, sheetName))
                                 {
                                     var worksheet = workbook.Worksheet(sheetName);
@@ -339,46 +367,32 @@ public class MergeService : IMergeService
                                     allFileColumns.Add(new HashSet<string>(columnNames));
                                 }
                             }
-                            catch (IOException ioEx)
+                            catch (FileNotFoundException)
                             {
-                                // On Linux, provide more verbose error information for filesystem issues
-                                _consoleUiService.MarkupLineInterpolated($"[yellow]Warning:[/] IO issue with file '{_fileSystem.Path.GetFileName(filePath)}': {ioEx.Message}");
+                                // File was deleted between validation and processing - log and continue
+                                _consoleUiService.MarkupLineInterpolated($"[yellow]Warning:[/] File '{_fileSystem.Path.GetFileName(filePath)}' was not found during column analysis.");
+                            }
+                            catch (UnauthorizedAccessException)
+                            {
+                                // Access denied - log and continue
+                                _consoleUiService.MarkupLineInterpolated($"[yellow]Warning:[/] Access denied to file '{_fileSystem.Path.GetFileName(filePath)}' during column analysis.");
+                            }
+                            catch (InvalidOperationException ex)
+                            {
+                                // Corrupted or invalid file - log and continue
+                                _consoleUiService.MarkupLineInterpolated($"[yellow]Warning:[/] Error reading file '{_fileSystem.Path.GetFileName(filePath)}': {ex.Message}");
+                            }
+                            catch (Exception ex)
+                            {
+                                // Unexpected error - log and continue
+                                _consoleUiService.MarkupLineInterpolated($"[yellow]Warning:[/] Unexpected error with file '{_fileSystem.Path.GetFileName(filePath)}': {ex.Message}");
                             }
                             fileAnalysisTask.Increment(1);
                         }
                     });
 
-                // If only mandatory columns are requested, filter the common columns
-                if (options.OnlyMandatoryColumns && SheetConfiguration.MandatoryColumns.TryGetValue(sheetName, out var mandatoryColumns))
-                {
-                    var columnsInAllFiles = allFileColumns.Count > 0
-                        ? allFileColumns.Aggregate((current, next) => new HashSet<string>(current.Intersect(next)))
-                            .Where(col => mandatoryColumns.Contains(col))
-                            .ToList()
-                        : [];
-
-                    // Make sure at least mandatory columns are included
-                    var mandatoryColumnsInAllFiles = new List<string>();
-                    foreach (var column in mandatoryColumns)
-                    {
-                        if (allFileColumns.All(fileColumns => fileColumns.Contains(column)))
-                        {
-                            mandatoryColumnsInAllFiles.Add(column);
-                        }
-                    }
-
-                    // Use only the mandatory columns that are present in all files
-                    commonColumns[sheetName] = mandatoryColumnsInAllFiles;
-                }
-                else
-                {
-                    // Find columns that are present in all files
-                    var columnsInAllFiles = allFileColumns.Count > 0
-                        ? allFileColumns.Aggregate((current, next) => new HashSet<string>(current.Intersect(next))).ToList()
-                        : [];
-
-                    commonColumns[sheetName] = columnsInAllFiles;
-                }
+                // Process the collected column information
+                ProcessSheetColumnInformation(sheetName, allFileColumns, options, commonColumns);
             }
         });
 
@@ -392,6 +406,52 @@ public class MergeService : IMergeService
         }
 
         return commonColumns;
+    }
+
+    /// <summary>
+    /// Processes column information for a specific sheet to determine common columns.
+    /// </summary>
+    /// <param name="sheetName">The name of the sheet being processed.</param>
+    /// <param name="allFileColumns">Collection of column sets from all files.</param>
+    /// <param name="options">Merge options.</param>
+    /// <param name="commonColumns">Dictionary to store the result.</param>
+    private static void ProcessSheetColumnInformation(
+        string sheetName,
+        List<HashSet<string>> allFileColumns,
+        MergeOptions options,
+        Dictionary<string, List<string>> commonColumns)
+    {
+        // If only mandatory columns are requested, filter the common columns
+        if (options.OnlyMandatoryColumns && SheetConfiguration.MandatoryColumns.TryGetValue(sheetName, out var mandatoryColumns))
+        {
+            var columnsInAllFiles = allFileColumns.Count > 0
+                ? allFileColumns.Aggregate((current, next) => new HashSet<string>(current.Intersect(next)))
+                    .Where(col => mandatoryColumns.Contains(col))
+                    .ToList()
+                : [];
+
+            // Make sure at least mandatory columns are included
+            var mandatoryColumnsInAllFiles = new List<string>();
+            foreach (var column in mandatoryColumns)
+            {
+                if (allFileColumns.All(fileColumns => fileColumns.Contains(column)))
+                {
+                    mandatoryColumnsInAllFiles.Add(column);
+                }
+            }
+
+            // Use only the mandatory columns that are present in all files
+            commonColumns[sheetName] = mandatoryColumnsInAllFiles;
+        }
+        else
+        {
+            // Find columns that are present in all files
+            var columnsInAllFiles = allFileColumns.Count > 0
+                ? allFileColumns.Aggregate((current, next) => new HashSet<string>(current.Intersect(next))).ToList()
+                : [];
+
+            commonColumns[sheetName] = columnsInAllFiles;
+        }
     }
 
     /// <summary>
@@ -530,152 +590,69 @@ public class MergeService : IMergeService
                             osConfigIndex = commonColumns[sheetName].IndexOf("OS according to the configuration file");
                         }
 
+                        // Prepare for mandatory column validation
+                        var mandatoryCols = SheetConfiguration.MandatoryColumns.TryGetValue(sheetName, out var mcols)
+                            ? mcols.Where(c => c != "OS according to the configuration file").ToList()
+                            : [];
+                        var mandatoryColIndices = mandatoryCols
+                            .Select(col => commonColumns[sheetName].IndexOf(col))
+                            .Where(idx => idx >= 0)
+                            .ToList();
+
                         foreach (var filePath in validFilePaths)
                         {
                             var fileName = _fileSystem.Path.GetFileName(filePath);
-                            using var workbook = new XLWorkbook(filePath);
-
-                            if (!_excelService.SheetExists(workbook, sheetName))
+                            
+                            try
                             {
-                                sheetTask.Increment(1);
-                                continue;
+                                using var workbook = _excelService.OpenWorkbook(filePath);
+
+                                if (!_excelService.SheetExists(workbook, sheetName))
+                                {
+                                    sheetTask.Increment(1);
+                                    continue;
+                                }
+
+                                var worksheet = workbook.Worksheet(sheetName);
+                                var (_, columnMapping) = _excelService.GetColumnInformationOptimized(worksheet, commonColumns[sheetName]);
+
+                                // Process the worksheet data
+                                ProcessWorksheetData(
+                                    worksheet, 
+                                    columnMapping, 
+                                    fileName, 
+                                    sheetName, 
+                                    options, 
+                                    commonColumns, 
+                                    anonymizeColumnIndices, 
+                                    mandatoryCols, 
+                                    mandatoryColIndices, 
+                                    mergedData, 
+                                    validationIssues, 
+                                    azureMigrateValidationResults, 
+                                    seenVmUuids, 
+                                    vmUuidIndex, 
+                                    osConfigIndex);
                             }
-
-                            var worksheet = workbook.Worksheet(sheetName);
-                            var columnMapping = _excelService.GetColumnMapping(worksheet, commonColumns[sheetName]);
-
-                            // Find the last row with data, handle null in case the worksheet is empty
-                            var lastRowUsed = worksheet.LastRowUsed();
-                            int lastRow = lastRowUsed is not null ? lastRowUsed.RowNumber() : 1;
-
-                            // Find source file column index if the option is enabled
-                            int sourceFileColumnIndex = -1;
-                            if (options.IncludeSourceFileName)
+                            catch (FileNotFoundException)
                             {
-                                sourceFileColumnIndex = commonColumns[sheetName].IndexOf("Source File");
+                                // File was deleted between validation and processing
+                                _consoleUiService.MarkupLineInterpolated($"[yellow]Warning:[/] File '{fileName}' was not found during data extraction.");
                             }
-
-                            // Prepare for mandatory column validation
-                            var mandatoryCols = SheetConfiguration.MandatoryColumns.TryGetValue(sheetName, out var mcols)
-                                ? mcols.Where(c => c != "OS according to the configuration file").ToList()
-                                : [];
-                            var mandatoryColIndices = mandatoryCols
-                                .Select(col => commonColumns[sheetName].IndexOf(col))
-                                .Where(idx => idx >= 0)
-                                .ToList();
-
-                            // Extract data rows
-                            for (int row = 2; row <= lastRow; row++)
+                            catch (UnauthorizedAccessException)
                             {
-                                var rowData = new XLCellValue[commonColumns[sheetName].Count];
-
-                                // Only fill data for columns that exist in this file
-                                foreach (var mapping in columnMapping)
-                                {
-                                    var cell = worksheet.Cell(row, mapping.FileColumnIndex);
-                                    var cellValue = cell.Value;
-
-                                    // Apply anonymization if needed
-                                    if (options.AnonymizeData && anonymizeColumnIndices.TryGetValue(sheetName, out var sheetAnonymizeCols))
-                                    {
-                                        cellValue = _anonymizationService.AnonymizeValue(
-                                            cellValue,
-                                            mapping.CommonColumnIndex,
-                                            sheetAnonymizeCols,
-                                            fileName);
-                                    }
-
-                                    // Store the value
-                                    rowData[mapping.CommonColumnIndex] = cellValue;
-                                }
-
-                                // Validate mandatory columns (except "OS according to the configuration file")
-                                bool hasEmptyMandatory = _validationService.HasEmptyMandatoryValues(rowData, mandatoryColIndices);
-                                if (hasEmptyMandatory)
-                                {
-                                    validationIssues.Add(new ValidationIssue(
-                                        fileName,
-                                        false,
-                                        $"Row {row} in sheet '{sheetName}' has empty value(s) in mandatory column(s) (excluding 'OS according to the configuration file')."
-                                    ));
-
-                                    if (options.SkipRowsWithEmptyMandatoryValues)
-                                    {
-                                        continue; // Skip this row
-                                    }
-                                }
-
-                                // Add source file name if the option is enabled
-                                if (options.IncludeSourceFileName && sourceFileColumnIndex >= 0)
-                                {
-                                    rowData[sourceFileColumnIndex] = _fileSystem.Path.GetFileName(filePath);
-                                }
-
-                                // Perform Azure Migrate validation if enabled
-                                bool skipRowDueToAzureMigrateValidation = false;
-                                if (options.EnableAzureMigrateValidation && sheetName == "vInfo" && azureMigrateValidationResults != null)
-                                {
-                                    var validationResult = azureMigrateValidationResults["vInfo"];
-
-                                    // Check if we've reached the VM count limit
-                                    if (validationResult.VmCountLimitReached)
-                                    {
-                                        skipRowDueToAzureMigrateValidation = true;
-                                        validationResult.RowsSkippedAfterLimitReached++;
-                                    }
-                                    else
-                                    {
-                                        // Validate the row for Azure Migrate
-                                        var failureReason = _validationService.ValidateRowForAzureMigrate(
-                                            rowData,
-                                            vmUuidIndex,
-                                            osConfigIndex,
-                                            seenVmUuids!,
-                                            validationResult.TotalVmsProcessed);
-
-                                        if (failureReason != null)
-                                        {
-                                            // Add to failed rows and skip
-                                            validationResult.FailedRows.Add(new AzureMigrateValidationFailure(rowData, failureReason.Value));
-
-                                            // Update counts based on failure reason
-                                            switch (failureReason.Value)
-                                            {
-                                                case AzureMigrateValidationFailureReason.MissingVmUuid:
-                                                    validationResult.MissingVmUuidCount++;
-                                                    break;
-                                                case AzureMigrateValidationFailureReason.MissingOsConfiguration:
-                                                    validationResult.MissingOsConfigurationCount++;
-                                                    break;
-                                                case AzureMigrateValidationFailureReason.DuplicateVmUuid:
-                                                    validationResult.DuplicateVmUuidCount++;
-                                                    break;
-                                                case AzureMigrateValidationFailureReason.VmCountExceeded:
-                                                    validationResult.VmCountExceededCount++;
-                                                    validationResult.VmCountLimitReached = true;
-
-                                                    // Warn user that VM count limit has been reached
-                                                    validationIssues.Add(new ValidationIssue(
-                                                        fileName,
-                                                        false,
-                                                        "VM count limit of 20,000 has been reached for Azure Migrate. Additional VMs will not be included."
-                                                    ));
-                                                    break;
-                                            }
-                                            skipRowDueToAzureMigrateValidation = true;
-                                        }
-                                        else
-                                        {
-                                            // Row passed validation, increment VM count
-                                            validationResult.TotalVmsProcessed++;
-                                        }
-                                    }
-                                }
-
-                                if (!skipRowDueToAzureMigrateValidation)
-                                {
-                                    mergedData[sheetName].Add(rowData);
-                                }
+                                // Access denied
+                                _consoleUiService.MarkupLineInterpolated($"[yellow]Warning:[/] Access denied to file '{fileName}' during data extraction.");
+                            }
+                            catch (InvalidOperationException ex)
+                            {
+                                // Corrupted or invalid file
+                                _consoleUiService.MarkupLineInterpolated($"[yellow]Warning:[/] Error reading file '{fileName}': {ex.Message}");
+                            }
+                            catch (Exception ex)
+                            {
+                                // Unexpected error - log and continue
+                                _consoleUiService.MarkupLineInterpolated($"[yellow]Warning:[/] Unexpected error with file '{fileName}': {ex.Message}");
                             }
 
                             sheetTask.Increment(1);
@@ -1019,6 +996,194 @@ public class MergeService : IMergeService
         }
 
         _consoleUiService.WriteLine();
+    }
+
+    /// <summary>
+    /// Processes data from a single worksheet.
+    /// </summary>
+    /// <param name="worksheet">The worksheet to process.</param>
+    /// <param name="columnMapping">Column mapping for the worksheet.</param>
+    /// <param name="fileName">Name of the source file.</param>
+    /// <param name="sheetName">Name of the sheet.</param>
+    /// <param name="options">Merge options.</param>
+    /// <param name="commonColumns">Common columns dictionary.</param>
+    /// <param name="anonymizeColumnIndices">Anonymization column indices.</param>
+    /// <param name="mandatoryCols">List of mandatory columns.</param>
+    /// <param name="mandatoryColIndices">Indices of mandatory columns.</param>
+    /// <param name="mergedData">Dictionary to store merged data.</param>
+    /// <param name="validationIssues">List to store validation issues.</param>
+    /// <param name="azureMigrateValidationResults">Azure Migrate validation results.</param>
+    /// <param name="seenVmUuids">Set of seen VM UUIDs.</param>
+    /// <param name="vmUuidIndex">Index of VM UUID column.</param>
+    /// <param name="osConfigIndex">Index of OS Configuration column.</param>
+    private void ProcessWorksheetData(
+        IXLWorksheet worksheet,
+        List<ColumnMapping> columnMapping,
+        string fileName,
+        string sheetName,
+        MergeOptions options,
+        Dictionary<string, List<string>> commonColumns,
+        Dictionary<string, Dictionary<string, int>> anonymizeColumnIndices,
+        List<string> mandatoryCols,
+        List<int> mandatoryColIndices,
+        Dictionary<string, List<XLCellValue[]>> mergedData,
+        List<ValidationIssue> validationIssues,
+        Dictionary<string, AzureMigrateValidationResult>? azureMigrateValidationResults,
+        HashSet<string>? seenVmUuids,
+        int vmUuidIndex,
+        int osConfigIndex)
+    {
+        // Find the last row with data, handle null in case the worksheet is empty
+        var lastRowUsed = worksheet.LastRowUsed();
+        int lastRow = lastRowUsed is not null ? lastRowUsed.RowNumber() : 1;
+
+        // Find source file column index if the option is enabled
+        int sourceFileColumnIndex = -1;
+        if (options.IncludeSourceFileName)
+        {
+            sourceFileColumnIndex = commonColumns[sheetName].IndexOf("Source File");
+        }
+
+        // Extract data rows
+        for (int row = 2; row <= lastRow; row++)
+        {
+            var rowData = new XLCellValue[commonColumns[sheetName].Count];
+
+            // Only fill data for columns that exist in this file
+            foreach (var mapping in columnMapping)
+            {
+                var cell = worksheet.Cell(row, mapping.FileColumnIndex);
+                var cellValue = cell.Value;
+
+                // Apply anonymization if needed
+                if (options.AnonymizeData && anonymizeColumnIndices.TryGetValue(sheetName, out var sheetAnonymizeCols))
+                {
+                    cellValue = _anonymizationService.AnonymizeValue(
+                        cellValue,
+                        mapping.CommonColumnIndex,
+                        sheetAnonymizeCols,
+                        fileName);
+                }
+
+                // Store the value
+                rowData[mapping.CommonColumnIndex] = cellValue;
+            }
+
+            // Validate mandatory columns (except "OS according to the configuration file")
+            bool hasEmptyMandatory = _validationService.HasEmptyMandatoryValues(rowData, mandatoryColIndices);
+            if (hasEmptyMandatory)
+            {
+                validationIssues.Add(new ValidationIssue(
+                    fileName,
+                    false,
+                    $"Row {row} in sheet '{sheetName}' has empty value(s) in mandatory column(s) (excluding 'OS according to the configuration file')."
+                ));
+
+                if (options.SkipRowsWithEmptyMandatoryValues)
+                {
+                    continue; // Skip this row
+                }
+            }
+
+            // Add source file name if the option is enabled
+            if (options.IncludeSourceFileName && sourceFileColumnIndex >= 0)
+            {
+                rowData[sourceFileColumnIndex] = fileName;
+            }
+
+            // Perform Azure Migrate validation if enabled
+            bool skipRowDueToAzureMigrateValidation = false;
+            if (options.EnableAzureMigrateValidation && sheetName == "vInfo" && azureMigrateValidationResults != null)
+            {
+                skipRowDueToAzureMigrateValidation = ProcessAzureMigrateValidation(
+                    rowData, 
+                    azureMigrateValidationResults, 
+                    seenVmUuids!, 
+                    vmUuidIndex, 
+                    osConfigIndex, 
+                    fileName, 
+                    validationIssues);
+            }
+
+            if (!skipRowDueToAzureMigrateValidation)
+            {
+                mergedData[sheetName].Add(rowData);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Processes Azure Migrate validation for a row of data.
+    /// </summary>
+    /// <param name="rowData">The row data to validate.</param>
+    /// <param name="azureMigrateValidationResults">Azure Migrate validation results.</param>
+    /// <param name="seenVmUuids">Set of seen VM UUIDs.</param>
+    /// <param name="vmUuidIndex">Index of VM UUID column.</param>
+    /// <param name="osConfigIndex">Index of OS Configuration column.</param>
+    /// <param name="fileName">Name of the source file.</param>
+    /// <param name="validationIssues">List to store validation issues.</param>
+    /// <returns>True if the row should be skipped due to validation failure.</returns>
+    private bool ProcessAzureMigrateValidation(
+        XLCellValue[] rowData,
+        Dictionary<string, AzureMigrateValidationResult> azureMigrateValidationResults,
+        HashSet<string> seenVmUuids,
+        int vmUuidIndex,
+        int osConfigIndex,
+        string fileName,
+        List<ValidationIssue> validationIssues)
+    {
+        var validationResult = azureMigrateValidationResults["vInfo"];
+
+        // Check if we've reached the VM count limit
+        if (validationResult.VmCountLimitReached)
+        {
+            validationResult.RowsSkippedAfterLimitReached++;
+            return true;
+        }
+
+        // Validate the row for Azure Migrate
+        var failureReason = _validationService.ValidateRowForAzureMigrate(
+            rowData,
+            vmUuidIndex,
+            osConfigIndex,
+            seenVmUuids,
+            validationResult.TotalVmsProcessed);
+
+        if (failureReason != null)
+        {
+            // Add to failed rows and skip
+            validationResult.FailedRows.Add(new AzureMigrateValidationFailure(rowData, failureReason.Value));
+
+            // Update counts based on failure reason
+            switch (failureReason.Value)
+            {
+                case AzureMigrateValidationFailureReason.MissingVmUuid:
+                    validationResult.MissingVmUuidCount++;
+                    break;
+                case AzureMigrateValidationFailureReason.MissingOsConfiguration:
+                    validationResult.MissingOsConfigurationCount++;
+                    break;
+                case AzureMigrateValidationFailureReason.DuplicateVmUuid:
+                    validationResult.DuplicateVmUuidCount++;
+                    break;
+                case AzureMigrateValidationFailureReason.VmCountExceeded:
+                    validationResult.VmCountExceededCount++;
+                    validationResult.VmCountLimitReached = true;
+
+                    // Warn user that VM count limit has been reached
+                    validationIssues.Add(new ValidationIssue(
+                        fileName,
+                        false,
+                        "VM count limit of 20,000 has been reached for Azure Migrate. Additional VMs will not be included."
+                    ));
+                    break;
+            }
+            return true;
+        }
+
+        // Row passed validation, increment VM count
+        validationResult.TotalVmsProcessed++;
+        return false;
     }
 
     /// <summary>
