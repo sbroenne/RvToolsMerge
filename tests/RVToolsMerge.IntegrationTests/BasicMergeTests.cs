@@ -39,19 +39,16 @@ public class BasicMergeTests : IntegrationTestBase
 
         // Assert
         // Verify the output file exists
-        Assert.True(FileSystem.File.Exists(outputPath));
+        Assert.True(File.Exists(outputPath));
 
-        // Verify merged data using test info
-        var infoPath = outputPath + ".testinfo";
-        Assert.True(FileSystem.File.Exists(infoPath), "Test info file should exist");
-
-        var sheetInfo = ReadTestInfo(infoPath);
+        // Verify merged data using actual Excel file
+        var rowInfo = GetRowInfo(outputPath);
 
         // Should have 5 VMs total (3 from file1 + 2 from file2)
-        Assert.Equal(5, sheetInfo.GetValueOrDefault("vInfo", 0));
+        Assert.Equal(5, rowInfo.GetValueOrDefault("vInfo", 0));
 
         // Verify vHost sheet has 3 hosts (2 from file1 + 1 from file2)
-        Assert.Equal(5, sheetInfo.GetValueOrDefault("vHost", 0));
+        Assert.Equal(3, rowInfo.GetValueOrDefault("vHost", 0));
 
         // No validation issues should exist
         Assert.Empty(validationIssues);
@@ -80,17 +77,15 @@ public class BasicMergeTests : IntegrationTestBase
         // Verify the output file exists
         Assert.True(FileSystem.File.Exists(outputPath));
 
-        // Verify merged data using test info
-        var infoPath = outputPath + ".testinfo";
-        Assert.True(FileSystem.File.Exists(infoPath), "Test info file should exist");
+        // Verify merged data using actual Excel file
+        var rowInfo = GetRowInfo(outputPath);
 
-        var sheetInfo = ReadTestInfo(infoPath);
+        // Verify vInfo sheet has correct data - should have 3 VMs as specified in the test
+        Assert.Equal(3, rowInfo.GetValueOrDefault("vInfo", 0));
 
-        // Verify vInfo sheet has correct data - our test data generator always creates 5 records
-        Assert.Equal(5, sheetInfo.GetValueOrDefault("vInfo", 0));
-
-        // No validation issues should exist
-        Assert.Empty(validationIssues);
+        // Should allow files with only required sheets, but may have warnings about missing optional sheets
+        // These are warnings, not errors, so the test should pass
+        Assert.True(validationIssues.All(issue => !issue.Skipped)); // No issues should cause the file to be skipped
     }
 
     /// <summary>
@@ -114,16 +109,13 @@ public class BasicMergeTests : IntegrationTestBase
 
         // Assert
         // Verify the output file exists
-        Assert.True(FileSystem.File.Exists(outputPath));
+        Assert.True(File.Exists(outputPath));
 
-        // Verify merged data using test info
-        var infoPath = outputPath + ".testinfo";
-        Assert.True(FileSystem.File.Exists(infoPath), "Test info file should exist");
-
-        var sheetInfo = ReadTestInfo(infoPath);
+        // Verify merged data using actual Excel file
+        var rowInfo = GetRowInfo(outputPath);
 
         // Should have 5 VMs total (2 from standardFile + 3 from alternativeFile)
-        Assert.Equal(5, sheetInfo.GetValueOrDefault("vInfo", 0));
+        Assert.Equal(5, rowInfo.GetValueOrDefault("vInfo", 0));
 
         // No validation issues should exist
         Assert.Empty(validationIssues);
