@@ -53,9 +53,20 @@ Understanding this structure will help you navigate the codebase and contribute 
 ## Development Workflow
 
 1. Make your changes in your feature branch
-2. Run tests to ensure your changes don't break existing functionality
-3. Commit your changes (see Commit Guidelines below)
-4. Push to your fork and submit a pull request
+2. **Build Verification**: Run `dotnet build` and ensure the solution builds successfully with zero errors
+3. **Test Verification**: Run `dotnet test` and ensure all tests pass with zero failures
+4. Commit your changes (see Commit Guidelines below)
+5. Push to your fork and submit a pull request
+
+### Pre-Commit Checklist
+
+Before committing any changes, ensure you have completed all of these steps:
+
+-   [ ] Code builds successfully: `dotnet build`
+-   [ ] All tests pass: `dotnet test`
+-   [ ] Code follows the project's coding standards
+-   [ ] Documentation has been updated if needed
+-   [ ] Commit message follows the guidelines below
 
 ## Coding Standards
 
@@ -144,6 +155,13 @@ When working with console UI using Spectre.Console:
 -   Create integration tests for file processing capabilities
 -   Test with various RVTools export versions and formats
 -   Include edge cases like malformed files, missing data, and extremely large datasets
+-   **Integration Tests**: Use real data and actual file system operations rather than mocking:
+    -   Create temporary test files and directories for each test scenario
+    -   Use actual Excel files with realistic RVTools data structures
+    -   Perform real file I/O operations to validate end-to-end functionality
+    -   Clean up test files and directories after test completion
+-   **Unit Tests**: May use mocking for isolated testing of individual components
+-   All tests must pass before any commit (`dotnet test` must show zero failures)
 
 ## Pull Request Process
 

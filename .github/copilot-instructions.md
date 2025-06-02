@@ -15,6 +15,15 @@ RVToolsMerge is a tool for combining and processing multiple RVTools exports fro
 -   Use Copilot agent for repetitive, boilerplate, or test code generation.
 -   Reference and update this file and README.md if project standards change.
 
+## Pre-Commit Requirements
+
+Before each commit, the following mandatory steps must be completed:
+
+-   **Build Verification**: Run `dotnet build` on the entire solution and ensure it builds successfully with zero errors
+-   **Test Execution**: Run `dotnet test` and ensure all tests pass with zero failures (skipped tests are acceptable)
+-   **Code Compliance**: Verify that all new and modified code follows the coding standards defined in this document
+-   **Documentation Updates**: Update relevant documentation if the changes affect public APIs, configuration, or user workflows
+
 ## Coding Standards
 
 -   Follow consistent naming conventions:
@@ -74,6 +83,15 @@ RVToolsMerge is a tool for combining and processing multiple RVTools exports fro
 -   Create integration tests for file processing capabilities
 -   Test with various RVTools export versions and formats
 -   Include edge cases like malformed files, missing data, and extremely large datasets
+-   **Integration Tests**: Always use real data and actual file system operations rather than mocking:
+    -   Create temporary test files and directories for each test scenario
+    -   Use actual Excel files with realistic RVTools data structures
+    -   Perform real file I/O operations to validate end-to-end functionality
+    -   Clean up test files and directories after test completion
+    -   Ensure tests are reproducible and don't depend on external resources
+-   **Unit Tests**: May use mocking for isolated testing of individual components and methods
+-   All tests must be reliable, fast, and provide clear failure messages
+-   Test names should clearly describe what is being tested and expected outcomes
 
 ## User Experience
 
