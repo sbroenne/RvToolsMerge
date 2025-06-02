@@ -72,6 +72,12 @@ public class ApplicationRunner
             return;
         }
 
+        // Validate output path directory exists
+        if (!ValidateOutputPath(outputPath!))
+        {
+            return;
+        }
+
         // Validate input path
         if (!ValidateInputPath(inputPath, out bool isInputFile, out bool isInputDirectory, out string[] excelFiles))
         {
@@ -210,6 +216,42 @@ public class ApplicationRunner
         }
 
         return true;
+    }
+
+    /// <summary>
+    /// Validates the output path to ensure the directory exists.
+    /// </summary>
+    /// <param name="outputPath">The output path to validate.</param>
+    /// <returns>True if the output path is valid, false otherwise.</returns>
+    private bool ValidateOutputPath(string outputPath)
+    {
+        try
+        {
+            var directory = _fileSystem.Path.GetDirectoryName(outputPath);
+            
+            // If the output path is just a filename (no directory part), it's valid
+            if (string.IsNullOrEmpty(directory))
+            {
+                return true;
+            }
+
+            // If the directory doesn't exist, fail with a clear error message
+            if (!_fileSystem.Directory.Exists(directory))
+            {
+                _consoleUiService.MarkupLineInterpolated($"[red]Error:[/] Output directory '[yellow]{directory}[/]' does not exist.");
+                _consoleUiService.DisplayInfo("Please create the directory or specify a different output path.");
+                _consoleUiService.DisplayInfo("Use --help to see usage information.");
+                return false;
+            }
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _consoleUiService.MarkupLineInterpolated($"[red]Error:[/] Invalid output path '[yellow]{outputPath}[/]': {ex.Message}");
+            _consoleUiService.DisplayInfo("Use --help to see usage information.");
+            return false;
+        }
     }
 
     /// <summary>

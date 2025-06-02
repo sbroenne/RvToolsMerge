@@ -145,6 +145,18 @@ public class ValidationService : IValidationService
             }
         }
 
+        // Check if vInfo sheet has any data rows (beyond the header row)
+        var lastUsedRow = worksheet.LastRowUsed();
+        if (lastUsedRow == null || lastUsedRow.RowNumber() <= 1)
+        {
+            issues.Add(new ValidationIssue(
+                fileName,
+                false, // This is a critical error that cannot be skipped
+                "The 'vInfo' sheet contains no data rows. At least one VM entry is required for processing."
+            ));
+            return false;
+        }
+
         return true;
     }
 

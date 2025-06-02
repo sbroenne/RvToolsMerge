@@ -233,7 +233,7 @@ public class TestDataGenerator
         vInfoSheet.Cell(1, 9).Value = "SRM Placeholder";
         vInfoSheet.Cell(1, 10).Value = "DNS Name";
         vInfoSheet.Cell(1, 11).Value = "Primary IP Address";
-        vInfoSheet.Cell(1, 12).Value = "Creation Date";
+        vInfoSheet.Cell(1, 12).Value = "Creation date";
         vInfoSheet.Cell(1, 13).Value = "NICs";
         vInfoSheet.Cell(1, 14).Value = "Disks";
         vInfoSheet.Cell(1, 15).Value = "Provisioned MiB";
@@ -281,7 +281,7 @@ public class TestDataGenerator
         vInfoSheet.Cell(1, 10).Value = "Cluster";
         vInfoSheet.Cell(1, 11).Value = "Host";
         vInfoSheet.Cell(1, 12).Value = "SRM Placeholder";
-        vInfoSheet.Cell(1, 13).Value = "Creation Date";
+        vInfoSheet.Cell(1, 13).Value = "Creation date";
         vInfoSheet.Cell(1, 14).Value = "NICs";
         vInfoSheet.Cell(1, 15).Value = "Disks";
         vInfoSheet.Cell(1, 16).Value = "Provisioned MiB";
@@ -460,5 +460,42 @@ public class TestDataGenerator
         _fileSystem.File.WriteAllBytes(fullPath, stream.ToArray());
 
         return fullPath;
+    }
+
+    /// <summary>
+    /// Creates an RVTools file with vInfo sheet that has headers but no data rows.
+    /// </summary>
+    /// <param name="fileName">Name of the file to create.</param>
+    /// <returns>The full path to the created file.</returns>
+    public string CreateFileWithNoDataRows(string fileName)
+    {
+        string filePath = _fileSystem.Path.Combine(_testDataDirectory, fileName);
+
+        using var workbook = new XLWorkbook();
+
+        var vInfoSheet = workbook.AddWorksheet("vInfo");
+
+        // Add headers - all mandatory columns according to SheetConfiguration
+        vInfoSheet.Cell(1, 1).Value = "VM";
+        vInfoSheet.Cell(1, 2).Value = "VM UUID";
+        vInfoSheet.Cell(1, 3).Value = "Powerstate";
+        vInfoSheet.Cell(1, 4).Value = "Template";
+        vInfoSheet.Cell(1, 5).Value = "CPUs";
+        vInfoSheet.Cell(1, 6).Value = "Memory";
+        vInfoSheet.Cell(1, 7).Value = "In Use MiB";
+        vInfoSheet.Cell(1, 8).Value = "OS according to the configuration file";
+        vInfoSheet.Cell(1, 9).Value = "Datacenter";
+        vInfoSheet.Cell(1, 10).Value = "Cluster";
+        vInfoSheet.Cell(1, 11).Value = "Host";
+        vInfoSheet.Cell(1, 12).Value = "SRM Placeholder";
+        vInfoSheet.Cell(1, 13).Value = "Creation date";
+        vInfoSheet.Cell(1, 14).Value = "NICs";
+        vInfoSheet.Cell(1, 15).Value = "Disks";
+        vInfoSheet.Cell(1, 16).Value = "Provisioned MiB";
+
+        // No data rows - only headers
+
+        workbook.SaveAs(filePath);
+        return filePath;
     }
 }

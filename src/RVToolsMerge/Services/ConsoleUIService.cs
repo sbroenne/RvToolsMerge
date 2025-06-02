@@ -189,6 +189,7 @@ public class ConsoleUIService
         AnsiConsole.MarkupLine("                [bold]Required[/]. Must be a valid file path or directory path.");
         AnsiConsole.MarkupLine("  [green]outputFile[/]    Path where the merged file will be saved.");
         AnsiConsole.MarkupLine("                Defaults to \"RVTools_Merged.xlsx\" in the current directory.");
+        AnsiConsole.MarkupLine("                [bold]Note[/]: If specifying a path with directories, the directory must exist.");
         AnsiConsole.WriteLine();
     }
 

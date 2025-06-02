@@ -114,6 +114,7 @@ public abstract class IntegrationTestBase : IDisposable
         services.AddSingleton<IValidationService, ValidationService>();
         services.AddSingleton<IMergeService, TestMergeService>();
         services.AddSingleton<ICommandLineParser, CommandLineParser>();
+        services.AddSingleton<ApplicationRunner>();
     }
 
     /// <summary>
