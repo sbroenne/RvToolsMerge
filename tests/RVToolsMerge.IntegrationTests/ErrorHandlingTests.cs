@@ -70,11 +70,9 @@ public class ErrorHandlingTests : IntegrationTestBase
         options.SkipInvalidFiles = false; // Don't skip invalid files
         var validationIssues = new List<ValidationIssue>();
 
-        // Act & Assert - Should handle gracefully and create output
-        await MergeService.MergeFilesAsync(filePaths, outputPath, options, validationIssues);
-        
-        // Should create output file even with invalid input files
-        Assert.True(File.Exists(outputPath));
+        // Act & Assert - Should throw InvalidFileException when invalid files found and not skipping
+        await Assert.ThrowsAsync<InvalidFileException>(() => 
+            MergeService.MergeFilesAsync(filePaths, outputPath, options, validationIssues));
     }
 
     /// <summary>
@@ -93,11 +91,9 @@ public class ErrorHandlingTests : IntegrationTestBase
         options.SkipInvalidFiles = true; // Skip invalid files
         var validationIssues = new List<ValidationIssue>();
 
-        // Act - Should complete successfully by skipping invalid files
-        await MergeService.MergeFilesAsync(filePaths, outputPath, options, validationIssues);
-
-        // Assert - Should create output file
-        Assert.True(File.Exists(outputPath));
+        // Act & Assert - Should throw NoValidFilesException when all files are invalid
+        await Assert.ThrowsAsync<NoValidFilesException>(() => 
+            MergeService.MergeFilesAsync(filePaths, outputPath, options, validationIssues));
     }
 
     /// <summary>
@@ -107,7 +103,7 @@ public class ErrorHandlingTests : IntegrationTestBase
     public void ExcelService_OpenCorruptedFile_ThrowsException()
     {
         // Arrange - Create a file with invalid Excel content
-        string corruptedFilePath = "/tmp/rvtools_test/input/corrupted.xlsx";
+        string corruptedFilePath = Path.Combine(TestInputDirectory, "corrupted.xlsx");
         FileSystem.File.WriteAllText(corruptedFilePath, "This is not an Excel file content");
 
         // Act & Assert

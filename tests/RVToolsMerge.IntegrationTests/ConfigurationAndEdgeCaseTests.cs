@@ -8,6 +8,7 @@
 
 using ClosedXML.Excel;
 using RVToolsMerge.Configuration;
+using RVToolsMerge.Exceptions;
 using RVToolsMerge.Models;
 using Xunit;
 
@@ -93,13 +94,12 @@ public class ConfigurationAndEdgeCaseTests : IntegrationTestBase
         
         var options = CreateDefaultMergeOptions();
         options.IgnoreMissingOptionalSheets = false;
+        options.SkipInvalidFiles = true; // Skip files that don't meet validation criteria
         var validationIssues = new List<ValidationIssue>();
 
-        // Act
-        await MergeService.MergeFilesAsync(filePaths, outputPath, options, validationIssues);
-
-        // Assert
-        Assert.True(File.Exists(outputPath));
+        // Act - Should skip the file due to missing optional sheets when ignore is disabled
+        await Assert.ThrowsAsync<NoValidFilesException>(() => 
+            MergeService.MergeFilesAsync(filePaths, outputPath, options, validationIssues));
     }
 
     /// <summary>

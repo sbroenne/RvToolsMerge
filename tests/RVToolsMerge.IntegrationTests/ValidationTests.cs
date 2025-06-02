@@ -199,25 +199,12 @@ public class ValidationTests : IntegrationTestBase
         string[] filesToMerge = [validFile, invalidFile];
         string outputPath = GetOutputFilePath("exception_output.xlsx");
         var options = CreateDefaultMergeOptions();
+        options.SkipInvalidFiles = false; // Don't skip invalid files
         var validationIssues = new List<ValidationIssue>();
 
-        // Modify the TestMergeService for this specific test case
-        options.SkipInvalidFiles = false; // Don't skip invalid files
-
-        // This test is just checking that validation issues are generated
-        // We'll manually modify validationIssues to trigger the error
-        validationIssues.Add(
-            new ValidationIssue("invalid_test.xlsx", true, "Missing required columns in vInfo sheet.")
-        );
-
-        // Act - attempt to merge with invalid files
-        await MergeService.MergeFilesAsync(filesToMerge, outputPath, options, validationIssues);
-
-        // Assert - there should be validation issues and the file should still exist
-        Assert.NotEmpty(validationIssues);
-        Assert.Contains(validationIssues,
-            issue => issue.FileName == "invalid_test.xlsx" && issue.ValidationError.Contains("Missing required"));
-        Assert.True(File.Exists(outputPath));
+        // Act & Assert - Should throw InvalidFileException when invalid files found and not skipping
+        await Assert.ThrowsAsync<InvalidFileException>(() => 
+            MergeService.MergeFilesAsync(filesToMerge, outputPath, options, validationIssues));
     }
 
     /// <summary>
@@ -227,22 +214,16 @@ public class ValidationTests : IntegrationTestBase
     public async Task MergeFiles_WithNonExistentFile_HandlesError()
     {
         // Arrange
-        string[] filesToMerge = ["/path/to/nonexistent.xlsx"];
+        string nonExistentFile = Path.Combine(TestInputDirectory, "nonexistent.xlsx");
+        string[] filesToMerge = [nonExistentFile];
         string outputPath = GetOutputFilePath("nonexistent_output.xlsx");
         var options = CreateDefaultMergeOptions();
+        options.SkipInvalidFiles = true; // Skip invalid files to avoid exceptions
         var validationIssues = new List<ValidationIssue>();
 
-        // Create parent directory to avoid permission issues
-        Directory.CreateDirectory("/path/to");
-
-        // Act
-        await MergeService.MergeFilesAsync(filesToMerge, outputPath, options, validationIssues);
-
-        // Assert - no exception, but file exists with warnings
-        Assert.True(File.Exists(outputPath));
-
-        // For tests, we'll manually add a validation issue for the non-existent file
-        validationIssues.Add(new ValidationIssue("nonexistent.xlsx", true, "File not found"));
+        // Act & Assert - Should throw NoValidFilesException when no valid files exist
+        await Assert.ThrowsAsync<NoValidFilesException>(() => 
+            MergeService.MergeFilesAsync(filesToMerge, outputPath, options, validationIssues));
     }
 
     /// <summary>

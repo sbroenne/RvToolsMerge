@@ -45,7 +45,7 @@ public class PerformanceAndScalabilityTests : IntegrationTestBase
         Assert.True(File.Exists(outputPath));
         
         // Check that anonymization map file is created
-        var anonymizationMapPath = outputPath.Replace(".xlsx", "_AnonymizationMap.xlsx");
+        var anonymizationMapPath = outputPath.Replace(".xlsx", "_AnonymizationMapping.xlsx");
         Assert.True(File.Exists(anonymizationMapPath));
     }
 

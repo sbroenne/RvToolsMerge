@@ -31,7 +31,7 @@ public class AnonymizationMapFileTests : IntegrationTestBase
 
         string[] filesToMerge = [file1, file2];
         string outputPath = GetOutputFilePath("anonymized_output.xlsx");
-        string expectedMapFilePath = GetOutputFilePath("anonymized_output_AnonymizationMap.xlsx");
+        string expectedMapFilePath = GetOutputFilePath("anonymized_output_AnonymizationMapping.xlsx");
 
         // Create options with anonymization enabled
         var options = CreateDefaultMergeOptions();

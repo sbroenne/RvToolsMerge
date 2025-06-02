@@ -7,6 +7,7 @@
 //-----------------------------------------------------------------------
 
 using RVToolsMerge.Exceptions;
+using RVToolsMerge.IntegrationTests.Utilities;
 using RVToolsMerge.Models;
 
 namespace RVToolsMerge.IntegrationTests;
@@ -14,6 +15,7 @@ namespace RVToolsMerge.IntegrationTests;
 /// <summary>
 /// Tests for data validation including vInfo data row validation and output path validation.
 /// </summary>
+[Collection("SpectreConsole")]
 public class DataValidationTests : IntegrationTestBase
 {
     /// <summary>
