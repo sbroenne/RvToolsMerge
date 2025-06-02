@@ -41,17 +41,20 @@ public class BasicMergeTests : IntegrationTestBase
         // Verify the output file exists
         Assert.True(FileSystem.File.Exists(outputPath));
 
-        // Verify merged data using test info
-        var infoPath = outputPath + ".testinfo";
-        Assert.True(FileSystem.File.Exists(infoPath), "Test info file should exist");
+        // Verify merged data by reading the actual Excel file
+        using var workbook = new XLWorkbook(outputPath);
+        
+        // Verify vInfo sheet exists and has correct data
+        Assert.True(workbook.TryGetWorksheet("vInfo", out var vInfoSheet));
+        var vInfoLastRow = vInfoSheet.LastRowUsed()?.RowNumber() ?? 1;
+        // Should have 5 VMs total (3 from file1 + 2 from file2) + header row
+        Assert.Equal(6, vInfoLastRow); // 5 data rows + 1 header row
 
-        var sheetInfo = ReadTestInfo(infoPath);
-
-        // Should have 5 VMs total (3 from file1 + 2 from file2)
-        Assert.Equal(5, sheetInfo.GetValueOrDefault("vInfo", 0));
-
-        // Verify vHost sheet has 3 hosts (2 from file1 + 1 from file2)
-        Assert.Equal(5, sheetInfo.GetValueOrDefault("vHost", 0));
+        // Verify vHost sheet exists and has correct data  
+        Assert.True(workbook.TryGetWorksheet("vHost", out var vHostSheet));
+        var vHostLastRow = vHostSheet.LastRowUsed()?.RowNumber() ?? 1;
+        // Should have 3 hosts total (2 from file1 + 1 from file2) + header row
+        Assert.Equal(4, vHostLastRow); // 3 data rows + 1 header row
 
         // No validation issues should exist
         Assert.Empty(validationIssues);
@@ -80,17 +83,18 @@ public class BasicMergeTests : IntegrationTestBase
         // Verify the output file exists
         Assert.True(FileSystem.File.Exists(outputPath));
 
-        // Verify merged data using test info
-        var infoPath = outputPath + ".testinfo";
-        Assert.True(FileSystem.File.Exists(infoPath), "Test info file should exist");
+        // Verify merged data by reading the actual Excel file
+        using var workbook = new XLWorkbook(outputPath);
+        
+        // Verify vInfo sheet exists and has correct data
+        Assert.True(workbook.TryGetWorksheet("vInfo", out var vInfoSheet));
+        var vInfoLastRow = vInfoSheet.LastRowUsed()?.RowNumber() ?? 1;
+        // Should have 3 VMs + header row (from min_required.xlsx)
+        Assert.Equal(4, vInfoLastRow); // 3 data rows + 1 header row
 
-        var sheetInfo = ReadTestInfo(infoPath);
-
-        // Verify vInfo sheet has correct data - our test data generator always creates 5 records
-        Assert.Equal(5, sheetInfo.GetValueOrDefault("vInfo", 0));
-
-        // No validation issues should exist
-        Assert.Empty(validationIssues);
+        // Validation issues about missing optional sheets are expected but not skipped 
+        // when IgnoreMissingOptionalSheets = true
+        Assert.True(validationIssues.All(issue => !issue.Skipped && issue.ValidationError.Contains("Missing optional sheet")));
     }
 
     /// <summary>
@@ -116,14 +120,14 @@ public class BasicMergeTests : IntegrationTestBase
         // Verify the output file exists
         Assert.True(FileSystem.File.Exists(outputPath));
 
-        // Verify merged data using test info
-        var infoPath = outputPath + ".testinfo";
-        Assert.True(FileSystem.File.Exists(infoPath), "Test info file should exist");
-
-        var sheetInfo = ReadTestInfo(infoPath);
-
-        // Should have 5 VMs total (2 from standardFile + 3 from alternativeFile)
-        Assert.Equal(5, sheetInfo.GetValueOrDefault("vInfo", 0));
+        // Verify merged data by reading the actual Excel file
+        using var workbook = new XLWorkbook(outputPath);
+        
+        // Verify vInfo sheet exists and has correct data
+        Assert.True(workbook.TryGetWorksheet("vInfo", out var vInfoSheet));
+        var vInfoLastRow = vInfoSheet.LastRowUsed()?.RowNumber() ?? 1;
+        // Should have 5 VMs total (2 from standardFile + 3 from alternativeFile) + header row
+        Assert.Equal(6, vInfoLastRow); // 5 data rows + 1 header row
 
         // No validation issues should exist
         Assert.Empty(validationIssues);

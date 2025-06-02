@@ -7,7 +7,6 @@
 //-----------------------------------------------------------------------
 
 using System.IO.Abstractions;
-using System.IO.Abstractions.TestingHelpers;
 using Microsoft.Extensions.DependencyInjection;
 using RVToolsMerge.IntegrationTests.Utilities;
 using RVToolsMerge.Models;
@@ -22,9 +21,9 @@ namespace RVToolsMerge.IntegrationTests;
 public abstract class IntegrationTestBase : IDisposable
 {
     /// <summary>
-    /// The mock file system used for testing.
+    /// The real file system used for testing with actual files.
     /// </summary>
-    protected readonly MockFileSystem FileSystem;
+    protected readonly IFileSystem FileSystem;
 
     /// <summary>
     /// Service provider containing the test dependencies.
@@ -47,22 +46,24 @@ public abstract class IntegrationTestBase : IDisposable
     protected readonly string TestOutputDirectory;
 
     /// <summary>
+    /// Root temporary directory for this test instance.
+    /// </summary>
+    protected readonly string TestRootDirectory;
+
+    /// <summary>
     /// Initializes a new instance of the <see cref="IntegrationTestBase"/> class.
     /// </summary>
     protected IntegrationTestBase()
     {
-        // Create a mock file system for testing with some necessary root directories
-        FileSystem = new MockFileSystem(new Dictionary<string, MockFileData>
-        {
-            { "/tmp", new MockDirectoryData() },
-            { "/tmp/rvtools_test", new MockDirectoryData() },
-            { "/path", new MockDirectoryData() },
-            { "/path/to", new MockDirectoryData() }
-        });
+        // Use real file system for integration tests as required by Copilot instructions
+        FileSystem = new FileSystem();
 
+        // Create a unique temporary directory for this test instance
+        TestRootDirectory = Path.Combine(Path.GetTempPath(), "RVToolsMerge_IntegrationTests", Guid.NewGuid().ToString());
+        
         // Set up test directories
-        TestInputDirectory = "/tmp/rvtools_test/input";
-        TestOutputDirectory = "/tmp/rvtools_test/output";
+        TestInputDirectory = FileSystem.Path.Combine(TestRootDirectory, "input");
+        TestOutputDirectory = FileSystem.Path.Combine(TestRootDirectory, "output");
 
         // Create the test directories
         FileSystem.Directory.CreateDirectory(TestInputDirectory);
@@ -71,7 +72,7 @@ public abstract class IntegrationTestBase : IDisposable
         // Create test data generator
         TestDataGenerator = new TestDataGenerator(FileSystem, TestInputDirectory);
 
-        // Set up DI container with the mock file system
+        // Set up DI container with the real file system
         var services = new ServiceCollection();
         ConfigureServices(services);
         ServiceProvider = services.BuildServiceProvider();
@@ -103,7 +104,7 @@ public abstract class IntegrationTestBase : IDisposable
     /// <param name="services">The service collection to configure.</param>
     protected virtual void ConfigureServices(IServiceCollection services)
     {
-        // Register the mock file system
+        // Register the real file system for integration tests
         services.AddSingleton<IFileSystem>(FileSystem);
 
         // Register the mock console service instead of the real one
@@ -112,7 +113,7 @@ public abstract class IntegrationTestBase : IDisposable
         services.AddSingleton<IExcelService, ExcelService>();
         services.AddSingleton<IAnonymizationService, AnonymizationService>();
         services.AddSingleton<IValidationService, ValidationService>();
-        services.AddSingleton<IMergeService, TestMergeService>();
+        services.AddSingleton<IMergeService, MergeService>(); // Use real MergeService for integration tests
         services.AddSingleton<ICommandLineParser, CommandLineParser>();
     }
 
@@ -172,42 +173,56 @@ public abstract class IntegrationTestBase : IDisposable
     }
 
     /// <summary>
-    /// Gets mock column info for test assertions.
+    /// Gets actual column info from a real Excel file by reading it.
     /// </summary>
     /// <param name="outputPath">Path to the output file.</param>
     /// <returns>Dictionary mapping sheet names to column counts.</returns>
     protected Dictionary<string, int> GetColumnInfo(string outputPath)
     {
-        // For tests, we'll return hardcoded values based on the options used in each test
         var result = new Dictionary<string, int>();
 
-        // Basic vInfo sheet with mandatory columns + source file column
-        if (outputPath.Contains("mandatory_only"))
+        if (!FileSystem.File.Exists(outputPath))
         {
-            result["vInfo"] = 9; // 8 mandatory + source file
+            return result;
         }
-        else if (outputPath.Contains("merged_output"))
+
+        try
         {
-            result["vInfo"] = 12; // Default columns in test data
-            result["vHost"] = 11;
-            result["vPartition"] = 4;
-            result["vMemory"] = 3;
+            using var workbook = new ClosedXML.Excel.XLWorkbook(outputPath);
+            foreach (var worksheet in workbook.Worksheets)
+            {
+                var lastColumnUsed = worksheet.LastColumnUsed();
+                result[worksheet.Name] = lastColumnUsed?.ColumnNumber() ?? 0;
+            }
         }
-        else
+        catch (Exception)
         {
-            // Default for other tests
-            result["vInfo"] = 12;
+            // If we can't read the file, return empty result
         }
 
         return result;
     }
 
     /// <summary>
-    /// Dispose of resources.
+    /// Dispose of resources and clean up temporary files/directories.
     /// </summary>
     public void Dispose()
     {
-        ServiceProvider.Dispose();
+        try
+        {
+            ServiceProvider.Dispose();
+            
+            // Clean up temporary test directory as required by Copilot instructions
+            if (FileSystem.Directory.Exists(TestRootDirectory))
+            {
+                FileSystem.Directory.Delete(TestRootDirectory, recursive: true);
+            }
+        }
+        catch (Exception)
+        {
+            // Ignore cleanup errors to prevent test failures
+        }
+        
         GC.SuppressFinalize(this);
     }
 }

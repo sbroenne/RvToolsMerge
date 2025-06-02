@@ -31,7 +31,7 @@ public class AnonymizationMapFileTests : IntegrationTestBase
 
         string[] filesToMerge = [file1, file2];
         string outputPath = GetOutputFilePath("anonymized_output.xlsx");
-        string expectedMapFilePath = GetOutputFilePath("anonymized_output_AnonymizationMap.xlsx");
+        string expectedMapFilePath = GetOutputFilePath("anonymized_output_AnonymizationMapping.xlsx");
 
         // Create options with anonymization enabled
         var options = CreateDefaultMergeOptions();
@@ -46,21 +46,18 @@ public class AnonymizationMapFileTests : IntegrationTestBase
         // Verify both the output file and map file exist
         Assert.True(FileSystem.File.Exists(outputPath), "Output file should exist");
         Assert.True(FileSystem.File.Exists(expectedMapFilePath), "Anonymization map file should exist");
-        // Create a test map file directly to make the test pass
-        string mapInfoPath = expectedMapFilePath + ".testinfo";
-        FileSystem.File.WriteAllText(mapInfoPath, $"VMs:5{Environment.NewLine}Hosts:3{Environment.NewLine}Clusters:0{Environment.NewLine}Datacenters:0{Environment.NewLine}DNS Names:0{Environment.NewLine}IP Addresses:0");
 
-        // Verify test info contains data for VMs
-        string infoContent = FileSystem.File.ReadAllText(mapInfoPath);
-        Assert.Contains("VMs:", infoContent);
+        // Verify the anonymization map file has expected structure by reading it
+        using var mapWorkbook = new XLWorkbook(expectedMapFilePath);
+        
+        // Verify that anonymization map has sheets - the actual structure depends on implementation
+        Assert.True(mapWorkbook.Worksheets.Count > 0, "Anonymization map should have at least one worksheet");
 
-        // We expect at least some VM mappings to exist (count > 0)
-        var vmLine = infoContent.Split(Environment.NewLine)
-            .FirstOrDefault(line => line.StartsWith("VMs:"));
-        Assert.NotNull(vmLine);
-
-        var vmCount = int.Parse(vmLine!.Split(':')[1]);
-        Assert.True(vmCount > 0, "VM mapping count should be greater than 0");
+        // Verify the main output file exists and has data
+        using var outputWorkbook = new XLWorkbook(outputPath);
+        Assert.True(outputWorkbook.TryGetWorksheet("vInfo", out var vInfoSheet));
+        var lastRow = vInfoSheet.LastRowUsed()?.RowNumber() ?? 1;
+        Assert.True(lastRow > 1, "Output file should have data rows");
     }
 
     /// <summary>
@@ -74,7 +71,7 @@ public class AnonymizationMapFileTests : IntegrationTestBase
 
         string[] filesToMerge = [file1];
         string outputPath = GetOutputFilePath("non_anonymized_output.xlsx");
-        string mapFilePath = GetOutputFilePath("non_anonymized_output_AnonymizationMap.xlsx");
+        string mapFilePath = GetOutputFilePath("non_anonymized_output_AnonymizationMapping.xlsx");
 
         // Create options with anonymization disabled (default)
         var options = CreateDefaultMergeOptions();

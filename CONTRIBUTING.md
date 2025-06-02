@@ -53,9 +53,28 @@ Understanding this structure will help you navigate the codebase and contribute 
 ## Development Workflow
 
 1. Make your changes in your feature branch
-2. Run tests to ensure your changes don't break existing functionality
-3. Commit your changes (see Commit Guidelines below)
-4. Push to your fork and submit a pull request
+2. **Build Verification**: Run `dotnet build` and ensure the solution builds successfully with zero errors
+3. **Test Verification**: Run `dotnet test` and ensure all tests pass with zero failures
+4. Commit your changes (see Commit Guidelines below)
+5. Push to your fork and submit a pull request
+
+### Pre-Commit Checklist
+
+Before committing any changes, ensure you have completed all of these steps:
+
+-   [ ] Code builds successfully: `dotnet build`
+-   [ ] All tests pass: `dotnet test`
+-   [ ] Code follows the project's coding standards
+-   [ ] **Documentation has been updated (MANDATORY)** - Check if any of the following need updates:
+    -   [ ] `README.md` for feature changes, usage instructions, or project structure
+    -   [ ] `CONTRIBUTING.md` for development process changes
+    -   [ ] `docs/` directory files for specialized documentation
+    -   [ ] XML documentation comments for public APIs
+    -   [ ] Online help system (console application's built-in help in `ConsoleUIService.ShowHelp()`)
+    -   [ ] Project structure documentation if files/folders changed
+-   [ ] Commit message follows the guidelines below
+
+**Note**: Documentation updates are mandatory for changes affecting public APIs, configuration, user workflows, project structure, testing approach, or any user-facing functionality.
 
 ## Coding Standards
 
@@ -140,10 +159,20 @@ When working with console UI using Spectre.Console:
 
 ### Testing
 
--   Write unit tests for all core functionality
--   Create integration tests for file processing capabilities
+The project maintains comprehensive test coverage (currently 76%) with two distinct test approaches:
+
+-   **Unit Tests** (`RVToolsMerge.UnitTests`): Use mocking for isolated testing of individual components and methods
+-   **Integration Tests** (`RVToolsMerge.IntegrationTests`): Use real data and actual file system operations rather than mocking:
+    -   Create temporary test files and directories for each test scenario
+    -   Use actual Excel files with realistic RVTools data structures
+    -   Perform real file I/O operations to validate end-to-end functionality
+    -   Clean up test files and directories after test completion
+
+Additional testing requirements:
+-   Write tests for all core functionality
 -   Test with various RVTools export versions and formats
 -   Include edge cases like malformed files, missing data, and extremely large datasets
+-   All tests must pass before any commit (`dotnet test` must show zero failures)
 
 ## Pull Request Process
 
