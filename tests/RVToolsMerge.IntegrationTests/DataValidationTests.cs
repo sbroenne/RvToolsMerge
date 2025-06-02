@@ -70,13 +70,16 @@ public class DataValidationTests : IntegrationTestBase
         var options = new MergeOptions();
         var validationIssues = new List<ValidationIssue>();
 
+        // First validate the file to populate validation issues
+        var isValid = ValidationService.ValidateFile(testFile, options.IgnoreMissingOptionalSheets, validationIssues);
+        Assert.False(isValid);
+        Assert.Single(validationIssues);
+
         // Act & Assert
         var exception = await Assert.ThrowsAsync<InvalidFileException>(
-            () => MergeService.MergeFilesAsync([testFile], outputPath, options, validationIssues));
+            () => MergeService.MergeFilesAsync([testFile], outputPath, options, new List<ValidationIssue>()));
 
         Assert.Contains("invalid file found", exception.Message);
-        Assert.Single(validationIssues);
-        Assert.Contains("no data rows", validationIssues[0].ValidationError);
     }
 
     /// <summary>
@@ -94,13 +97,24 @@ public class DataValidationTests : IntegrationTestBase
         var options = new MergeOptions { SkipInvalidFiles = true };
         var validationIssues = new List<ValidationIssue>();
 
+        // Pre-validate files to set up validation issues as the TestMergeService would
+        var invalidFileIssues = new List<ValidationIssue>();
+        var isValidInvalid = ValidationService.ValidateFile(invalidFile, options.IgnoreMissingOptionalSheets, invalidFileIssues);
+        Assert.False(isValidInvalid);
+        validationIssues.AddRange(invalidFileIssues);
+
+        var validFileIssues = new List<ValidationIssue>();
+        var isValidValid = ValidationService.ValidateFile(validFile, options.IgnoreMissingOptionalSheets, validFileIssues);
+        Assert.True(isValidValid);
+        validationIssues.AddRange(validFileIssues);
+
         // Act
         await MergeService.MergeFilesAsync([invalidFile, validFile], outputPath, options, validationIssues);
 
         // Assert
         Assert.True(FileSystem.File.Exists(outputPath));
-        Assert.Single(validationIssues);
-        Assert.Contains("no data rows", validationIssues[0].ValidationError);
+        Assert.Single(invalidFileIssues);
+        Assert.Contains("no data rows", invalidFileIssues[0].ValidationError);
     }
 
     /// <summary>

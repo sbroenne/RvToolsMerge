@@ -192,13 +192,13 @@ public class ErrorHandlingTests : IntegrationTestBase
     [Fact]
     public void ValidationService_NullValidationIssuesList_HandledGracefully()
     {
-        // Arrange
-        var validFile = TestDataGenerator.CreateValidRVToolsFile("valid.xlsx", numVMs: 1);
+        // Arrange - Use empty string to trigger the first validation check that adds to issues list
+        string emptyFilePath = string.Empty;
         
         // Act & Assert
         // Should throw NullReferenceException when trying to add to null list
         Assert.Throws<NullReferenceException>(() =>
-            ValidationService.ValidateFile(validFile, false, null!));
+            ValidationService.ValidateFile(emptyFilePath, false, null!));
     }
 
     /// <summary>

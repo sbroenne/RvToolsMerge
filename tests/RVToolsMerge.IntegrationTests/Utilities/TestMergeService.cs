@@ -305,25 +305,67 @@ public class TestMergeService : IMergeService
         await Task.Run(() =>
         {
             // In test mode, we'll handle validation differently to support tests
-            // We won't actually validate files in the TestMergeService to avoid file existence issues
+            // We don't validate files in the TestMergeService for most tests to avoid file existence issues
+            // But we do call the validation service for specific tests that need it
 
-            // If any validation issues were already provided, use those
-            if (validationIssues.Count > 0)
+            // For tests that require validation (like DataValidationTests), 
+            // they should call ValidationService directly rather than through MergeService
+            
+            // Collect all validation results only if we're testing validation specifically
+            var shouldValidate = validationIssues.Count == 0; // Only validate if no pre-existing issues
+            if (shouldValidate)
             {
-                // Remove invalid files based on validation issues if option is enabled
-                if (options.SkipInvalidFiles)
-                {
-                    var invalidFiles = validationIssues
-                        .Where(issue => issue.Skipped)
-                        .Select(issue => issue.FileName)
-                        .ToHashSet();
+                var fileValidationResults = new List<(string FilePath, bool IsValid, List<ValidationIssue> Issues)>();
 
-                    for (int i = validFilePaths.Count - 1; i >= 0; i--)
+                foreach (string filePath in validFilePaths)
+                {
+                    var fileIssues = new List<ValidationIssue>();
+                    bool isValid = _validationService.ValidateFile(filePath, options.IgnoreMissingOptionalSheets, fileIssues);
+
+                    fileValidationResults.Add((filePath, isValid, fileIssues));
+                    validationIssues.AddRange(fileIssues);
+                }
+
+                // Process the validation results based on options
+                for (int i = validFilePaths.Count - 1; i >= 0; i--)
+                {
+                    string filePath = validFilePaths[i];
+                    var validationResult = fileValidationResults.First(r => r.FilePath == filePath);
+
+                    if (!validationResult.IsValid && !options.SkipInvalidFiles)
                     {
-                        var fileName = _fileSystem.Path.GetFileName(validFilePaths[i]);
-                        if (invalidFiles.Contains(fileName))
+                        // If file is not valid and we're not skipping invalid files, throw an exception
+                        var errorMessage = "At least one invalid file found. Use the -i or --skip-invalid-files option to skip invalid files.\n";
+                        throw new InvalidFileException(errorMessage);
+                    }
+
+                    if (!validationResult.IsValid && options.SkipInvalidFiles)
+                    {
+                        // Remove invalid file if skipping is enabled
+                        validFilePaths.RemoveAt(i);
+                    }
+                }
+            }
+            else
+            {
+                // If validation issues were already provided, use those
+                if (validationIssues.Count > 0)
+                {
+                    // Remove invalid files based on validation issues if option is enabled
+                    if (options.SkipInvalidFiles)
+                    {
+                        var invalidFiles = validationIssues
+                            .Where(issue => issue.Skipped)
+                            .Select(issue => issue.FileName)
+                            .ToHashSet();
+
+                        for (int i = validFilePaths.Count - 1; i >= 0; i--)
                         {
-                            validFilePaths.RemoveAt(i);
+                            var fileName = _fileSystem.Path.GetFileName(validFilePaths[i]);
+                            if (invalidFiles.Contains(fileName))
+                            {
+                                validFilePaths.RemoveAt(i);
+                            }
                         }
                     }
                 }
