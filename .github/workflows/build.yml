@@ -36,15 +36,28 @@ jobs:
           - os: windows-latest
             runtime: win-x64
             cache-suffix: ""
+            run-tests: true
           - os: ubuntu-latest
             runtime: linux-x64
             cache-suffix: ""
+            run-tests: true
           - os: macos-latest
             runtime: osx-arm64
             cache-suffix: ""
+            run-tests: true
+          # Cross-compilation builds (no native tests)
           - os: windows-latest
             runtime: win-arm64
             cache-suffix: "-arm64"
+            run-tests: false
+          - os: ubuntu-latest
+            runtime: linux-arm64
+            cache-suffix: "-arm64"
+            run-tests: false
+          - os: macos-13  # Intel Mac runner
+            runtime: osx-x64
+            cache-suffix: "-x64"
+            run-tests: true
 
     runs-on: ${{ matrix.os }}
 
@@ -62,7 +75,9 @@ jobs:
       - name: Cache NuGet packages
         uses: actions/cache@v4
         with:
-          path: ~/.nuget/packages
+          path: |
+            ~/.nuget/packages
+            ${{ github.workspace }}/.nuget/packages
           key: ${{ runner.os }}${{ matrix.cache-suffix }}-nuget-${{ hashFiles('**/*.csproj', '**/packages.lock.json') }}
           restore-keys: |
             ${{ runner.os }}${{ matrix.cache-suffix }}-nuget-
@@ -74,20 +89,25 @@ jobs:
         run: dotnet build --configuration ${{ inputs.configuration }} --no-restore
 
       - name: Test
-        run: dotnet test tests/RVToolsMerge.IntegrationTests/RVToolsMerge.IntegrationTests.csproj --configuration ${{ inputs.configuration }} --no-build --verbosity normal --logger trx --results-directory TestResults
+        if: matrix.run-tests
+        run: dotnet test --configuration ${{ inputs.configuration }} --no-build --verbosity normal --logger "trx;LogFileName=${{ matrix.runtime }}-test-results.trx" --results-directory TestResults
+        env:
+          DOTNET_RUNTIME: ${{ matrix.runtime }}
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
-        if: always()
+        if: always() && matrix.run-tests
         with:
           name: test-results-${{ matrix.runtime }}
           path: TestResults/*.trx
           retention-days: 7
 
-# Code coverage is now handled exclusively by the dedicated code-coverage.yml workflow
-
       - name: Publish
-        run: dotnet publish src/RVToolsMerge/RVToolsMerge.csproj --configuration ${{ inputs.configuration }} --runtime ${{ matrix.runtime }} --self-contained true --no-restore --output publish
+        run: dotnet publish src/RVToolsMerge/RVToolsMerge.csproj --configuration ${{ inputs.configuration }} --runtime ${{ matrix.runtime }} --self-contained true -p:PublishSingleFile=true -p:PublishTrimmed=true --no-restore --output publish
+
+      - name: Make executable on Unix
+        if: runner.os != 'Windows'
+        run: chmod +x publish/RVToolsMerge
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
