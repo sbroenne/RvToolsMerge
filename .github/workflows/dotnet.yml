@@ -1,19 +1,7 @@
 name: .NET CI - Builds only windows-latest
 
 on:
-  # Trigger on push events only for non-main branches
-  push:
-    branches-ignore:
-      - "main"
-    paths:
-      - "**.cs"
-      - "**.csproj"
-      - "**.sln"
-      - "**/nuget.config"
-      - "**/Directory.Build.props"
-      - "**/Directory.Build.targets"
-      - "**/global.json"
-  # Trigger on pull requests targeting main branch
+  # Trigger only on pull requests targeting main branch
   pull_request:
     branches:
       - "main"
@@ -36,8 +24,6 @@ permissions:
 
 jobs:
   build:
-    # Skip duplicate workflow runs
-    if: github.event_name != 'push' || !contains(github.event.head_commit.message, '[skip ci]')
     name: Build and Test
     runs-on: windows-latest
     steps:
