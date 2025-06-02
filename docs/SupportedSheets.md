@@ -32,6 +32,9 @@ Each sheet has specific required columns that must be present for proper process
 -   NICs
 -   Disks
 -   Provisioned MiB
+-   Datacenter
+-   Cluster
+-   Host
 
 ### vHost Sheet (Optional)
 
