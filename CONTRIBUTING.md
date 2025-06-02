@@ -53,9 +53,10 @@ Understanding this structure will help you navigate the codebase and contribute 
 ## Development Workflow
 
 1. Make your changes in your feature branch
-2. Run tests to ensure your changes don't break existing functionality
-3. Commit your changes (see Commit Guidelines below)
-4. Push to your fork and submit a pull request
+2. **Run `dotnet build` to ensure your changes compile successfully**
+3. **Run `dotnet test` to ensure your changes don't break existing functionality**
+4. Commit your changes (see Commit Guidelines below)
+5. Push to your fork and submit a pull request
 
 ## Coding Standards
 
@@ -142,8 +143,11 @@ When working with console UI using Spectre.Console:
 
 -   Write unit tests for all core functionality
 -   Create integration tests for file processing capabilities
+-   **Always use real data for integration tests** - no mocking allowed in integration tests
+-   Integration tests must exercise actual source code paths with real file operations
 -   Test with various RVTools export versions and formats
 -   Include edge cases like malformed files, missing data, and extremely large datasets
+-   **Always run `dotnet build` and `dotnet test` before committing changes**
 
 ## Pull Request Process
 

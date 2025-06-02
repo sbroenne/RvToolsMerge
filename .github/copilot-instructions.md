@@ -11,6 +11,8 @@ RVToolsMerge is a tool for combining and processing multiple RVTools exports fro
 -   Write clear, descriptive issues and PRs with context and acceptance criteria.
 -   Use checklists for multi-step tasks.
 -   Document code and design decisions in comments and PRs.
+-   **Always run a build (`dotnet build`) before committing changes** to ensure code compiles
+-   **Always run tests (`dotnet test`) before committing changes** to ensure no regressions
 -   Review and test all Copilot agent contributions before merging.
 -   Use Copilot agent for repetitive, boilerplate, or test code generation.
 -   Reference and update this file and README.md if project standards change.
@@ -72,8 +74,20 @@ RVToolsMerge is a tool for combining and processing multiple RVTools exports fro
 
 -   Write unit tests for all core functionality
 -   Create integration tests for file processing capabilities
+-   **Always use real data for integration tests** - no mocking allowed in integration tests
+-   Integration tests must exercise actual source code paths with real file operations
 -   Test with various RVTools export versions and formats
 -   Include edge cases like malformed files, missing data, and extremely large datasets
+-   **Always run a build before committing changes** to ensure code compiles and tests pass
+
+### Integration Test Requirements
+
+-   **No mocking**: Integration tests must use real services and file system operations
+-   **Real Excel files**: Create and manipulate actual Excel files using ClosedXML
+-   **Real data processing**: Exercise the actual merge, validation, and anonymization services
+-   **File system operations**: Use actual file I/O rather than in-memory abstractions
+-   **Full service integration**: Test complete workflows from file input to output generation
+-   **Meaningful coverage**: Ensure tests exercise actual source code paths to achieve realistic coverage metrics
 
 ## User Experience
 
