@@ -42,11 +42,11 @@ public class PerformanceAndScalabilityTests : IntegrationTestBase
         await MergeService.MergeFilesAsync(filePaths, outputPath, options, validationIssues);
 
         // Assert
-        Assert.True(FileSystem.File.Exists(outputPath));
+        Assert.True(File.Exists(outputPath));
         
         // Check that anonymization map file is created
         var anonymizationMapPath = outputPath.Replace(".xlsx", "_AnonymizationMap.xlsx");
-        Assert.True(FileSystem.File.Exists(anonymizationMapPath));
+        Assert.True(File.Exists(anonymizationMapPath));
     }
 
     /// <summary>
@@ -68,7 +68,7 @@ public class PerformanceAndScalabilityTests : IntegrationTestBase
         await MergeService.MergeFilesAsync(filePaths, outputPath, options, validationIssues);
 
         // Assert
-        Assert.True(FileSystem.File.Exists(outputPath));
+        Assert.True(File.Exists(outputPath));
     }
 
     /// <summary>
@@ -181,7 +181,7 @@ public class PerformanceAndScalabilityTests : IntegrationTestBase
         await MergeService.MergeFilesAsync(filePaths, outputPath, options, validationIssues);
 
         // Assert
-        Assert.True(FileSystem.File.Exists(outputPath));
+        Assert.True(File.Exists(outputPath));
     }
 
     /// <summary>
@@ -283,7 +283,7 @@ public class PerformanceAndScalabilityTests : IntegrationTestBase
         await MergeService.MergeFilesAsync(filePaths, outputPath, options, validationIssues);
 
         // Assert
-        Assert.True(FileSystem.File.Exists(outputPath));
+        Assert.True(File.Exists(outputPath));
     }
 
     /// <summary>
@@ -333,7 +333,7 @@ public class PerformanceAndScalabilityTests : IntegrationTestBase
         await MergeService.MergeFilesAsync(filePaths, outputPath, options, validationIssues);
 
         // Assert
-        Assert.True(FileSystem.File.Exists(outputPath));
+        Assert.True(File.Exists(outputPath));
     }
 
     /// <summary>

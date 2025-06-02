@@ -55,7 +55,7 @@ public class ConfigurationAndEdgeCaseTests : IntegrationTestBase
         await MergeService.MergeFilesAsync(filePaths, outputPath, options, validationIssues);
 
         // Assert
-        Assert.True(FileSystem.File.Exists(outputPath));
+        Assert.True(File.Exists(outputPath));
     }
 
     /// <summary>
@@ -77,7 +77,7 @@ public class ConfigurationAndEdgeCaseTests : IntegrationTestBase
         await MergeService.MergeFilesAsync(filePaths, outputPath, options, validationIssues);
 
         // Assert
-        Assert.True(FileSystem.File.Exists(outputPath));
+        Assert.True(File.Exists(outputPath));
     }
 
     /// <summary>
@@ -99,7 +99,7 @@ public class ConfigurationAndEdgeCaseTests : IntegrationTestBase
         await MergeService.MergeFilesAsync(filePaths, outputPath, options, validationIssues);
 
         // Assert
-        Assert.True(FileSystem.File.Exists(outputPath));
+        Assert.True(File.Exists(outputPath));
     }
 
     /// <summary>
@@ -226,7 +226,7 @@ public class ConfigurationAndEdgeCaseTests : IntegrationTestBase
         await MergeService.MergeFilesAsync(filePaths, outputPath, options, validationIssues);
 
         // Assert
-        Assert.True(FileSystem.File.Exists(outputPath));
+        Assert.True(File.Exists(outputPath));
     }
 
     /// <summary>
@@ -270,7 +270,7 @@ public class ConfigurationAndEdgeCaseTests : IntegrationTestBase
         await MergeService.MergeFilesAsync(filePaths, outputPath, options, validationIssues);
 
         // Assert
-        Assert.True(FileSystem.File.Exists(outputPath));
+        Assert.True(File.Exists(outputPath));
     }
 
     /// <summary>

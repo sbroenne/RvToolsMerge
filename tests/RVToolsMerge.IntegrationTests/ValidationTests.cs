@@ -32,7 +32,7 @@ public class ValidationTests : IntegrationTestBase
         using var workbook = new XLWorkbook();
         // Create a workbook with a dummy sheet (not vInfo)
         workbook.AddWorksheet("DummySheet");
-        var filePath = FileSystem.Path.Combine(TestInputDirectory, "missing_sheet.xlsx");
+        var filePath = Path.Combine(TestInputDirectory, "missing_sheet.xlsx");
         workbook.SaveAs(filePath);
 
         var issues = new List<ValidationIssue>();
@@ -73,7 +73,7 @@ public class ValidationTests : IntegrationTestBase
     {
         // Arrange
         // Create a file with only vInfo, missing other required sheets
-        var filePath = FileSystem.Path.Combine(TestInputDirectory, "missing_optional_sheets.xlsx");
+        var filePath = Path.Combine(TestInputDirectory, "missing_optional_sheets.xlsx");
         using (var workbook = new XLWorkbook())
         {
             var sheet = workbook.AddWorksheet("vInfo");            // Add all mandatory columns for vInfo
@@ -135,7 +135,7 @@ public class ValidationTests : IntegrationTestBase
         foreach (var mandatoryColumn in SheetConfiguration.MandatoryColumns["vInfo"])
         {
             // Arrange - create file with one mandatory column missing
-            var filePath = FileSystem.Path.Combine(TestInputDirectory, $"missing_{mandatoryColumn.Replace(" ", "_")}.xlsx");
+            var filePath = Path.Combine(TestInputDirectory, $"missing_{mandatoryColumn.Replace(" ", "_")}.xlsx");
             using (var workbook = new XLWorkbook())
             {
                 var sheet = workbook.AddWorksheet("vInfo");
@@ -217,7 +217,7 @@ public class ValidationTests : IntegrationTestBase
         Assert.NotEmpty(validationIssues);
         Assert.Contains(validationIssues,
             issue => issue.FileName == "invalid_test.xlsx" && issue.ValidationError.Contains("Missing required"));
-        Assert.True(FileSystem.File.Exists(outputPath));
+        Assert.True(File.Exists(outputPath));
     }
 
     /// <summary>
@@ -233,13 +233,13 @@ public class ValidationTests : IntegrationTestBase
         var validationIssues = new List<ValidationIssue>();
 
         // Create parent directory to avoid permission issues
-        FileSystem.Directory.CreateDirectory("/path/to");
+        Directory.CreateDirectory("/path/to");
 
         // Act
         await MergeService.MergeFilesAsync(filesToMerge, outputPath, options, validationIssues);
 
         // Assert - no exception, but file exists with warnings
-        Assert.True(FileSystem.File.Exists(outputPath));
+        Assert.True(File.Exists(outputPath));
 
         // For tests, we'll manually add a validation issue for the non-existent file
         validationIssues.Add(new ValidationIssue("nonexistent.xlsx", true, "File not found"));
@@ -252,31 +252,44 @@ public class ValidationTests : IntegrationTestBase
     public async Task MergeFiles_WithIgnoreMissingOptionalSheets_WorksWithMinimumSheets()
     {
         // Arrange
-        // Create a file with only vInfo (minimum required sheet)
-        var filePath = FileSystem.Path.Combine(TestInputDirectory, "min_sheets.xlsx");
+        // Create a file with only vInfo (minimum required sheet) but all mandatory columns
+        var filePath = Path.Combine(TestInputDirectory, "min_sheets.xlsx");
         using (var workbook = new XLWorkbook())
         {
             var sheet = workbook.AddWorksheet("vInfo");
 
-            // Add minimum required columns for vInfo
-            sheet.Cell(1, 1).Value = "VM";
-            sheet.Cell(1, 2).Value = "Powerstate";
+            // Add all mandatory columns for vInfo
+            sheet.Cell(1, 1).Value = "VM UUID";
+            sheet.Cell(1, 2).Value = "VM";
             sheet.Cell(1, 3).Value = "Template";
-            sheet.Cell(1, 4).Value = "CPUs";
-            sheet.Cell(1, 5).Value = "Memory";
-            sheet.Cell(1, 6).Value = "In Use MiB";
-            sheet.Cell(1, 7).Value = "OS according to the configuration file";
-            sheet.Cell(1, 8).Value = "SRM Placeholder";
+            sheet.Cell(1, 4).Value = "SRM Placeholder";
+            sheet.Cell(1, 5).Value = "Powerstate";
+            sheet.Cell(1, 6).Value = "CPUs";
+            sheet.Cell(1, 7).Value = "Memory";
+            sheet.Cell(1, 8).Value = "NICs";
+            sheet.Cell(1, 9).Value = "Disks";
+            sheet.Cell(1, 10).Value = "In Use MiB";
+            sheet.Cell(1, 11).Value = "Provisioned MiB";
+            sheet.Cell(1, 12).Value = "OS according to the configuration file";
+            sheet.Cell(1, 13).Value = "Creation date";
 
-            // Add one data row
-            sheet.Cell(2, 1).Value = "MinVM";
-            sheet.Cell(2, 2).Value = "poweredOn";
-            sheet.Cell(2, 3).Value = "FALSE";
-            sheet.Cell(2, 4).Value = 2;
-            sheet.Cell(2, 5).Value = 4096;
-            sheet.Cell(2, 6).Value = 2048;
-            sheet.Cell(2, 7).Value = "Windows Server 2019";
-            sheet.Cell(2, 8).Value = "FALSE";
+            // Add data rows
+            for (int i = 2; i <= 4; i++)
+            {
+                sheet.Cell(i, 1).Value = $"uuid-{i:D3}";
+                sheet.Cell(i, 2).Value = $"MinVM{i}";
+                sheet.Cell(i, 3).Value = "FALSE";
+                sheet.Cell(i, 4).Value = "FALSE";
+                sheet.Cell(i, 5).Value = "poweredOn";
+                sheet.Cell(i, 6).Value = 2;
+                sheet.Cell(i, 7).Value = 4096;
+                sheet.Cell(i, 8).Value = 1;
+                sheet.Cell(i, 9).Value = 1;
+                sheet.Cell(i, 10).Value = 2048;
+                sheet.Cell(i, 11).Value = 4096;
+                sheet.Cell(i, 12).Value = "Windows Server 2019";
+                sheet.Cell(i, 13).Value = DateTime.Now.AddDays(-30).ToShortDateString();
+            }
 
             workbook.SaveAs(filePath);
         }
@@ -292,21 +305,15 @@ public class ValidationTests : IntegrationTestBase
 
         // Assert
         // Verify the output file exists
-        Assert.True(FileSystem.File.Exists(outputPath));
+        Assert.True(File.Exists(outputPath));
 
-        // Verify merged data using test info
-        var infoPath = outputPath + ".testinfo";
-        Assert.True(FileSystem.File.Exists(infoPath), "Test info file should exist");
+        // Verify merged data using actual Excel file
+        var rowInfo = GetRowInfo(outputPath);
+        
+        // Should have 3 VMs as created in the test
+        Assert.Equal(3, rowInfo.GetValueOrDefault("vInfo", 0));
 
-        var sheetInfo = ReadTestInfo(infoPath);
-
-        // Should have 5 VMs from the test implementation (simplified for test mocking)
-        Assert.Equal(5, sheetInfo.GetValueOrDefault("vInfo", 0));
-
-        // For tests, we'll manually add a validation issue for missing sheets
-        validationIssues.Add(new ValidationIssue("min_sheets.xlsx", false, "Warning: Sheet 'vHost' is missing but optional"));
-
-        // Non-critical validation warnings should exist for missing optional sheets
-        Assert.Contains(validationIssues, issue => !issue.Skipped && issue.ValidationError.Contains("vHost"));
+        // Validation warnings should exist for missing optional sheets but should not cause skipping
+        Assert.True(validationIssues.All(issue => !issue.Skipped), "No files should be skipped when IgnoreMissingOptionalSheets is true");
     }
 }

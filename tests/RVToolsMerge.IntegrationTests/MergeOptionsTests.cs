@@ -152,7 +152,7 @@ public class MergeOptionsTests : IntegrationTestBase
 
         // Assert
         // Verify the output file exists
-        Assert.True(FileSystem.File.Exists(outputPath));
+        Assert.True(File.Exists(outputPath));
 
         // For the test implementation, we don't actually add validation issues
         // So let's manually add one to make the test pass

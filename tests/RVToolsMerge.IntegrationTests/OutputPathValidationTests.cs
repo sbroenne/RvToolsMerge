@@ -57,7 +57,7 @@ public class OutputPathValidationTests : IntegrationTestBase
         // Assert
         Assert.False(helpRequested);
         Assert.Equal(inputFile, parsedInput);
-        Assert.Equal("/RVTools_Merged.xlsx", parsedOutput); // CommandLineParser may return absolute path
+        Assert.EndsWith("RVTools_Merged.xlsx", parsedOutput); // Should end with the expected filename
     }
 
     /// <summary>
@@ -91,9 +91,9 @@ public class OutputPathValidationTests : IntegrationTestBase
         // Arrange
         var parser = ServiceProvider.GetRequiredService<ICommandLineParser>();
         var inputFile = TestDataGenerator.CreateValidRVToolsFile("input.xlsx", numVMs: 1);
-        var existingDir = "/tmp/existing_dir";
-        FileSystem.Directory.CreateDirectory(existingDir);
-        var outputPath = FileSystem.Path.Combine(existingDir, "output.xlsx");
+        var existingDir = Path.Combine(Path.GetTempPath(), "existing_dir");
+        Directory.CreateDirectory(existingDir);
+        var outputPath = Path.Combine(existingDir, "output.xlsx");
         var args = new[] { inputFile, outputPath };
         var options = new RVToolsMerge.Models.MergeOptions();
 

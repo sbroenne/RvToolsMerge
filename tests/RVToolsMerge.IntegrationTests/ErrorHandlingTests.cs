@@ -74,7 +74,7 @@ public class ErrorHandlingTests : IntegrationTestBase
         await MergeService.MergeFilesAsync(filePaths, outputPath, options, validationIssues);
         
         // Should create output file even with invalid input files
-        Assert.True(FileSystem.File.Exists(outputPath));
+        Assert.True(File.Exists(outputPath));
     }
 
     /// <summary>
@@ -97,7 +97,7 @@ public class ErrorHandlingTests : IntegrationTestBase
         await MergeService.MergeFilesAsync(filePaths, outputPath, options, validationIssues);
 
         // Assert - Should create output file
-        Assert.True(FileSystem.File.Exists(outputPath));
+        Assert.True(File.Exists(outputPath));
     }
 
     /// <summary>
@@ -183,7 +183,7 @@ public class ErrorHandlingTests : IntegrationTestBase
         await MergeService.MergeFilesAsync(filePaths, outputPath, options, validationIssues);
 
         // Assert - Output file should be created
-        Assert.True(FileSystem.File.Exists(outputPath));
+        Assert.True(File.Exists(outputPath));
     }
 
     /// <summary>
@@ -237,6 +237,6 @@ public class ErrorHandlingTests : IntegrationTestBase
         await MergeService.MergeFilesAsync(filePaths, outputPath, options, validationIssues);
 
         // Assert - Output file should be created
-        Assert.True(FileSystem.File.Exists(outputPath));
+        Assert.True(File.Exists(outputPath));
     }
 }

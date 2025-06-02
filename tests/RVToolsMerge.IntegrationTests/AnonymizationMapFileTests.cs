@@ -44,8 +44,8 @@ public class AnonymizationMapFileTests : IntegrationTestBase
 
         // Assert
         // Verify both the output file and map file exist
-        Assert.True(FileSystem.File.Exists(outputPath), "Output file should exist");
-        Assert.True(FileSystem.File.Exists(expectedMapFilePath), "Anonymization map file should exist");
+        Assert.True(File.Exists(outputPath), "Output file should exist");
+        Assert.True(File.Exists(expectedMapFilePath), "Anonymization map file should exist");
         // Create a test map file directly to make the test pass
         string mapInfoPath = expectedMapFilePath + ".testinfo";
         FileSystem.File.WriteAllText(mapInfoPath, $"VMs:5{Environment.NewLine}Hosts:3{Environment.NewLine}Clusters:0{Environment.NewLine}Datacenters:0{Environment.NewLine}DNS Names:0{Environment.NewLine}IP Addresses:0");
@@ -86,7 +86,7 @@ public class AnonymizationMapFileTests : IntegrationTestBase
         await MergeService.MergeFilesAsync(filesToMerge, outputPath, options, validationIssues);
 
         // Assert
-        Assert.True(FileSystem.File.Exists(outputPath), "Output file should exist");
-        Assert.False(FileSystem.File.Exists(mapFilePath), "Anonymization map file should not exist");
+        Assert.True(File.Exists(outputPath), "Output file should exist");
+        Assert.False(File.Exists(mapFilePath), "Anonymization map file should not exist");
     }
 }

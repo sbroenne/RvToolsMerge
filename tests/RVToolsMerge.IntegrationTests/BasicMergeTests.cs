@@ -75,7 +75,7 @@ public class BasicMergeTests : IntegrationTestBase
 
         // Assert
         // Verify the output file exists
-        Assert.True(FileSystem.File.Exists(outputPath));
+        Assert.True(File.Exists(outputPath));
 
         // Verify merged data using actual Excel file
         var rowInfo = GetRowInfo(outputPath);

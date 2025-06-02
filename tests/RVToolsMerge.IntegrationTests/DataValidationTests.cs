@@ -66,7 +66,7 @@ public class DataValidationTests : IntegrationTestBase
         // Arrange
         var fileName = "vinfo_no_data.xlsx";
         var testFile = TestDataGenerator.CreateFileWithNoDataRows(fileName);
-        var outputPath = FileSystem.Path.Combine(TestOutputDirectory, "merged_output.xlsx");
+        var outputPath = Path.Combine(TestOutputDirectory, "merged_output.xlsx");
         var options = new MergeOptions();
         var validationIssues = new List<ValidationIssue>();
 
@@ -93,7 +93,7 @@ public class DataValidationTests : IntegrationTestBase
         var validFileName = "vinfo_with_data.xlsx";
         var invalidFile = TestDataGenerator.CreateFileWithNoDataRows(invalidFileName);
         var validFile = TestDataGenerator.CreateValidRVToolsFile(validFileName, numVMs: 2);
-        var outputPath = FileSystem.Path.Combine(TestOutputDirectory, "merged_output.xlsx");
+        var outputPath = Path.Combine(TestOutputDirectory, "merged_output.xlsx");
         var options = new MergeOptions { SkipInvalidFiles = true };
         var validationIssues = new List<ValidationIssue>();
 
@@ -112,7 +112,7 @@ public class DataValidationTests : IntegrationTestBase
         await MergeService.MergeFilesAsync([invalidFile, validFile], outputPath, options, validationIssues);
 
         // Assert
-        Assert.True(FileSystem.File.Exists(outputPath));
+        Assert.True(File.Exists(outputPath));
         Assert.Single(invalidFileIssues);
         Assert.Contains("no data rows", invalidFileIssues[0].ValidationError);
     }
