@@ -70,6 +70,7 @@ Before committing any changes, ensure you have completed all of these steps:
     -   [ ] `CONTRIBUTING.md` for development process changes
     -   [ ] `docs/` directory files for specialized documentation
     -   [ ] XML documentation comments for public APIs
+    -   [ ] Online help system (console application's built-in help in `ConsoleUIService.ShowHelp()`)
     -   [ ] Project structure documentation if files/folders changed
 -   [ ] Commit message follows the guidelines below
 

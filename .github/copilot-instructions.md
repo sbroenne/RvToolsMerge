@@ -26,6 +26,7 @@ Before each commit, the following mandatory steps must be completed:
     -   Public APIs, interfaces, or method signatures
     -   Configuration options or settings
     -   User workflows or command-line arguments
+    -   Online help system (console application's built-in help)
     -   Project structure or file organization
     -   Testing approach or requirements
     -   Performance characteristics or requirements
@@ -40,6 +41,7 @@ When making changes, verify if any of the following documentation requires updat
 -   [ ] `CONTRIBUTING.md` - Development guidelines and contribution process
 -   [ ] `docs/` directory files - Specialized documentation (code coverage, CI/CD, etc.)
 -   [ ] Inline code documentation (XML comments for public APIs)
+-   [ ] Online help system - Console application's built-in help (`ConsoleUIService.ShowHelp()` and related methods)
 -   [ ] Project structure diagrams if files/folders are added or reorganized
 -   [ ] Version information and changelogs if applicable
 
