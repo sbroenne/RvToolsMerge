@@ -226,34 +226,34 @@ public class TestDataGenerator
         vInfoSheet.Cell(1, 2).Value = "VM UUID";
         vInfoSheet.Cell(1, 3).Value = "Powerstate";
         vInfoSheet.Cell(1, 4).Value = "Template";
-        vInfoSheet.Cell(1, 5).Value = "CPUs";
-        vInfoSheet.Cell(1, 6).Value = "Memory";
-        vInfoSheet.Cell(1, 7).Value = "In Use MiB";
-        vInfoSheet.Cell(1, 8).Value = "OS according to the configuration file";
-        vInfoSheet.Cell(1, 9).Value = "SRM Placeholder";
-        vInfoSheet.Cell(1, 10).Value = "DNS Name";
-        vInfoSheet.Cell(1, 11).Value = "Primary IP Address";
-        vInfoSheet.Cell(1, 12).Value = "Creation Date";
-        vInfoSheet.Cell(1, 13).Value = "NICs";
-        vInfoSheet.Cell(1, 14).Value = "Disks";
-        vInfoSheet.Cell(1, 15).Value = "Provisioned MiB";
+        vInfoSheet.Cell(1, 5).Value = "SRM Placeholder";
+        vInfoSheet.Cell(1, 6).Value = "CPUs";
+        vInfoSheet.Cell(1, 7).Value = "Memory";
+        vInfoSheet.Cell(1, 8).Value = "NICs";
+        vInfoSheet.Cell(1, 9).Value = "Disks";
+        vInfoSheet.Cell(1, 10).Value = "In Use MiB";
+        vInfoSheet.Cell(1, 11).Value = "Provisioned MiB";
+        vInfoSheet.Cell(1, 12).Value = "OS according to the configuration file";
+        vInfoSheet.Cell(1, 13).Value = "Creation date";
+        vInfoSheet.Cell(1, 14).Value = "DNS Name";
+        vInfoSheet.Cell(1, 15).Value = "Primary IP Address";
 
         // Add data with items that should be anonymized
         vInfoSheet.Cell(2, 1).Value = "CONFIDENTIAL-SERVER-01";
-        vInfoSheet.Cell(2, 2).Value = "42008ee5-71f9-48d7-8e02-7e371f5a8b4e"; // Added VM UUID
+        vInfoSheet.Cell(2, 2).Value = "42008ee5-71f9-48d7-8e02-7e371f5a8b4e"; // VM UUID
         vInfoSheet.Cell(2, 3).Value = "poweredOn";
         vInfoSheet.Cell(2, 4).Value = "FALSE";
-        vInfoSheet.Cell(2, 5).Value = 4;
-        vInfoSheet.Cell(2, 6).Value = 8192;
-        vInfoSheet.Cell(2, 7).Value = 4096;
-        vInfoSheet.Cell(2, 8).Value = "Windows Server 2019";
-        vInfoSheet.Cell(2, 9).Value = "FALSE";
-        vInfoSheet.Cell(2, 10).Value = "server01.contoso.local";
-        vInfoSheet.Cell(2, 11).Value = "192.168.1.100";
-        vInfoSheet.Cell(2, 12).Value = DateTime.Now.AddDays(-30).ToShortDateString(); // Creation Date
-        vInfoSheet.Cell(2, 13).Value = 2; // NICs
-        vInfoSheet.Cell(2, 14).Value = 2; // Disks
-        vInfoSheet.Cell(2, 15).Value = 10240; // Provisioned MiB
+        vInfoSheet.Cell(2, 5).Value = "FALSE"; // SRM Placeholder
+        vInfoSheet.Cell(2, 6).Value = 4;
+        vInfoSheet.Cell(2, 7).Value = 8192;
+        vInfoSheet.Cell(2, 8).Value = 2; // NICs
+        vInfoSheet.Cell(2, 9).Value = 2; // Disks
+        vInfoSheet.Cell(2, 10).Value = 4096;
+        vInfoSheet.Cell(2, 11).Value = 10240; // Provisioned MiB
+        vInfoSheet.Cell(2, 12).Value = "Windows Server 2019";
+        vInfoSheet.Cell(2, 13).Value = DateTime.Now.AddDays(-30).ToShortDateString(); // Creation date
+        vInfoSheet.Cell(2, 14).Value = "server01.contoso.local";
+        vInfoSheet.Cell(2, 15).Value = "192.168.1.100";
 
         workbook.SaveAs(filePath);
         return filePath;
@@ -281,7 +281,7 @@ public class TestDataGenerator
         vInfoSheet.Cell(1, 10).Value = "Cluster";
         vInfoSheet.Cell(1, 11).Value = "Host";
         vInfoSheet.Cell(1, 12).Value = "SRM Placeholder";
-        vInfoSheet.Cell(1, 13).Value = "Creation Date";
+        vInfoSheet.Cell(1, 13).Value = "Creation date";
         vInfoSheet.Cell(1, 14).Value = "NICs";
         vInfoSheet.Cell(1, 15).Value = "Disks";
         vInfoSheet.Cell(1, 16).Value = "Provisioned MiB";

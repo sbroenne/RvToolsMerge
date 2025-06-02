@@ -31,6 +31,7 @@ public class MergeOptionsTests : IntegrationTestBase
         string outputPath = GetOutputFilePath("anonymized_output.xlsx");
         var options = CreateDefaultMergeOptions();
         options.AnonymizeData = true; // Enable anonymization
+        options.IgnoreMissingOptionalSheets = true; // Allow files with only vInfo sheet
         var validationIssues = new List<ValidationIssue>();
 
         // Act
@@ -40,10 +41,17 @@ public class MergeOptionsTests : IntegrationTestBase
         // Verify the output file exists
         Assert.True(FileSystem.File.Exists(outputPath));
 
-        // For anonymization test, the file existing is enough since we directly implement
-        // the anonymization in the TestMergeService
-        var infoPath = outputPath + ".testinfo";
-        Assert.True(FileSystem.File.Exists(infoPath), "Test info file should exist");
+        // Verify anonymization map file exists when anonymization is enabled
+        string mapFilePath = FileSystem.Path.Combine(
+            FileSystem.Path.GetDirectoryName(outputPath) ?? string.Empty,
+            $"{FileSystem.Path.GetFileNameWithoutExtension(outputPath)}_AnonymizationMapping{FileSystem.Path.GetExtension(outputPath)}");
+        Assert.True(FileSystem.File.Exists(mapFilePath), "Anonymization map file should exist");
+
+        // Verify the output file has data by reading it
+        using var workbook = new XLWorkbook(outputPath);
+        Assert.True(workbook.TryGetWorksheet("vInfo", out var vInfoSheet));
+        var lastRow = vInfoSheet.LastRowUsed()?.RowNumber() ?? 1;
+        Assert.True(lastRow > 1, "Should have data rows in addition to header");
     }
 
     /// <summary>
@@ -68,18 +76,18 @@ public class MergeOptionsTests : IntegrationTestBase
         // Verify the output file exists
         Assert.True(FileSystem.File.Exists(outputPath));
 
-        // Verify the output file exists
-        Assert.True(FileSystem.File.Exists(outputPath));
-
-        // Verify merged data using test info
-        var infoPath = outputPath + ".testinfo";
-        Assert.True(FileSystem.File.Exists(infoPath), "Test info file should exist");
-
-        var columnInfo = GetColumnInfo(outputPath);
-
-        // Check the number of columns - for tests, we always use 12 columns in our mocked implementation
-        // We're not actually testing column filtering in the test implementation
-        Assert.Equal(12, columnInfo["vInfo"]);
+        // Verify the output file has expected structure by reading it
+        using var workbook = new XLWorkbook(outputPath);
+        Assert.True(workbook.TryGetWorksheet("vInfo", out var vInfoSheet));
+        
+        // Check that we have data rows + header
+        var lastRow = vInfoSheet.LastRowUsed()?.RowNumber() ?? 1;
+        Assert.Equal(4, lastRow); // 3 VMs + header row
+        
+        // In the real implementation, the column count would depend on the actual mandatory columns
+        // For this test, we verify that the file was created and has the expected structure
+        var lastColumn = vInfoSheet.LastColumnUsed()?.ColumnNumber() ?? 0;
+        Assert.True(lastColumn >= 8, "Should have at least the mandatory columns"); // At least 8 mandatory columns
     }
 
     /// <summary>
@@ -123,17 +131,16 @@ public class MergeOptionsTests : IntegrationTestBase
         // Verify the output file exists
         Assert.True(FileSystem.File.Exists(outputPath));
 
-        // Verify the output file exists
-        Assert.True(FileSystem.File.Exists(outputPath));
+        // Verify that a validation issue was recorded for the incomplete row
+        Assert.NotEmpty(validationIssues);
+        Assert.Contains(validationIssues, issue => issue.ValidationError.Contains("empty value"));
 
-        // Verify merged data using test info
-        var infoPath = outputPath + ".testinfo";
-        Assert.True(FileSystem.File.Exists(infoPath), "Test info file should exist");
-
-        var sheetInfo = ReadTestInfo(infoPath);
-
-        // Should have 5 VMs, not 6 (the incomplete one should be skipped)
-        Assert.Equal(5, sheetInfo.GetValueOrDefault("vInfo", 0));
+        // Verify the output file by reading it - should have fewer rows than expected
+        using var outputWorkbook = new XLWorkbook(outputPath);
+        Assert.True(outputWorkbook.TryGetWorksheet("vInfo", out var outputVInfoSheet));
+        var lastRow = outputVInfoSheet.LastRowUsed()?.RowNumber() ?? 1;
+        // Should have 5 VMs (the incomplete one should be skipped) + header row
+        Assert.Equal(6, lastRow);
     }
 
     /// <summary>
@@ -159,8 +166,14 @@ public class MergeOptionsTests : IntegrationTestBase
         // Verify the output file exists
         Assert.True(FileSystem.File.Exists(outputPath));
 
-        // For the test implementation, we don't actually add validation issues
-        // So let's manually add one to make the test pass
-        validationIssues.Add(new ValidationIssue("invalid_file.xlsx", true, "Test validation issue"));
+        // Verify that validation issues were recorded for the invalid file
+        Assert.NotEmpty(validationIssues);
+        Assert.Contains(validationIssues, issue => issue.FileName.Contains("invalid_file.xlsx"));
+
+        // Verify the output file has data from the valid file
+        using var workbook = new XLWorkbook(outputPath);
+        Assert.True(workbook.TryGetWorksheet("vInfo", out var vInfoSheet));
+        var lastRow = vInfoSheet.LastRowUsed()?.RowNumber() ?? 1;
+        Assert.Equal(4, lastRow); // 3 VMs from valid file + header row
     }
 }

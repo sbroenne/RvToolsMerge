@@ -199,50 +199,42 @@ public class ValidationTests : IntegrationTestBase
         string[] filesToMerge = [validFile, invalidFile];
         string outputPath = GetOutputFilePath("exception_output.xlsx");
         var options = CreateDefaultMergeOptions();
+        options.SkipInvalidFiles = false; // Don't skip invalid files - should throw exception
         var validationIssues = new List<ValidationIssue>();
 
-        // Modify the TestMergeService for this specific test case
-        options.SkipInvalidFiles = false; // Don't skip invalid files
+        // Act & Assert - should throw InvalidFileException when invalid files are found and skip is disabled
+        var exception = await Assert.ThrowsAsync<InvalidFileException>(async () =>
+        {
+            await MergeService.MergeFilesAsync(filesToMerge, outputPath, options, validationIssues);
+        });
 
-        // This test is just checking that validation issues are generated
-        // We'll manually modify validationIssues to trigger the error
-        validationIssues.Add(
-            new ValidationIssue("invalid_test.xlsx", true, "Missing required columns in vInfo sheet.")
-        );
-
-        // Act - attempt to merge with invalid files
-        await MergeService.MergeFilesAsync(filesToMerge, outputPath, options, validationIssues);
-
-        // Assert - there should be validation issues and the file should still exist
+        // Verify that validation issues were recorded for the invalid file
         Assert.NotEmpty(validationIssues);
-        Assert.Contains(validationIssues,
-            issue => issue.FileName == "invalid_test.xlsx" && issue.ValidationError.Contains("Missing required"));
-        Assert.True(FileSystem.File.Exists(outputPath));
+        Assert.Contains(validationIssues, issue => issue.FileName.Contains("invalid_test.xlsx") && issue.Skipped);
     }
 
     /// <summary>
-    /// Tests handling of non-existent files.
+    /// Tests that merge service handles non-existent files by throwing an exception when no valid files remain.
     /// </summary>
     [Fact]
     public async Task MergeFiles_WithNonExistentFile_HandlesError()
     {
         // Arrange
-        string[] filesToMerge = ["/path/to/nonexistent.xlsx"];
+        string nonExistentPath = FileSystem.Path.Combine(TestInputDirectory, "nonexistent.xlsx");
+        string[] filesToMerge = [nonExistentPath];
         string outputPath = GetOutputFilePath("nonexistent_output.xlsx");
         var options = CreateDefaultMergeOptions();
         var validationIssues = new List<ValidationIssue>();
 
-        // Create parent directory to avoid permission issues
-        FileSystem.Directory.CreateDirectory("/path/to");
+        // Act & Assert - should throw NoValidFilesException when no valid files remain
+        var exception = await Assert.ThrowsAsync<NoValidFilesException>(async () =>
+        {
+            await MergeService.MergeFilesAsync(filesToMerge, outputPath, options, validationIssues);
+        });
 
-        // Act
-        await MergeService.MergeFilesAsync(filesToMerge, outputPath, options, validationIssues);
-
-        // Assert - no exception, but file exists with warnings
-        Assert.True(FileSystem.File.Exists(outputPath));
-
-        // For tests, we'll manually add a validation issue for the non-existent file
-        validationIssues.Add(new ValidationIssue("nonexistent.xlsx", true, "File not found"));
+        // Verify that validation issues were recorded for the non-existent file
+        Assert.NotEmpty(validationIssues);
+        Assert.Contains(validationIssues, issue => issue.ValidationError.Contains("Could not find file"));
     }
 
     /// <summary>
@@ -258,25 +250,35 @@ public class ValidationTests : IntegrationTestBase
         {
             var sheet = workbook.AddWorksheet("vInfo");
 
-            // Add minimum required columns for vInfo
+            // Add all mandatory columns for vInfo as per SheetConfiguration.MandatoryColumns
             sheet.Cell(1, 1).Value = "VM";
-            sheet.Cell(1, 2).Value = "Powerstate";
-            sheet.Cell(1, 3).Value = "Template";
-            sheet.Cell(1, 4).Value = "CPUs";
-            sheet.Cell(1, 5).Value = "Memory";
-            sheet.Cell(1, 6).Value = "In Use MiB";
-            sheet.Cell(1, 7).Value = "OS according to the configuration file";
-            sheet.Cell(1, 8).Value = "SRM Placeholder";
+            sheet.Cell(1, 2).Value = "VM UUID";
+            sheet.Cell(1, 3).Value = "Powerstate";
+            sheet.Cell(1, 4).Value = "Template";
+            sheet.Cell(1, 5).Value = "SRM Placeholder";
+            sheet.Cell(1, 6).Value = "CPUs";
+            sheet.Cell(1, 7).Value = "Memory";
+            sheet.Cell(1, 8).Value = "NICs";
+            sheet.Cell(1, 9).Value = "Disks";
+            sheet.Cell(1, 10).Value = "In Use MiB";
+            sheet.Cell(1, 11).Value = "Provisioned MiB";
+            sheet.Cell(1, 12).Value = "OS according to the configuration file";
+            sheet.Cell(1, 13).Value = "Creation date";
 
             // Add one data row
             sheet.Cell(2, 1).Value = "MinVM";
-            sheet.Cell(2, 2).Value = "poweredOn";
-            sheet.Cell(2, 3).Value = "FALSE";
-            sheet.Cell(2, 4).Value = 2;
-            sheet.Cell(2, 5).Value = 4096;
-            sheet.Cell(2, 6).Value = 2048;
-            sheet.Cell(2, 7).Value = "Windows Server 2019";
-            sheet.Cell(2, 8).Value = "FALSE";
+            sheet.Cell(2, 2).Value = "42008ee5-71f9-48d7-8e02-7e371f5a8b99";
+            sheet.Cell(2, 3).Value = "poweredOn";
+            sheet.Cell(2, 4).Value = "FALSE";
+            sheet.Cell(2, 5).Value = "FALSE";
+            sheet.Cell(2, 6).Value = 2;
+            sheet.Cell(2, 7).Value = 4096;
+            sheet.Cell(2, 8).Value = 1;
+            sheet.Cell(2, 9).Value = 1;
+            sheet.Cell(2, 10).Value = 2048;
+            sheet.Cell(2, 11).Value = 8192;
+            sheet.Cell(2, 12).Value = "Windows Server 2019";
+            sheet.Cell(2, 13).Value = DateTime.Now.AddDays(-30).ToShortDateString();
 
             workbook.SaveAs(filePath);
         }
@@ -294,14 +296,11 @@ public class ValidationTests : IntegrationTestBase
         // Verify the output file exists
         Assert.True(FileSystem.File.Exists(outputPath));
 
-        // Verify merged data using test info
-        var infoPath = outputPath + ".testinfo";
-        Assert.True(FileSystem.File.Exists(infoPath), "Test info file should exist");
-
-        var sheetInfo = ReadTestInfo(infoPath);
-
-        // Should have 5 VMs from the test implementation (simplified for test mocking)
-        Assert.Equal(5, sheetInfo.GetValueOrDefault("vInfo", 0));
+        // Verify the output file by reading it directly
+        using var outputWorkbook = new XLWorkbook(outputPath);
+        Assert.True(outputWorkbook.TryGetWorksheet("vInfo", out var vInfoSheet));
+        var lastRow = vInfoSheet.LastRowUsed()?.RowNumber() ?? 1;
+        Assert.Equal(2, lastRow); // 1 data row + 1 header row
 
         // For tests, we'll manually add a validation issue for missing sheets
         validationIssues.Add(new ValidationIssue("min_sheets.xlsx", false, "Warning: Sheet 'vHost' is missing but optional"));
