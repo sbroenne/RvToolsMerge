@@ -87,7 +87,7 @@ public class MergeOptionsTests : IntegrationTestBase
         // In the real implementation, the column count would depend on the actual mandatory columns
         // For this test, we verify that the file was created and has the expected structure
         var lastColumn = vInfoSheet.LastColumnUsed()?.ColumnNumber() ?? 0;
-        Assert.True(lastColumn >= 8, "Should have at least the mandatory columns"); // At least 8 mandatory columns
+        Assert.True(lastColumn >= 16, "Should have at least the mandatory columns"); // At least 16 mandatory columns
     }
 
     /// <summary>

@@ -95,6 +95,9 @@ public class TestDataGenerator
         vInfoSheet.Cell(1, 11).Value = "vInfoNICs";         // Should map to "NICs"
         vInfoSheet.Cell(1, 12).Value = "vInfoNumVirtualDisks"; // Should map to "Disks"
         vInfoSheet.Cell(1, 13).Value = "vInfoProvisioned";  // Should map to "Provisioned MiB"
+        vInfoSheet.Cell(1, 14).Value = "vInfoDataCenter";   // Should map to "Datacenter"
+        vInfoSheet.Cell(1, 15).Value = "vInfoCluster";      // Should map to "Cluster"
+        vInfoSheet.Cell(1, 16).Value = "vInfoHost";         // Should map to "Host"
 
         // Add data rows
         for (int i = 1; i <= numVMs; i++)
@@ -112,6 +115,9 @@ public class TestDataGenerator
             vInfoSheet.Cell(i + 1, 11).Value = i % 3 + 1; // 1-3 NICs
             vInfoSheet.Cell(i + 1, 12).Value = i % 2 + 1; // 1-2 Disks
             vInfoSheet.Cell(i + 1, 13).Value = 8192 * i; // Provisioned MiB
+            vInfoSheet.Cell(i + 1, 14).Value = $"DC{(i % 2) + 1}"; // Datacenter
+            vInfoSheet.Cell(i + 1, 15).Value = $"Cluster{(i % 3) + 1}"; // Cluster
+            vInfoSheet.Cell(i + 1, 16).Value = $"Host{i}"; // Host
         }
 
         // Add additional required sheets with alternative headers
@@ -235,8 +241,11 @@ public class TestDataGenerator
         vInfoSheet.Cell(1, 11).Value = "Provisioned MiB";
         vInfoSheet.Cell(1, 12).Value = "OS according to the configuration file";
         vInfoSheet.Cell(1, 13).Value = "Creation date";
-        vInfoSheet.Cell(1, 14).Value = "DNS Name";
-        vInfoSheet.Cell(1, 15).Value = "Primary IP Address";
+        vInfoSheet.Cell(1, 14).Value = "Datacenter";
+        vInfoSheet.Cell(1, 15).Value = "Cluster";
+        vInfoSheet.Cell(1, 16).Value = "Host";
+        vInfoSheet.Cell(1, 17).Value = "DNS Name";
+        vInfoSheet.Cell(1, 18).Value = "Primary IP Address";
 
         // Add data with items that should be anonymized
         vInfoSheet.Cell(2, 1).Value = "CONFIDENTIAL-SERVER-01";
@@ -252,8 +261,11 @@ public class TestDataGenerator
         vInfoSheet.Cell(2, 11).Value = 10240; // Provisioned MiB
         vInfoSheet.Cell(2, 12).Value = "Windows Server 2019";
         vInfoSheet.Cell(2, 13).Value = DateTime.Now.AddDays(-30).ToShortDateString(); // Creation date
-        vInfoSheet.Cell(2, 14).Value = "server01.contoso.local";
-        vInfoSheet.Cell(2, 15).Value = "192.168.1.100";
+        vInfoSheet.Cell(2, 14).Value = "SENSITIVE-DC";
+        vInfoSheet.Cell(2, 15).Value = "CONFIDENTIAL-CLUSTER";
+        vInfoSheet.Cell(2, 16).Value = "SENSITIVE-HOST-01";
+        vInfoSheet.Cell(2, 17).Value = "server01.contoso.local";
+        vInfoSheet.Cell(2, 18).Value = "192.168.1.100";
 
         workbook.SaveAs(filePath);
         return filePath;

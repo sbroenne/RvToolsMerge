@@ -89,7 +89,12 @@ public class ValidationTests : IntegrationTestBase
             sheet.Cell(1, 10).Value = "Creation date";
             sheet.Cell(1, 11).Value = "NICs";
             sheet.Cell(1, 12).Value = "Disks";
-            sheet.Cell(1, 13).Value = "Provisioned MiB";// Add one data row
+            sheet.Cell(1, 13).Value = "Provisioned MiB";
+            sheet.Cell(1, 14).Value = "Datacenter";
+            sheet.Cell(1, 15).Value = "Cluster";
+            sheet.Cell(1, 16).Value = "Host";
+
+            // Add one data row
             sheet.Cell(2, 1).Value = "TestVM";
             sheet.Cell(2, 2).Value = "42008ee5-71f9-48d7-8e02-7e371f5a8b01";  // Added UUID value
             sheet.Cell(2, 3).Value = "poweredOn";
@@ -103,6 +108,9 @@ public class ValidationTests : IntegrationTestBase
             sheet.Cell(2, 11).Value = 2; // NICs
             sheet.Cell(2, 12).Value = 2; // Disks
             sheet.Cell(2, 13).Value = 10240; // Provisioned MiB
+            sheet.Cell(2, 14).Value = "DC1"; // Datacenter
+            sheet.Cell(2, 15).Value = "Cluster1"; // Cluster
+            sheet.Cell(2, 16).Value = "Host1"; // Host
 
             workbook.SaveAs(filePath);
         }
@@ -264,6 +272,9 @@ public class ValidationTests : IntegrationTestBase
             sheet.Cell(1, 11).Value = "Provisioned MiB";
             sheet.Cell(1, 12).Value = "OS according to the configuration file";
             sheet.Cell(1, 13).Value = "Creation date";
+            sheet.Cell(1, 14).Value = "Datacenter";
+            sheet.Cell(1, 15).Value = "Cluster";
+            sheet.Cell(1, 16).Value = "Host";
 
             // Add one data row
             sheet.Cell(2, 1).Value = "MinVM";
@@ -279,6 +290,9 @@ public class ValidationTests : IntegrationTestBase
             sheet.Cell(2, 11).Value = 8192;
             sheet.Cell(2, 12).Value = "Windows Server 2019";
             sheet.Cell(2, 13).Value = DateTime.Now.AddDays(-30).ToShortDateString();
+            sheet.Cell(2, 14).Value = "DC1"; // Datacenter
+            sheet.Cell(2, 15).Value = "Cluster1"; // Cluster
+            sheet.Cell(2, 16).Value = "Host1"; // Host
 
             workbook.SaveAs(filePath);
         }
