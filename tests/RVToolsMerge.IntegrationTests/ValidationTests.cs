@@ -191,7 +191,7 @@ public class ValidationTests : IntegrationTestBase
 
         // Assert
         Assert.True(isValid, "File with alternative headers should be valid");
-        Assert.Empty(issues.Where(i => i.Skipped)); // No critical issues
+        Assert.DoesNotContain(issues, i => i.Skipped); // No critical issues
     }
 
     /// <summary>

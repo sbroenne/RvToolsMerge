@@ -126,25 +126,6 @@ public class ExcelServiceTests : IntegrationTestBase
     }
 
     /// <summary>
-    /// Tests getting column mapping with alternative header mappings - 
-    /// This test requires the actual configuration from the app which isn't accessible in the unit tests.
-    /// </summary>
-    [Fact(Skip = "This test requires configuration that's not available in the test environment")]
-    public void GetColumnMapping_AlternativeHeaders_MapsCorrectly()
-    {
-        // This test is skipped as it requires specific configuration from the actual app
-    }
-
-    /// <summary>
-    /// Tests mapping columns with case insensitivity.
-    /// </summary>
-    [Fact(Skip = "Case insensitivity mapping requires actual implementation details")]
-    public void GetColumnMapping_CaseInsensitive_MapsCorrectly()
-    {
-        // This test is skipped as it requires specific implementation details
-    }
-
-    /// <summary>
     /// Tests opening a workbook from a valid file path.
     /// </summary>
     [Fact]
