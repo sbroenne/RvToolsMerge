@@ -22,7 +22,28 @@ Before each commit, the following mandatory steps must be completed:
 -   **Build Verification**: Run `dotnet build` on the entire solution and ensure it builds successfully with zero errors
 -   **Test Execution**: Run `dotnet test` and ensure all tests pass with zero failures (skipped tests are acceptable)
 -   **Code Compliance**: Verify that all new and modified code follows the coding standards defined in this document
--   **Documentation Updates**: Update relevant documentation if the changes affect public APIs, configuration, or user workflows
+-   **Documentation Updates**: **MANDATORY** - Update relevant documentation if the changes affect:
+    -   Public APIs, interfaces, or method signatures
+    -   Configuration options or settings
+    -   User workflows or command-line arguments
+    -   Project structure or file organization
+    -   Testing approach or requirements
+    -   Performance characteristics or requirements
+    -   Security considerations or features
+    -   Installation or deployment procedures
+
+### Documentation Update Checklist
+
+When making changes, verify if any of the following documentation requires updates:
+
+-   [ ] `README.md` - Main project documentation, usage instructions, features
+-   [ ] `CONTRIBUTING.md` - Development guidelines and contribution process
+-   [ ] `docs/` directory files - Specialized documentation (code coverage, CI/CD, etc.)
+-   [ ] Inline code documentation (XML comments for public APIs)
+-   [ ] Project structure diagrams if files/folders are added or reorganized
+-   [ ] Version information and changelogs if applicable
+
+**Failure to update documentation when required will result in commit rejection.**
 
 ## Coding Standards
 

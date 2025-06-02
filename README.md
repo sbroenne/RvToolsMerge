@@ -282,15 +282,6 @@ RVToolsMerge implements robust validation to ensure data integrity:
 
 To enable any special processing behavior, you must explicitly specify the corresponding command-line options.
 
-## Sample Files
-
-The project includes sample files in the `input` directory:
-
--   `default.xlsx`: Standard RVTools export format with all required sheets and columns
--   `altenativeColumnNames.xlsx`: Example file with alternative column naming variations
-
-These files can be used to test the application and understand the expected format of RVTools exports.
-
 ## Troubleshooting
 
 If you encounter issues while using RVToolsMerge:
@@ -382,7 +373,8 @@ This project follows strict development standards:
 -   **Coding Style**: C# coding best practices with PascalCase for public members, camelCase for private fields
 -   **Documentation**: XML documentation for all public methods and classes
 -   **Error Handling**: Robust exception handling and validation
--   **Code Coverage**: Comprehensive test coverage with detailed reports - see [Code Coverage Documentation](docs/code-coverage.md)
+-   **Code Coverage**: Comprehensive test coverage (currently 76%) with detailed reports - see [Code Coverage Documentation](docs/code-coverage.md)
+-   **Testing Approach**: Integration tests use real file system operations while unit tests use mocking for isolated component testing
 
 ### Continuous Integration
 
@@ -441,24 +433,28 @@ The project follows standard GitHub repository best practices:
 
 ```
 RVToolsMerge/
-├── .github/           # GitHub-specific files (workflows)
-├── docs/              # Documentation files
-├── Input/             # Sample input files
-├── src/               # Source code
-│   └── RVToolsMerge/  # .NET project
-│       ├── Configuration/ # Configuration settings
-│       ├── Exceptions/    # Custom exception classes
-│       ├── Models/        # Data models and DTOs
-│       ├── Services/      # Service implementations
-│       │   └── Interfaces/ # Service interfaces
-│       └── UI/            # User interface components
-├── CHANGELOG.md       # Version history
-├── CONTRIBUTING.md    # Guidelines for contributors
-├── LICENSE            # MIT License file
-├── README.md          # This file
-├── run.bat            # Windows script to run the application
-├── run.sh             # Linux/macOS script to run the application
-└── SECURITY.md        # Security policy
+├── .github/                      # GitHub-specific files (workflows)
+├── docs/                         # Documentation files
+├── src/                          # Source code
+│   └── RVToolsMerge/            # .NET project
+│       ├── Configuration/       # Configuration settings
+│       ├── Exceptions/          # Custom exception classes
+│       ├── Models/              # Data models and DTOs
+│       ├── Services/            # Service implementations
+│       │   └── Interfaces/      # Service interfaces
+│       └── UI/                  # User interface components
+│           ├── Console/         # Console UI implementations
+│           └── Interfaces/      # UI interfaces
+├── tests/                        # Test projects
+│   ├── RVToolsMerge.IntegrationTests/ # Integration tests using real file operations
+│   └── RVToolsMerge.UnitTests/        # Unit tests with mocking for isolated testing
+├── CHANGELOG.md                  # Version history
+├── CONTRIBUTING.md               # Guidelines for contributors
+├── LICENSE                       # MIT License file
+├── README.md                     # This file
+├── run.bat                       # Windows script to run the application
+├── run.sh                        # Linux/macOS script to run the application
+└── SECURITY.md                   # Security policy
 ```
 
 ## Contributing
