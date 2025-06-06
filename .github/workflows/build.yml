@@ -109,9 +109,54 @@ jobs:
         if: runner.os != 'Windows'
         run: chmod +x publish/RVToolsMerge
 
+      - name: Install WiX Toolset (Windows only)
+        if: runner.os == 'Windows' && inputs.configuration == 'Release'
+        run: dotnet tool install --global wix --version 6.0.1
+
+      - name: Create MSI installer (Windows only)
+        if: runner.os == 'Windows' && inputs.configuration == 'Release'
+        working-directory: installer
+        run: |
+          $publishDir = Join-Path $env:GITHUB_WORKSPACE "publish"
+          $outputDir = Join-Path $env:GITHUB_WORKSPACE "msi-output"
+          $version = "1.3.3"  # This should be extracted from the project file
+          
+          # Create output directory
+          New-Item -ItemType Directory -Force -Path $outputDir
+          
+          # Extract version from project file
+          $projectFile = Join-Path $env:GITHUB_WORKSPACE "src\RVToolsMerge\RVToolsMerge.csproj"
+          $projectContent = Get-Content $projectFile -Raw
+          if ($projectContent -match '<Version>(.*?)</Version>') {
+              $version = $matches[1]
+              Write-Host "Extracted version: $version"
+          }
+          
+          # Build MSI
+          $msiName = "RVToolsMerge-$version-${{ matrix.runtime }}.msi"
+          Write-Host "Building MSI: $msiName"
+          
+          wix build RVToolsMerge.wxs -define PublishDir="$publishDir" -out "$outputDir\$msiName" -ext WixToolset.UI.wixext
+          
+          if ($LASTEXITCODE -ne 0) {
+              Write-Error "MSI build failed"
+              exit 1
+          }
+          
+          Write-Host "MSI created successfully: $outputDir\$msiName"
+        shell: pwsh
+
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
           name: RVToolsMerge-${{ matrix.runtime }}
           path: publish/
+          retention-days: 30
+
+      - name: Upload MSI artifact (Windows only)
+        if: runner.os == 'Windows' && inputs.configuration == 'Release'
+        uses: actions/upload-artifact@v4
+        with:
+          name: RVToolsMerge-${{ matrix.runtime }}-msi
+          path: msi-output/*.msi
           retention-days: 30

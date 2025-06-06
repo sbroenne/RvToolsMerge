@@ -1,0 +1,97 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package 
+    Name="RVToolsMerge" 
+    Version="!(bind.FileVersion.RVToolsMerge.exe)"
+    Manufacturer="Stefan Broenner" 
+    UpgradeCode="12345678-1234-1234-1234-123456789012"
+    Language="1033"
+    Codepage="1252">
+    
+    <!-- Package properties -->
+    <SummaryInformation
+      Description="A tool to merge multiple RVTools Excel files into a single consolidated file"
+      Manufacturer="Stefan Broenner"
+      Keywords="RVTools, VMware, Excel, Merge, Virtualization" />
+    
+    <!-- Installation directory structure -->
+    <StandardDirectory Id="ProgramFilesFolder">
+      <Directory Id="INSTALLFOLDER" Name="RVToolsMerge">
+        <Component Id="MainExecutable" Guid="87654321-4321-4321-4321-210987654321">
+          <File Id="RVToolsMerge.exe" 
+                Source="$(var.PublishDir)\RVToolsMerge.exe" 
+                KeyPath="yes">
+            <Shortcut Id="DesktopShortcut" 
+                      Directory="DesktopFolder" 
+                      Name="RVToolsMerge" 
+                      Description="Merge RVTools Excel files"
+                      Icon="RVToolsMergeIcon.exe" 
+                      IconIndex="0" 
+                      WorkingDirectory="INSTALLFOLDER" />
+            <Shortcut Id="StartMenuShortcut" 
+                      Directory="ProgramMenuFolder" 
+                      Name="RVToolsMerge" 
+                      Description="Merge RVTools Excel files"
+                      Icon="RVToolsMergeIcon.exe" 
+                      IconIndex="0" 
+                      WorkingDirectory="INSTALLFOLDER" />
+          </File>
+        </Component>
+        
+        <!-- Icon files -->
+        <Component Id="IconFiles" Guid="11111111-2222-3333-4444-555555555555">
+          <File Id="AppIcon.ico" 
+                Source="$(var.PublishDir)\Resources\Icons\app-icon.ico" />
+          <File Id="AppIcon.png" 
+                Source="$(var.PublishDir)\Resources\Icons\app-icon.png" />
+          <File Id="AppIcon.svg" 
+                Source="$(var.PublishDir)\Resources\Icons\app-icon.svg" />
+        </Component>
+      </Directory>
+    </StandardDirectory>
+    
+    <!-- Standard directories -->
+    <StandardDirectory Id="ProgramMenuFolder" />
+    <StandardDirectory Id="DesktopFolder" />
+    
+    <!-- Icon for installer -->
+    <Icon Id="RVToolsMergeIcon.exe" SourceFile="$(var.PublishDir)\RVToolsMerge.exe" />
+    <Property Id="ARPPRODUCTICON" Value="RVToolsMergeIcon.exe" />
+    
+    <!-- Add/Remove Programs properties -->
+    <Property Id="ARPHELPLINK" Value="https://github.com/sbroenne/RVToolsMerge" />
+    <Property Id="ARPURLINFOABOUT" Value="https://github.com/sbroenne/RVToolsMerge" />
+    <Property Id="ARPNOREPAIR" Value="yes" Secure="yes" />
+    
+    <!-- Feature definition -->
+    <Feature Id="ProductFeature" Title="RVToolsMerge" Level="1">
+      <ComponentRef Id="MainExecutable" />
+      <ComponentRef Id="IconFiles" />
+    </Feature>
+    
+    <!-- Major upgrade -->
+    <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+    
+    <!-- Custom actions for PATH environment variable (optional) -->
+    <Property Id="ADDTOPATH" Value="0" />
+    
+    <!-- UI sequence -->
+    <UI>
+      <UIRef Id="WixUI_Minimal" />
+      <Publish Dialog="ExitDialog" 
+               Control="Finish" 
+               Event="DoAction" 
+               Value="LaunchApplication">WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1 and NOT Installed</Publish>
+    </UI>
+    
+    <!-- License agreement -->
+    <WixVariable Id="WixUILicenseRtf" Value="License.rtf" />
+    
+    <!-- Launch application option -->
+    <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" Value="Launch RVToolsMerge" />
+    <Property Id="WixShellExecTarget" Value="[#RVToolsMerge.exe]" />
+    <CustomAction Id="LaunchApplication" 
+                  BinaryKey="WixCA" 
+                  DllEntry="WixShellExec" 
+                  Impersonate="yes" />
+  </Package>
+</Wix>

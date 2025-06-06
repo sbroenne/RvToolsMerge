@@ -384,11 +384,52 @@ jobs:
             fi
           }
 
+          # Function to copy MSI files directly (for Windows platforms)
+          copy_msi() {
+            local platform=$1
+            local artifact_name=$2
+            local version=$3
+
+            echo "Looking for MSI artifact with name: $artifact_name"
+
+            # Find the MSI artifact directory
+            msi_artifact_dir=$(find artifacts -type d -name "$artifact_name" | head -1)
+
+            if [[ -n "$msi_artifact_dir" && -d "$msi_artifact_dir" ]]; then
+              msi_files=$(find "$msi_artifact_dir" -name "*.msi")
+              if [[ -n "$msi_files" ]]; then
+                for msi_file in $msi_files; do
+                  msi_filename=$(basename "$msi_file")
+                  cp "$msi_file" "release-files/$msi_filename"
+                  echo "✅ Successfully copied MSI: $msi_filename"
+                  
+                  # Add to created files list
+                  abs_path="$(pwd)/release-files/$msi_filename"
+                  if [[ -z "$created_files" ]]; then
+                    created_files="$abs_path"
+                  else
+                    created_files="$created_files,$abs_path"
+                  fi
+                done
+              else
+                echo "::warning::No MSI files found in $msi_artifact_dir"
+              fi
+            else
+              echo "::info::No MSI artifact found for $platform (this is normal for non-Windows platforms or Debug builds)"
+            fi
+          }
+
           # Use the version extracted from the tag (not from previous job outputs)
           VERSION_FROM_TAG="${{ steps.get-version.outputs.version }}"
           echo "Using version from tag: $VERSION_FROM_TAG"
 
-          # Create archives for each expected platform with exact artifact names
+          # For Windows platforms, try to use MSI files first, fallback to ZIP
+          echo "Checking for Windows MSI files..."
+          copy_msi "win-x64" "RVToolsMerge-win-x64-msi" "$VERSION_FROM_TAG"
+          copy_msi "win-arm64" "RVToolsMerge-win-arm64-msi" "$VERSION_FROM_TAG"
+
+          # Create ZIP archives for all platforms (as fallback for Windows and primary for others)
+          echo "Creating ZIP archives for all platforms..."
           create_archive "win-x64" "RVToolsMerge-win-x64" "$VERSION_FROM_TAG"
           create_archive "win-arm64" "RVToolsMerge-win-arm64" "$VERSION_FROM_TAG"
           create_archive "linux-x64" "RVToolsMerge-linux-x64" "$VERSION_FROM_TAG"
@@ -447,6 +488,7 @@ jobs:
           prerelease: ${{ contains(steps.get-version.outputs.version, '-') }}
           files: |
             release-files/*.zip
+            release-files/*.msi
           fail_on_unmatched_files: true
           generate_release_notes: true
           body: |
@@ -458,16 +500,22 @@ jobs:
 
             Choose the appropriate version for your operating system:
 
-            | Platform | Architecture | Download |
-            |----------|-------------|----------|
-            | Windows | x64 | RVToolsMerge-${{ steps.get-version.outputs.version }}-win-x64.zip |
-            | Windows | ARM64 | RVToolsMerge-${{ steps.get-version.outputs.version }}-win-arm64.zip |
-            | Linux | x64 | RVToolsMerge-${{ steps.get-version.outputs.version }}-linux-x64.zip |
-            | macOS | ARM64 (Apple Silicon) | RVToolsMerge-${{ steps.get-version.outputs.version }}-osx-arm64.zip |
+            | Platform | Architecture | Download | Installer |
+            |----------|-------------|----------|-----------|
+            | Windows | x64 | RVToolsMerge-${{ steps.get-version.outputs.version }}-win-x64.zip | RVToolsMerge-${{ steps.get-version.outputs.version }}-win-x64.msi |
+            | Windows | ARM64 | RVToolsMerge-${{ steps.get-version.outputs.version }}-win-arm64.zip | RVToolsMerge-${{ steps.get-version.outputs.version }}-win-arm64.msi |
+            | Linux | x64 | RVToolsMerge-${{ steps.get-version.outputs.version }}-linux-x64.zip | - |
+            | macOS | ARM64 (Apple Silicon) | RVToolsMerge-${{ steps.get-version.outputs.version }}-osx-arm64.zip | - |
 
             ### 🚀 Quick Start
 
-            1. Download the archive for your platform
+            #### Windows Users (Recommended)
+            1. Download the MSI installer for your architecture (x64 or ARM64)
+            2. Run the installer and follow the setup wizard
+            3. Launch RVToolsMerge from the Start Menu or Desktop shortcut
+
+            #### All Platforms (Portable)
+            1. Download the ZIP archive for your platform
             2. Extract the archive to a directory of your choice
             3. Run the executable to start the interactive console interface
             4. Follow the prompts to select and merge your RVTools Excel files
