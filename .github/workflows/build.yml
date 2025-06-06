@@ -111,7 +111,16 @@ jobs:
 
       - name: Install WiX Toolset (Windows only)
         if: runner.os == 'Windows' && inputs.configuration == 'Release'
-        run: dotnet tool install --global wix --version 6.0.1
+        run: |
+          # Install WiX toolset and extensions
+          dotnet tool install --global wix --version 6.0.1
+          
+          # Install WiX UI extension explicitly
+          wix extension add WixToolset.UI.wixext/6.0.1
+          
+          # Verify installation
+          wix --version
+          wix extension list
 
       - name: Create MSI installer (Windows only)
         if: runner.os == 'Windows' && inputs.configuration == 'Release'
@@ -119,31 +128,67 @@ jobs:
         run: |
           $publishDir = Join-Path $env:GITHUB_WORKSPACE "publish"
           $outputDir = Join-Path $env:GITHUB_WORKSPACE "msi-output"
-          $version = "1.3.3"  # This should be extracted from the project file
           
           # Create output directory
           New-Item -ItemType Directory -Force -Path $outputDir
           
-          # Extract version from project file
-          $projectFile = Join-Path $env:GITHUB_WORKSPACE "src\RVToolsMerge\RVToolsMerge.csproj"
-          $projectContent = Get-Content $projectFile -Raw
-          if ($projectContent -match '<Version>(.*?)</Version>') {
-              $version = $matches[1]
-              Write-Host "Extracted version: $version"
-          }
+          # Extract version from project file using proper Windows path separators
+          $projectFile = Join-Path $env:GITHUB_WORKSPACE "src" "RVToolsMerge" "RVToolsMerge.csproj"
+          Write-Host "Looking for project file at: $projectFile"
           
-          # Build MSI
-          $msiName = "RVToolsMerge-$version-${{ matrix.runtime }}.msi"
-          Write-Host "Building MSI: $msiName"
-          
-          wix build RVToolsMerge.wxs -define PublishDir="$publishDir" -out "$outputDir\$msiName" -ext WixToolset.UI.wixext
-          
-          if ($LASTEXITCODE -ne 0) {
-              Write-Error "MSI build failed"
+          if (-not (Test-Path $projectFile)) {
+              Write-Error "Project file not found at: $projectFile"
               exit 1
           }
           
-          Write-Host "MSI created successfully: $outputDir\$msiName"
+          $projectContent = Get-Content $projectFile -Raw
+          if ($projectContent -match '<Version>(.*?)</Version>') {
+              $version = $matches[1].Trim()
+              Write-Host "Extracted version: $version"
+          } else {
+              Write-Error "Could not extract version from project file"
+              Write-Host "Project file content preview:"
+              $projectContent | Select-Object -First 30 | Write-Host
+              exit 1
+          }
+          
+          # Validate version format
+          if (-not ($version -match '^\d+\.\d+\.\d+(\.\d+)?$')) {
+              Write-Error "Invalid version format: $version. Expected format: X.Y.Z or X.Y.Z.W"
+              exit 1
+          }
+          
+          # Build MSI using wix command with proper extension
+          $msiName = "RVToolsMerge-$version-${{ matrix.runtime }}.msi"
+          $outputPath = Join-Path $outputDir $msiName
+          Write-Host "Building MSI: $msiName"
+          Write-Host "Output path: $outputPath"
+          Write-Host "Publish directory: $publishDir"
+          
+          # Use wix build command with explicit extension reference
+          $wixCommand = "wix build RVToolsMerge.wxs -define PublishDir=`"$publishDir`" -out `"$outputPath`" -ext WixToolset.UI.wixext"
+          Write-Host "Executing: $wixCommand"
+          
+          Invoke-Expression $wixCommand
+          
+          if ($LASTEXITCODE -ne 0) {
+              Write-Error "MSI build failed with exit code: $LASTEXITCODE"
+              Write-Host "Checking WiX extension status:"
+              wix extension list
+              exit 1
+          }
+          
+          # Verify MSI was created
+          if (Test-Path $outputPath) {
+              Write-Host "MSI created successfully: $outputPath"
+              $msiInfo = Get-Item $outputPath
+              Write-Host "MSI size: $($msiInfo.Length) bytes"
+          } else {
+              Write-Error "MSI file not found at expected location: $outputPath"
+              Write-Host "Output directory contents:"
+              Get-ChildItem -Path $outputDir -Recurse | Write-Host
+              exit 1
+          }
         shell: pwsh
 
       - name: Upload build artifact
