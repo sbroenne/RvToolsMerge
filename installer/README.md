@@ -118,20 +118,21 @@ When releasing new versions:
 
 RVToolsMerge is prepared for publication to the Windows Package Manager with the identifier `RvToolsMerge.RvToolsMerge`.
 
-### Winget Manifests
+### Automated Winget Manifest Generation
 
-The project includes winget manifest files located in `/manifests/r/RvToolsMerge/RvToolsMerge/1.3.3/`:
+The project includes **automated winget manifest generation** as part of the release process:
 
-- **Package manifest**: Defines the package identity and basic information
-- **Installer manifest**: Specifies installation details and MSI URLs
-- **Locale manifest**: Contains localized descriptions and metadata
+- **Template-based generation**: Winget manifests are automatically generated from templates in `.github/winget-templates/`
+- **Dynamic SHA256 calculation**: MSI file hashes are automatically calculated and included in manifests
+- **Version synchronization**: Package version automatically matches the release version
+- **Release integration**: Generated manifests are included as artifacts in GitHub releases
 
 ### Publishing Process
 
 To submit to the Microsoft winget-pkgs repository:
 
-1. **Validate manifests**: Use `winget-create validate` to verify manifest syntax
-2. **Update SHA256 hashes**: Calculate and update installer SHA256 values in the installer manifest
+1. **Download manifests**: Get the generated winget manifest files from the GitHub release artifacts
+2. **Validate manifests**: Use `winget-create validate` to verify manifest syntax (pre-validated during generation)
 3. **Submit PR**: Fork [microsoft/winget-pkgs](https://github.com/microsoft/winget-pkgs) and submit the manifest files
 4. **Review process**: Microsoft reviews and approves the submission
 
@@ -139,7 +140,7 @@ To submit to the Microsoft winget-pkgs repository:
 
 The MSI installer is configured for winget compatibility:
 
-- **Consistent Product Code**: Uses stable GUID `{A7B8C9D0-E1F2-4A5B-8C9D-0E1F2A5B8C9D}`
+- **Consistent Product Code**: Uses stable GUID `{F3E4D5C6-B7A8-9C0D-1E2F-3A4B5C6D7E8F}`
 - **Publisher information**: Matches winget manifest publisher details
 - **Version information**: Automatically extracted from executable for consistency
 - **Silent installation**: Supports silent installation modes required by winget
