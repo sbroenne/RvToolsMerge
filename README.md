@@ -102,13 +102,13 @@ winget install RvToolsMerge.RvToolsMerge
 #### Windows - Package Manager (Recommended)
 1. Open PowerShell or Command Prompt
 2. Run: `winget install RvToolsMerge.RvToolsMerge`
-3. Launch RVToolsMerge from the Start Menu or Desktop shortcut
+3. After installation, RVToolsMerge will be available from any command prompt or PowerShell window
 
 #### Windows - MSI Installer (Alternative)
 1. Download the appropriate MSI file for your architecture (x64 or ARM64)
 2. Double-click the MSI file to start the installation
 3. Follow the installation wizard prompts
-4. Launch RVToolsMerge from the Start Menu or Desktop shortcut
+4. After installation, RVToolsMerge will be available from any command prompt or PowerShell window
 
 #### All Platforms - Portable ZIP
 1. Download the appropriate ZIP file for your platform

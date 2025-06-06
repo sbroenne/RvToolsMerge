@@ -14,7 +14,7 @@ This directory contains the WiX Toolset configuration files for creating Windows
 The Windows MSI installer provides:
 
 - **Professional installation experience** with proper Windows Installer integration
-- **Desktop and Start Menu shortcuts** for easy access
+- **Command-line access** by adding RVToolsMerge to the user's PATH environment variable
 - **Add/Remove Programs integration** with proper uninstall support
 - **Application icon** embedded throughout the installation experience
 - **License agreement** display during installation
@@ -73,8 +73,8 @@ build-msi.bat
 - **User selectable**: Yes, user can choose custom installation directory
 
 ### Shortcuts Created
-- **Desktop**: `RVToolsMerge` shortcut pointing to the main executable
-- **Start Menu**: `RVToolsMerge` shortcut in the programs menu
+- **Command-line access**: `RVToolsMerge` command is available from any command prompt or PowerShell window after installation
+- **PATH integration**: The installation directory is added to the user's PATH environment variable
 
 ### Files Installed
 - **Main executable**: `RVToolsMerge.exe`
