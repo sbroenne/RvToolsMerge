@@ -37,16 +37,44 @@ jobs:
       - name: Get Current Version
         id: get-version
         run: |
-          CURRENT_VERSION=$(grep -o '<Version>[^<]*' src/RVToolsMerge/RVToolsMerge.csproj | sed 's/<Version>//')
+          # Check if project file exists
+          PROJECT_FILE="src/RVToolsMerge/RVToolsMerge.csproj"
+          if [ ! -f "$PROJECT_FILE" ]; then
+            echo "::error::Project file not found: $PROJECT_FILE"
+            exit 1
+          fi
+
+          # Extract current version from project file
+          CURRENT_VERSION=$(grep -o '<Version>[^<]*' "$PROJECT_FILE" | sed 's/<Version>//' | head -1)
+          
+          # Validate that version was extracted
+          if [ -z "$CURRENT_VERSION" ]; then
+            echo "::error::Could not extract version from $PROJECT_FILE"
+            echo "Project file content:"
+            head -30 "$PROJECT_FILE"
+            exit 1
+          fi
+
           echo "current_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          echo "::notice::Current version: $CURRENT_VERSION"
 
           # Handle complex versions with pre-release tags
           BASE_VERSION=$(echo "$CURRENT_VERSION" | cut -d'-' -f1)
 
+          # Parse version components
           IFS='.' read -r MAJOR MINOR PATCH <<< "$BASE_VERSION"
+          
+          # Validate that all components were parsed
+          if [ -z "$MAJOR" ] || [ -z "$MINOR" ] || [ -z "$PATCH" ]; then
+            echo "::error::Failed to parse version components from: $BASE_VERSION"
+            echo "Parsed: MAJOR='$MAJOR' MINOR='$MINOR' PATCH='$PATCH'"
+            exit 1
+          fi
+
           echo "major=$MAJOR" >> $GITHUB_OUTPUT
           echo "minor=$MINOR" >> $GITHUB_OUTPUT
           echo "patch=$PATCH" >> $GITHUB_OUTPUT
+          echo "::notice::Parsed version components: MAJOR=$MAJOR, MINOR=$MINOR, PATCH=$PATCH"
 
       - name: Calculate New Version
         id: calc-version
@@ -113,28 +141,105 @@ jobs:
         run: |
           PACKAGE_VERSION="${{ steps.calc-version.outputs.package_version }}"
           ASSEMBLY_VERSION="${{ steps.calc-version.outputs.assembly_version }}"
+          PROJECT_FILE="src/RVToolsMerge/RVToolsMerge.csproj"
+
+          echo "::notice::Updating $PROJECT_FILE with package version: $PACKAGE_VERSION, assembly version: $ASSEMBLY_VERSION"
+
+          # Verify inputs
+          if [ -z "$PACKAGE_VERSION" ] || [ -z "$ASSEMBLY_VERSION" ]; then
+            echo "::error::Missing version values. PACKAGE_VERSION='$PACKAGE_VERSION' ASSEMBLY_VERSION='$ASSEMBLY_VERSION'"
+            exit 1
+          fi
+
+          # Create backup of project file
+          cp "$PROJECT_FILE" "$PROJECT_FILE.backup"
 
           # Update the package version
-          sed -i "s/<Version>.*<\/Version>/<Version>$PACKAGE_VERSION<\/Version>/g" src/RVToolsMerge/RVToolsMerge.csproj
+          if ! sed -i "s/<Version>.*<\/Version>/<Version>$PACKAGE_VERSION<\/Version>/g" "$PROJECT_FILE"; then
+            echo "::error::Failed to update package version in $PROJECT_FILE"
+            exit 1
+          fi
 
           # Update assembly and file versions (must be strictly numeric with 4 parts)
-          sed -i "s/<AssemblyVersion>.*<\/AssemblyVersion>/<AssemblyVersion>$ASSEMBLY_VERSION<\/AssemblyVersion>/g" src/RVToolsMerge/RVToolsMerge.csproj
-          sed -i "s/<FileVersion>.*<\/FileVersion>/<FileVersion>$ASSEMBLY_VERSION<\/FileVersion>/g" src/RVToolsMerge/RVToolsMerge.csproj
+          if ! sed -i "s/<AssemblyVersion>.*<\/AssemblyVersion>/<AssemblyVersion>$ASSEMBLY_VERSION<\/AssemblyVersion>/g" "$PROJECT_FILE"; then
+            echo "::error::Failed to update assembly version in $PROJECT_FILE"
+            exit 1
+          fi
+          
+          if ! sed -i "s/<FileVersion>.*<\/FileVersion>/<FileVersion>$ASSEMBLY_VERSION<\/FileVersion>/g" "$PROJECT_FILE"; then
+            echo "::error::Failed to update file version in $PROJECT_FILE"
+            exit 1
+          fi
 
-          echo "::notice::Version updated from ${{ steps.get-version.outputs.current_version }} to package version $PACKAGE_VERSION (assembly version: $ASSEMBLY_VERSION)"
+          # Verify the changes were applied correctly
+          echo "::group::Verifying version updates"
+          UPDATED_PACKAGE=$(grep -o '<Version>[^<]*' "$PROJECT_FILE" | sed 's/<Version>//' | head -1)
+          UPDATED_ASSEMBLY=$(grep -o '<AssemblyVersion>[^<]*' "$PROJECT_FILE" | sed 's/<AssemblyVersion>//' | head -1)
+          UPDATED_FILE=$(grep -o '<FileVersion>[^<]*' "$PROJECT_FILE" | sed 's/<FileVersion>//' | head -1)
+
+          echo "Updated package version: $UPDATED_PACKAGE"
+          echo "Updated assembly version: $UPDATED_ASSEMBLY"
+          echo "Updated file version: $UPDATED_FILE"
+
+          if [ "$UPDATED_PACKAGE" != "$PACKAGE_VERSION" ]; then
+            echo "::error::Package version update verification failed. Expected: $PACKAGE_VERSION, Got: $UPDATED_PACKAGE"
+            exit 1
+          fi
+
+          if [ "$UPDATED_ASSEMBLY" != "$ASSEMBLY_VERSION" ]; then
+            echo "::error::Assembly version update verification failed. Expected: $ASSEMBLY_VERSION, Got: $UPDATED_ASSEMBLY"
+            exit 1
+          fi
+
+          if [ "$UPDATED_FILE" != "$ASSEMBLY_VERSION" ]; then
+            echo "::error::File version update verification failed. Expected: $ASSEMBLY_VERSION, Got: $UPDATED_FILE"
+            exit 1
+          fi
+          echo "::endgroup::"
+
+          echo "::notice::Version updated successfully from ${{ steps.get-version.outputs.current_version }} to package version $PACKAGE_VERSION (assembly version: $ASSEMBLY_VERSION)"
 
       - name: Create Version Update Branch
         id: create-branch
         run: |
           # Create a new branch for the version update
           VERSION_BRANCH="version-update-${{ steps.calc-version.outputs.package_version }}"
-          git checkout -b $VERSION_BRANCH
-          echo "branch_name=$VERSION_BRANCH" >> $GITHUB_OUTPUT
-          git add src/RVToolsMerge/RVToolsMerge.csproj
+          echo "::notice::Creating branch: $VERSION_BRANCH"
+          
+          # Configure Git user for commits
           git config --local user.email "actions@github.com"
           git config --local user.name "GitHub Actions"
+          
+          # Check if branch already exists and delete it if it does (cleanup from failed runs)
+          if git show-ref --verify --quiet refs/remotes/origin/"$VERSION_BRANCH"; then
+            echo "::warning::Branch $VERSION_BRANCH already exists remotely, deleting it"
+            git push origin --delete "$VERSION_BRANCH" || echo "::warning::Failed to delete remote branch"
+          fi
+          
+          # Create and switch to new branch
+          git checkout -b "$VERSION_BRANCH"
+          echo "branch_name=$VERSION_BRANCH" >> $GITHUB_OUTPUT
+          
+          # Add the modified project file
+          git add src/RVToolsMerge/RVToolsMerge.csproj
+          
+          # Check if there are changes to commit
+          if git diff --cached --quiet; then
+            echo "::error::No changes to commit. Version update may have failed."
+            git status
+            exit 1
+          fi
+          
+          # Commit the changes
           git commit -m "chore: bump version to ${{ steps.calc-version.outputs.package_version }} [skip ci]"
-          git push origin $VERSION_BRANCH
+          
+          # Push the branch
+          if ! git push origin "$VERSION_BRANCH"; then
+            echo "::error::Failed to push branch $VERSION_BRANCH"
+            exit 1
+          fi
+          
+          echo "::notice::Successfully created and pushed branch: $VERSION_BRANCH"
 
       - name: Create Pull Request
         id: create-pr
@@ -143,16 +248,43 @@ jobs:
           # Uses the GitHub CLI to create a pull request with the version changes
           # The PR title follows conventional commits format with "chore: bump version"
           # The PR description includes both the old and new version numbers for clarity
-          PR_URL=$(gh pr create \
-            --title "chore: bump version to ${{ steps.calc-version.outputs.package_version }}" \
-            --body "This PR updates the version from ${{ steps.get-version.outputs.current_version }} to ${{ steps.calc-version.outputs.package_version }}." \
-            --base "${{ github.ref_name }}" \
-            --head "${{ steps.create-branch.outputs.branch_name }}")
-          echo "pr_url=$PR_URL" >> $GITHUB_OUTPUT
-          # Extract the PR number from the URL for use in subsequent steps
-          PR_NUMBER=$(echo $PR_URL | grep -o '[0-9]*$')
-          echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
-          echo "::notice::Created PR for version update: $PR_URL"
+          
+          echo "::notice::Creating pull request for version update"
+          
+          # Check if PR already exists for this branch
+          EXISTING_PR=$(gh pr list --head "${{ steps.create-branch.outputs.branch_name }}" --json number --jq '.[0].number' 2>/dev/null || echo "")
+          
+          if [ -n "$EXISTING_PR" ] && [ "$EXISTING_PR" != "null" ]; then
+            echo "::warning::PR already exists for branch ${{ steps.create-branch.outputs.branch_name }}: #$EXISTING_PR"
+            echo "pr_number=$EXISTING_PR" >> $GITHUB_OUTPUT
+            echo "pr_url=https://github.com/${{ github.repository }}/pull/$EXISTING_PR" >> $GITHUB_OUTPUT
+          else
+            # Create new PR
+            PR_URL=$(gh pr create \
+              --title "chore: bump version to ${{ steps.calc-version.outputs.package_version }}" \
+              --body "This PR updates the version from ${{ steps.get-version.outputs.current_version }} to ${{ steps.calc-version.outputs.package_version }}." \
+              --base "${{ github.ref_name }}" \
+              --head "${{ steps.create-branch.outputs.branch_name }}")
+            
+            if [ $? -ne 0 ] || [ -z "$PR_URL" ]; then
+              echo "::error::Failed to create pull request"
+              echo "Attempting to get more information..."
+              gh pr list --head "${{ steps.create-branch.outputs.branch_name }}" || true
+              exit 1
+            fi
+            
+            echo "pr_url=$PR_URL" >> $GITHUB_OUTPUT
+            
+            # Extract the PR number from the URL for use in subsequent steps
+            PR_NUMBER=$(echo "$PR_URL" | grep -o '[0-9]*$')
+            if [ -z "$PR_NUMBER" ]; then
+              echo "::error::Failed to extract PR number from URL: $PR_URL"
+              exit 1
+            fi
+            
+            echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
+            echo "::notice::Created PR for version update: $PR_URL (PR #$PR_NUMBER)"
+          fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
