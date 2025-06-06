@@ -3,6 +3,7 @@
     Name="RVToolsMerge" 
     Version="!(bind.FileVersion.RVToolsMerge.exe)"
     Manufacturer="Stefan Broenner" 
+    ProductCode="F3E4D5C6-B7A8-9C0D-1E2F-3A4B5C6D7E8F"
     UpgradeCode="A7B8C9D0-E1F2-4A5B-8C9D-0E1F2A5B8C9D"
     Language="1033"
     Codepage="1252">

@@ -1,7 +1,7 @@
 # Created with winget-create
 # https://github.com/microsoft/winget-create
 PackageIdentifier: RvToolsMerge.RvToolsMerge
-PackageVersion: 1.3.3
+PackageVersion: {{VERSION}}
 PackageLocale: en-US
 Publisher: Stefan Broenner
 PublisherUrl: https://github.com/sbroenne
@@ -38,36 +38,8 @@ Tags:
 - consolidation
 - automation
 ReleaseNotes: |-
-  ## 🎨 Professional Application Icon
-  - Created modern, professional icon representing RVTools Excel file merging functionality
-  - Features overlapping documents with grid lines, merge arrow, and "RV MERGE" branding
-  - Available in multiple formats: SVG (vector), PNG (256x256), and ICO (multi-resolution)
-  - Embedded in Windows executable and used throughout MSI installer experience
-
-  ## 📦 MSI Installer Implementation
-  - WiX Toolset 6.0 Integration: Professional Windows Installer packages using industry-standard WiX
-  - Complete Installation Experience with desktop and Start Menu shortcuts
-  - Add/Remove Programs integration with proper uninstall support
-  - License agreement display during installation
-  - Optional application launch after installation
-  - Version-based upgrade support with automatic detection
-  - Professional Branding: Application icon embedded throughout installer UI
-
-  ## 🔧 Build System Updates
-  - Automated MSI Creation: GitHub Actions automatically creates MSI files for Windows x64 and ARM64
-  - Cross-Platform Compatibility: MSI creation only on Windows runners, preserving existing cross-platform build support
-  - Dual Distribution: Both MSI installers and portable ZIP archives for Windows platforms
-
-  ## 🚀 Release Process Enhancement
-  - Intelligent Asset Detection: Release workflow automatically includes MSI files when available
-  - Updated Release Notes: Clear guidance on recommended MSI installer vs portable ZIP options
-  - Download Table: Professional download matrix showing both installer and portable options
-
-  ## 📚 Documentation Updates
-  - Installation Guide: Updated README.md with clear MSI vs ZIP installation instructions
-  - Developer Documentation: Comprehensive installer/README.md explaining MSI build process
-  - Troubleshooting Guide: Common issues and solutions for MSI packaging
-ReleaseNotesUrl: https://github.com/sbroenne/RVToolsMerge/releases/tag/v1.3.3
+  {{RELEASE_NOTES}}
+ReleaseNotesUrl: https://github.com/sbroenne/RVToolsMerge/releases/tag/v{{VERSION}}
 PurchaseUrl: https://github.com/sbroenne/RVToolsMerge
 InstallationNotes: |-
   After installation, RVToolsMerge will be available from the Start Menu and Desktop shortcut.
