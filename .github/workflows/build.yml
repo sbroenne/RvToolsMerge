@@ -112,15 +112,11 @@ jobs:
       - name: Install WiX Toolset (Windows only)
         if: runner.os == 'Windows' && inputs.configuration == 'Release'
         run: |
-          # Install WiX toolset and extensions
+          # Install WiX toolset
           dotnet tool install --global wix --version 6.0.1
-          
-          # Install WiX UI extension explicitly (without version specification for WiX 6.0.1)
-          wix extension add WixToolset.UI.wixext
           
           # Verify installation
           wix --version
-          wix extension list
           
           # Additional debug info for troubleshooting
           Write-Host "WiX installation location:"
@@ -170,16 +166,14 @@ jobs:
           Write-Host "Output path: $outputPath"
           Write-Host "Publish directory: $publishDir"
           
-          # Use wix build command with explicit extension reference
-          $wixCommand = "wix build RVToolsMerge.wxs -define PublishDir=`"$publishDir`" -out `"$outputPath`" -ext WixToolset.UI.wixext"
+          # Use wix build command for WiX v6
+          $wixCommand = "wix build RVToolsMerge.wxs -define PublishDir=`"$publishDir`" -out `"$outputPath`""
           Write-Host "Executing: $wixCommand"
           
           Invoke-Expression $wixCommand
           
           if ($LASTEXITCODE -ne 0) {
               Write-Error "MSI build failed with exit code: $LASTEXITCODE"
-              Write-Host "Checking WiX extension status:"
-              wix extension list
               Write-Host "WiX version:"
               wix --version
               Write-Host "Current working directory:"
