@@ -28,7 +28,7 @@
     <Authors>Stefan Broenner</Authors>
     <Company>Stefan Broenner</Company>
     <Product>RVToolsMerge</Product>
-    <Description>A tool to merge multiple RVTools Excel files into a single consolidated file.</Description>
+    <Description>A tool to merge multiple RVTools Excel files into a single consolidated file</Description>
     <Copyright>Copyright © 2025 Stefan Broenner</Copyright>
     <RepositoryUrl>https://github.com/sbroenne/RVToolsMerge</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
