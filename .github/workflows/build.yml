@@ -115,7 +115,6 @@ jobs:
 
       - name: Create MSI installer (Windows only)
         if: runner.os == 'Windows' && inputs.configuration == 'Release'
-        working-directory: installer
         run: |
           $publishDir = Join-Path $env:GITHUB_WORKSPACE "publish"
           $outputDir = Join-Path $env:GITHUB_WORKSPACE "msi-output"
@@ -149,18 +148,36 @@ jobs:
               exit 1
           }
           
-          # Build MSI
+          # Build MSI using project-based approach
           $msiName = "RVToolsMerge-$version-${{ matrix.runtime }}.msi"
           Write-Host "Building MSI: $msiName"
           
-          wix build RVToolsMerge.wxs -define PublishDir="$publishDir" -out "$outputDir\$msiName" -ext WixToolset.UI.wixext
+          # Use dotnet build with the WiX project file to properly handle extensions
+          $installerProject = Join-Path $env:GITHUB_WORKSPACE "installer" "RVToolsMerge.Installer.wixproj"
+          $buildOutput = dotnet build $installerProject --configuration ${{ inputs.configuration }} -p:PublishDir="$publishDir" -p:OutputPath="$outputDir\" 2>&1
           
           if ($LASTEXITCODE -ne 0) {
               Write-Error "MSI build failed with exit code: $LASTEXITCODE"
+              Write-Host "Build output:"
+              Write-Host $buildOutput
               exit 1
           }
           
-          Write-Host "MSI created successfully: $outputDir\$msiName"
+          # Find the generated MSI file and rename it to include runtime
+          $generatedMsi = Get-ChildItem -Path $outputDir -Filter "*.msi" | Select-Object -First 1
+          if ($generatedMsi) {
+              $targetMsiPath = Join-Path $outputDir $msiName
+              if ($generatedMsi.FullName -ne $targetMsiPath) {
+                  Move-Item -Path $generatedMsi.FullName -Destination $targetMsiPath -Force
+                  Write-Host "Renamed MSI to: $msiName"
+              }
+              Write-Host "MSI created successfully: $targetMsiPath"
+          } else {
+              Write-Error "No MSI file found in output directory: $outputDir"
+              Write-Host "Output directory contents:"
+              Get-ChildItem -Path $outputDir -Recurse | Write-Host
+              exit 1
+          }
         shell: pwsh
 
       - name: Upload build artifact
