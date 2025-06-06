@@ -18,19 +18,17 @@
         <Component Id="MainExecutable">
           <File Id="RVToolsMerge.exe" 
                 Source="$(var.PublishDir)\RVToolsMerge.exe" 
-                KeyPath="yes">
-            <Shortcut Id="StartMenuShortcut" 
-                      Directory="ProgramMenuFolder" 
-                      Name="RVToolsMerge" 
-                      Description="Merge RVTools Excel files"
-                      WorkingDirectory="INSTALLFOLDER" />
-          </File>
+                KeyPath="yes" />
+          <Environment Id="PATH" 
+                       Name="PATH" 
+                       Value="[INSTALLFOLDER]" 
+                       Permanent="no" 
+                       Part="last" 
+                       Action="set" 
+                       System="yes" />
         </Component>
       </Directory>
     </StandardDirectory>
-    
-    <!-- Standard directories -->
-    <StandardDirectory Id="ProgramMenuFolder" />
     
     <!-- Add/Remove Programs properties -->
     <Property Id="ARPHELPLINK" Value="https://github.com/sbroenne/RVToolsMerge" />
