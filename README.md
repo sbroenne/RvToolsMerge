@@ -81,10 +81,28 @@ For a complete reference of all column mappings, see [Column Mappings Documentat
 
 Download the latest release for your platform from the [Releases page](https://github.com/sbroenne/RVToolsMerge/releases):
 
--   Windows (x64): `RVToolsMerge-windows-Release.zip`
--   Windows (ARM64): `RVToolsMerge-windows-arm64-Release.zip`
--   Linux (x64): `RVToolsMerge-linux-Release.zip`
--   macOS (ARM64): `RVToolsMerge-macos-arm64-Release.zip`
+### Windows (Recommended: MSI Installer)
+-   **Windows x64**: `RVToolsMerge-[version]-win-x64.msi` - Full installer with shortcuts and uninstall support
+-   **Windows ARM64**: `RVToolsMerge-[version]-win-arm64.msi` - Full installer with shortcuts and uninstall support
+
+### All Platforms (Portable ZIP)
+-   **Windows x64**: `RVToolsMerge-[version]-win-x64.zip` - Portable version, no installation required
+-   **Windows ARM64**: `RVToolsMerge-[version]-win-arm64.zip` - Portable version, no installation required
+-   **Linux x64**: `RVToolsMerge-[version]-linux-x64.zip` - Portable version for Linux
+-   **macOS ARM64**: `RVToolsMerge-[version]-osx-arm64.zip` - Portable version for macOS (Apple Silicon)
+
+### Installation Instructions
+
+#### Windows - MSI Installer (Recommended)
+1. Download the appropriate MSI file for your architecture (x64 or ARM64)
+2. Double-click the MSI file to start the installation
+3. Follow the installation wizard prompts
+4. Launch RVToolsMerge from the Start Menu or Desktop shortcut
+
+#### All Platforms - Portable ZIP
+1. Download the appropriate ZIP file for your platform
+2. Extract the contents to a folder of your choice
+3. Run the executable directly (no installation required)
 
 ### Prerequisites
 
