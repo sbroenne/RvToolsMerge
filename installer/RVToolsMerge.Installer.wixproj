@@ -15,14 +15,4 @@
   <ItemGroup>
     <Compile Include="RVToolsMerge.wxs" />
   </ItemGroup>
-
-  <ItemGroup>
-    <WixExtension Include="WixToolset.UI.wixext" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Content Include="License.rtf">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
 </Project>
