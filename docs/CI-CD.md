@@ -113,7 +113,25 @@ Code coverage is now handled exclusively by the dedicated code-coverage.yml work
 
 Common issues and solutions:
 
--   **Version workflow fails**: Ensure csproj file exists and has proper version elements
--   **Release creation fails**: Verify build artifacts are properly generated and version format is correct
--   **Publication error**: Check for valid GitHub permissions and tokens
+-   **Version workflow fails**: 
+    -   Ensure csproj file exists and has proper version elements (`<Version>`, `<AssemblyVersion>`, `<FileVersion>`)
+    -   Check that the version format is valid (X.Y.Z format)
+    -   Verify that version components don't exceed .NET assembly version limits (0-65535)
+    -   Check workflow logs for detailed error messages with validation steps
+-   **Release creation fails**: 
+    -   Verify build artifacts are properly generated and version format is correct
+    -   Ensure MSI creation succeeded on Windows runners
+    -   Check that all expected platforms completed their builds
+-   **Publication error**: 
+    -   Check for valid GitHub permissions and tokens
+    -   Verify that the repository allows Actions to create PRs and releases
+    -   Ensure no existing PR conflicts with the version update branch
 -   **Code coverage not found**: Ensure Windows x64 build completes successfully and generates coverage files
+-   **Branch creation fails**: 
+    -   Check for existing version update branches that may conflict
+    -   Verify git configuration and push permissions
+    -   Ensure the version increment didn't create duplicate branch names
+-   **PR auto-merge fails**: 
+    -   Verify repository branch protection rules allow auto-merge
+    -   Check that required status checks are configured correctly
+    -   Ensure the GitHub token has sufficient permissions
