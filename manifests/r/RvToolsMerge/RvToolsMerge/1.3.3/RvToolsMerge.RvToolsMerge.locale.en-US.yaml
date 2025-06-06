@@ -1,0 +1,81 @@
+# Created with winget-create
+# https://github.com/microsoft/winget-create
+PackageIdentifier: RvToolsMerge.RvToolsMerge
+PackageVersion: 1.3.3
+PackageLocale: en-US
+Publisher: Stefan Broenner
+PublisherUrl: https://github.com/sbroenne
+PublisherSupportUrl: https://github.com/sbroenne/RVToolsMerge/issues
+Author: Stefan Broenner
+PackageName: RVToolsMerge
+PackageUrl: https://github.com/sbroenne/RVToolsMerge
+License: MIT
+LicenseUrl: https://github.com/sbroenne/RVToolsMerge/blob/main/LICENSE
+Copyright: Copyright © 2025 Stefan Broenner
+CopyrightUrl: https://github.com/sbroenne/RVToolsMerge/blob/main/LICENSE
+ShortDescription: A tool to merge multiple RVTools Excel files into a single consolidated file
+Description: |-
+  RVToolsMerge is a powerful console application designed to simplify the management of VMware infrastructure data by merging multiple RVTools Excel exports into a single consolidated file.
+  
+  Key Features:
+  - Merge multiple RVTools Excel files efficiently
+  - Interactive console interface with progress tracking
+  - Cross-platform support (Windows, Linux, macOS)
+  - Professional MSI installer for Windows
+  - Comprehensive data validation and error handling
+  - Support for all standard RVTools export tabs
+  
+  Perfect for VMware administrators managing multiple vCenter environments who need to consolidate RVTools data for reporting and analysis.
+Moniker: rvtoolsmerge
+Tags:
+- vmware
+- excel
+- rvtools
+- merge
+- virtualization
+- infrastructure
+- vcenter
+- consolidation
+- automation
+ReleaseNotes: |-
+  ## 🎨 Professional Application Icon
+  - Created modern, professional icon representing RVTools Excel file merging functionality
+  - Features overlapping documents with grid lines, merge arrow, and "RV MERGE" branding
+  - Available in multiple formats: SVG (vector), PNG (256x256), and ICO (multi-resolution)
+  - Embedded in Windows executable and used throughout MSI installer experience
+
+  ## 📦 MSI Installer Implementation
+  - WiX Toolset 6.0 Integration: Professional Windows Installer packages using industry-standard WiX
+  - Complete Installation Experience with desktop and Start Menu shortcuts
+  - Add/Remove Programs integration with proper uninstall support
+  - License agreement display during installation
+  - Optional application launch after installation
+  - Version-based upgrade support with automatic detection
+  - Professional Branding: Application icon embedded throughout installer UI
+
+  ## 🔧 Build System Updates
+  - Automated MSI Creation: GitHub Actions automatically creates MSI files for Windows x64 and ARM64
+  - Cross-Platform Compatibility: MSI creation only on Windows runners, preserving existing cross-platform build support
+  - Dual Distribution: Both MSI installers and portable ZIP archives for Windows platforms
+
+  ## 🚀 Release Process Enhancement
+  - Intelligent Asset Detection: Release workflow automatically includes MSI files when available
+  - Updated Release Notes: Clear guidance on recommended MSI installer vs portable ZIP options
+  - Download Table: Professional download matrix showing both installer and portable options
+
+  ## 📚 Documentation Updates
+  - Installation Guide: Updated README.md with clear MSI vs ZIP installation instructions
+  - Developer Documentation: Comprehensive installer/README.md explaining MSI build process
+  - Troubleshooting Guide: Common issues and solutions for MSI packaging
+ReleaseNotesUrl: https://github.com/sbroenne/RVToolsMerge/releases/tag/v1.3.3
+PurchaseUrl: https://github.com/sbroenne/RVToolsMerge
+InstallationNotes: |-
+  After installation, RVToolsMerge will be available from the Start Menu and Desktop shortcut.
+  The application provides an interactive console interface to guide you through the merge process.
+Documentations:
+- DocumentLabel: User Guide
+  DocumentUrl: https://github.com/sbroenne/RVToolsMerge/blob/main/README.md
+- DocumentLabel: Contributing Guidelines
+  DocumentUrl: https://github.com/sbroenne/RVToolsMerge/blob/main/CONTRIBUTING.md
+ManifestType: defaultLocale
+ManifestVersion: 1.6.0

@@ -3,7 +3,7 @@
     Name="RVToolsMerge" 
     Version="!(bind.FileVersion.RVToolsMerge.exe)"
     Manufacturer="Stefan Broenner" 
-    UpgradeCode="12345678-1234-1234-1234-123456789012"
+    UpgradeCode="A7B8C9D0-E1F2-4A5B-8C9D-0E1F2A5B8C9D"
     Language="1033"
     Codepage="1252">
     
@@ -16,7 +16,7 @@
     <!-- Installation directory structure -->
     <StandardDirectory Id="ProgramFilesFolder">
       <Directory Id="INSTALLFOLDER" Name="RVToolsMerge">
-        <Component Id="MainExecutable" Guid="87654321-4321-4321-4321-210987654321">
+        <Component Id="MainExecutable" Guid="B8C9D0E1-F2A3-5B6C-9D0E-1F2A3B6C9D0E">
           <File Id="RVToolsMerge.exe" 
                 Source="$(var.PublishDir)\RVToolsMerge.exe" 
                 KeyPath="yes">
@@ -38,7 +38,7 @@
         </Component>
         
         <!-- Icon files -->
-        <Component Id="IconFiles" Guid="11111111-2222-3333-4444-555555555555">
+        <Component Id="IconFiles" Guid="C9D0E1F2-A3B4-6C7D-0E1F-2A3B4C7D0E1F">
           <File Id="AppIcon.ico" 
                 Source="$(var.PublishDir)\Resources\Icons\app-icon.ico" />
           <File Id="AppIcon.png" 

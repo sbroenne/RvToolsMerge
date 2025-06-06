@@ -113,3 +113,41 @@ When releasing new versions:
 - **Code signing**: For production releases, MSI files should be code-signed with a valid certificate
 - **Publisher verification**: Unsigned MSI files will show security warnings during installation
 - **Admin privileges**: The installer requests admin privileges for proper system integration
+
+## Windows Package Manager (winget) Integration
+
+RVToolsMerge is prepared for publication to the Windows Package Manager with the identifier `RvToolsMerge.RvToolsMerge`.
+
+### Winget Manifests
+
+The project includes winget manifest files located in `/manifests/r/RvToolsMerge/RvToolsMerge/1.3.3/`:
+
+- **Package manifest**: Defines the package identity and basic information
+- **Installer manifest**: Specifies installation details and MSI URLs
+- **Locale manifest**: Contains localized descriptions and metadata
+
+### Publishing Process
+
+To submit to the Microsoft winget-pkgs repository:
+
+1. **Validate manifests**: Use `winget-create validate` to verify manifest syntax
+2. **Update SHA256 hashes**: Calculate and update installer SHA256 values in the installer manifest
+3. **Submit PR**: Fork [microsoft/winget-pkgs](https://github.com/microsoft/winget-pkgs) and submit the manifest files
+4. **Review process**: Microsoft reviews and approves the submission
+
+### MSI Compatibility Requirements
+
+The MSI installer is configured for winget compatibility:
+
+- **Consistent Product Code**: Uses stable GUID `{A7B8C9D0-E1F2-4A5B-8C9D-0E1F2A5B8C9D}`
+- **Publisher information**: Matches winget manifest publisher details
+- **Version information**: Automatically extracted from executable for consistency
+- **Silent installation**: Supports silent installation modes required by winget
+
+### User Installation
+
+Once published, users can install RVToolsMerge using:
+
+```powershell
+winget install RvToolsMerge.RvToolsMerge
+```

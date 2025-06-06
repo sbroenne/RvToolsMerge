@@ -81,7 +81,13 @@ For a complete reference of all column mappings, see [Column Mappings Documentat
 
 Download the latest release for your platform from the [Releases page](https://github.com/sbroenne/RVToolsMerge/releases):
 
-### Windows (Recommended: MSI Installer)
+### Windows (Recommended: Package Manager)
+**Using Windows Package Manager (winget)**:
+```powershell
+winget install RvToolsMerge.RvToolsMerge
+```
+
+**Manual Download**:
 -   **Windows x64**: `RVToolsMerge-[version]-win-x64.msi` - Full installer with shortcuts and uninstall support
 -   **Windows ARM64**: `RVToolsMerge-[version]-win-arm64.msi` - Full installer with shortcuts and uninstall support
 
@@ -93,7 +99,12 @@ Download the latest release for your platform from the [Releases page](https://g
 
 ### Installation Instructions
 
-#### Windows - MSI Installer (Recommended)
+#### Windows - Package Manager (Recommended)
+1. Open PowerShell or Command Prompt
+2. Run: `winget install RvToolsMerge.RvToolsMerge`
+3. Launch RVToolsMerge from the Start Menu or Desktop shortcut
+
+#### Windows - MSI Installer (Alternative)
 1. Download the appropriate MSI file for your architecture (x64 or ARM64)
 2. Double-click the MSI file to start the installation
 3. Follow the installation wizard prompts
