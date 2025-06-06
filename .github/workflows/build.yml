@@ -115,12 +115,17 @@ jobs:
           # Install WiX toolset and extensions
           dotnet tool install --global wix --version 6.0.1
           
-          # Install WiX UI extension explicitly
-          wix extension add WixToolset.UI.wixext/6.0.1
+          # Install WiX UI extension explicitly (without version specification for WiX 6.0.1)
+          wix extension add WixToolset.UI.wixext
           
           # Verify installation
           wix --version
           wix extension list
+          
+          # Additional debug info for troubleshooting
+          Write-Host "WiX installation location:"
+          where wix
+        shell: pwsh
 
       - name: Create MSI installer (Windows only)
         if: runner.os == 'Windows' && inputs.configuration == 'Release'
@@ -175,6 +180,12 @@ jobs:
               Write-Error "MSI build failed with exit code: $LASTEXITCODE"
               Write-Host "Checking WiX extension status:"
               wix extension list
+              Write-Host "WiX version:"
+              wix --version
+              Write-Host "Current working directory:"
+              Get-Location
+              Write-Host "Files in current directory:"
+              Get-ChildItem -Name
               exit 1
           }
           
