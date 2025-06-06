@@ -28,13 +28,14 @@
     <Authors>Stefan Broenner</Authors>
     <Company>Stefan Broenner</Company>
     <Product>RVToolsMerge</Product>
-    <Description>A tool to merge multiple RVTools Excel files into a single consolidated file.</Description>
+    <Description>A tool to merge multiple RVTools Excel files into a single consolidated file</Description>
     <Copyright>Copyright © 2025 Stefan Broenner</Copyright>
     <RepositoryUrl>https://github.com/sbroenne/RVToolsMerge</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageProjectUrl>https://github.com/sbroenne/RVToolsMerge</PackageProjectUrl>
     <NeutralLanguage>en-US</NeutralLanguage>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <ApplicationIcon>Resources\Icons\app-icon.ico</ApplicationIcon>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
@@ -49,6 +50,19 @@
     <None Update="..\..\run.bat">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+  </ItemGroup>
+
+  <!-- Include application icon -->
+  <ItemGroup>
+    <Content Include="Resources\Icons\app-icon.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\Icons\app-icon.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\Icons\app-icon.svg">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>

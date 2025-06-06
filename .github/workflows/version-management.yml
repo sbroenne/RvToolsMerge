@@ -287,9 +287,98 @@ jobs:
       configuration: "Release"
       ref: ${{ needs.create-tag.outputs.tag_name }}
 
+  generate-winget-manifests:
+    name: Generate Winget Manifests
+    needs: [bump-version, create-tag, build-release]
+    if: ${{ success() && github.event.inputs.createRelease == 'true' && needs.create-tag.outputs.tag_created == 'true' }}
+    runs-on: windows-latest
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.create-tag.outputs.tag_name }}
+
+      - name: Get Version from Tag
+        id: get-version
+        run: |
+          # Extract version from the tag name (remove 'v' prefix)
+          $TAG_NAME = "${{ needs.create-tag.outputs.tag_name }}"
+          $VERSION = $TAG_NAME.Substring(1)
+          echo "version=$VERSION" >> $env:GITHUB_OUTPUT
+          Write-Host "::notice::Generating winget manifests for version $VERSION"
+        shell: pwsh
+
+      - name: Download MSI Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: msi-artifacts
+          pattern: "*-msi"
+
+      - name: List MSI Artifacts
+        run: |
+          Write-Host "Downloaded MSI artifacts:"
+          Get-ChildItem msi-artifacts -Recurse -Filter "*.msi" | ForEach-Object {
+            Write-Host "  $($_.FullName) ($(($_.Length / 1MB).ToString('F2')) MB)"
+          }
+        shell: pwsh
+
+      - name: Find MSI Files
+        id: find-msi
+        run: |
+          $version = "${{ steps.get-version.outputs.version }}"
+          
+          # Find MSI files
+          $x64Msi = Get-ChildItem msi-artifacts -Recurse -Filter "*win-x64.msi" | Select-Object -First 1
+          $arm64Msi = Get-ChildItem msi-artifacts -Recurse -Filter "*win-arm64.msi" | Select-Object -First 1
+          
+          if (-not $x64Msi) {
+            Write-Error "x64 MSI file not found"
+            exit 1
+          }
+          
+          if (-not $arm64Msi) {
+            Write-Error "ARM64 MSI file not found"
+            exit 1
+          }
+          
+          echo "x64_msi_path=$($x64Msi.FullName)" >> $env:GITHUB_OUTPUT
+          echo "arm64_msi_path=$($arm64Msi.FullName)" >> $env:GITHUB_OUTPUT
+          
+          Write-Host "Found x64 MSI: $($x64Msi.FullName)"
+          Write-Host "Found ARM64 MSI: $($arm64Msi.FullName)"
+        shell: pwsh
+
+      - name: Generate Winget Manifests
+        run: |
+          $version = "${{ steps.get-version.outputs.version }}"
+          $x64MsiPath = "${{ steps.find-msi.outputs.x64_msi_path }}"
+          $arm64MsiPath = "${{ steps.find-msi.outputs.arm64_msi_path }}"
+          $outputDir = "winget-manifests"
+          
+          # Create a basic release notes string - in a real scenario this could be extracted from CHANGELOG or release notes
+          $releaseNotes = @"
+          ## What's New in v$version
+          
+          This release includes improvements and updates to RVToolsMerge.
+          See the full release notes at: https://github.com/sbroenne/RVToolsMerge/releases/tag/v$version
+          "@
+          
+          & .github/scripts/generate-winget-manifests.ps1 -Version $version -X64MsiPath $x64MsiPath -Arm64MsiPath $arm64MsiPath -OutputDir $outputDir -ReleaseNotes $releaseNotes
+        shell: pwsh
+
+      - name: Upload Winget Manifests
+        uses: actions/upload-artifact@v4
+        with:
+          name: winget-manifests-${{ steps.get-version.outputs.version }}
+          path: winget-manifests/*.yaml
+          retention-days: 30
+
   create-release:
     name: Create GitHub Release
-    needs: [bump-version, create-tag, build-release]
+    needs: [bump-version, create-tag, build-release, generate-winget-manifests]
     if: ${{ success() && github.event.inputs.createRelease == 'true' && needs.create-tag.outputs.tag_created == 'true' }}
     runs-on: ubuntu-latest
     permissions:
@@ -314,6 +403,12 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: artifacts
+
+      - name: Download Winget Manifests
+        uses: actions/download-artifact@v4
+        with:
+          path: winget-manifests
+          pattern: "winget-manifests-*"
 
       - name: List Downloaded Artifacts
         run: |
@@ -384,11 +479,52 @@ jobs:
             fi
           }
 
+          # Function to copy MSI files directly (for Windows platforms)
+          copy_msi() {
+            local platform=$1
+            local artifact_name=$2
+            local version=$3
+
+            echo "Looking for MSI artifact with name: $artifact_name"
+
+            # Find the MSI artifact directory
+            msi_artifact_dir=$(find artifacts -type d -name "$artifact_name" | head -1)
+
+            if [[ -n "$msi_artifact_dir" && -d "$msi_artifact_dir" ]]; then
+              msi_files=$(find "$msi_artifact_dir" -name "*.msi")
+              if [[ -n "$msi_files" ]]; then
+                for msi_file in $msi_files; do
+                  msi_filename=$(basename "$msi_file")
+                  cp "$msi_file" "release-files/$msi_filename"
+                  echo "✅ Successfully copied MSI: $msi_filename"
+                  
+                  # Add to created files list
+                  abs_path="$(pwd)/release-files/$msi_filename"
+                  if [[ -z "$created_files" ]]; then
+                    created_files="$abs_path"
+                  else
+                    created_files="$created_files,$abs_path"
+                  fi
+                done
+              else
+                echo "::warning::No MSI files found in $msi_artifact_dir"
+              fi
+            else
+              echo "::info::No MSI artifact found for $platform (this is normal for non-Windows platforms or Debug builds)"
+            fi
+          }
+
           # Use the version extracted from the tag (not from previous job outputs)
           VERSION_FROM_TAG="${{ steps.get-version.outputs.version }}"
           echo "Using version from tag: $VERSION_FROM_TAG"
 
-          # Create archives for each expected platform with exact artifact names
+          # For Windows platforms, try to use MSI files first, fallback to ZIP
+          echo "Checking for Windows MSI files..."
+          copy_msi "win-x64" "RVToolsMerge-win-x64-msi" "$VERSION_FROM_TAG"
+          copy_msi "win-arm64" "RVToolsMerge-win-arm64-msi" "$VERSION_FROM_TAG"
+
+          # Create ZIP archives for all platforms (as fallback for Windows and primary for others)
+          echo "Creating ZIP archives for all platforms..."
           create_archive "win-x64" "RVToolsMerge-win-x64" "$VERSION_FROM_TAG"
           create_archive "win-arm64" "RVToolsMerge-win-arm64" "$VERSION_FROM_TAG"
           create_archive "linux-x64" "RVToolsMerge-linux-x64" "$VERSION_FROM_TAG"
@@ -447,6 +583,8 @@ jobs:
           prerelease: ${{ contains(steps.get-version.outputs.version, '-') }}
           files: |
             release-files/*.zip
+            release-files/*.msi
+            winget-manifests/*/*.yaml
           fail_on_unmatched_files: true
           generate_release_notes: true
           body: |
@@ -458,16 +596,22 @@ jobs:
 
             Choose the appropriate version for your operating system:
 
-            | Platform | Architecture | Download |
-            |----------|-------------|----------|
-            | Windows | x64 | RVToolsMerge-${{ steps.get-version.outputs.version }}-win-x64.zip |
-            | Windows | ARM64 | RVToolsMerge-${{ steps.get-version.outputs.version }}-win-arm64.zip |
-            | Linux | x64 | RVToolsMerge-${{ steps.get-version.outputs.version }}-linux-x64.zip |
-            | macOS | ARM64 (Apple Silicon) | RVToolsMerge-${{ steps.get-version.outputs.version }}-osx-arm64.zip |
+            | Platform | Architecture | Download | Installer |
+            |----------|-------------|----------|-----------|
+            | Windows | x64 | RVToolsMerge-${{ steps.get-version.outputs.version }}-win-x64.zip | RVToolsMerge-${{ steps.get-version.outputs.version }}-win-x64.msi |
+            | Windows | ARM64 | RVToolsMerge-${{ steps.get-version.outputs.version }}-win-arm64.zip | RVToolsMerge-${{ steps.get-version.outputs.version }}-win-arm64.msi |
+            | Linux | x64 | RVToolsMerge-${{ steps.get-version.outputs.version }}-linux-x64.zip | - |
+            | macOS | ARM64 (Apple Silicon) | RVToolsMerge-${{ steps.get-version.outputs.version }}-osx-arm64.zip | - |
 
             ### 🚀 Quick Start
 
-            1. Download the archive for your platform
+            #### Windows Users (Recommended)
+            1. Download the MSI installer for your architecture (x64 or ARM64)
+            2. Run the installer and follow the setup wizard
+            3. Launch RVToolsMerge from the Start Menu or Desktop shortcut
+
+            #### All Platforms (Portable)
+            1. Download the ZIP archive for your platform
             2. Extract the archive to a directory of your choice
             3. Run the executable to start the interactive console interface
             4. Follow the prompts to select and merge your RVTools Excel files
@@ -479,6 +623,16 @@ jobs:
             ### 🐛 Issues & Support
 
             If you encounter any issues, please report them on our [Issues page](https://github.com/${{ github.repository }}/issues).
+
+            ### 📦 Winget Package Manager
+
+            This release includes automatically generated winget manifests for easy installation via Windows Package Manager:
+
+            ```powershell
+            winget install RvToolsMerge.RvToolsMerge
+            ```
+
+            The winget manifests are included as artifacts in this release and can be submitted to the [Microsoft winget-pkgs repository](https://github.com/microsoft/winget-pkgs) for community distribution.
 
       - name: Cleanup
         if: always()
