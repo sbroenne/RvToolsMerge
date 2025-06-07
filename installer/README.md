@@ -40,6 +40,8 @@ To build MSI installers locally (Windows only):
 ```powershell
 # Install WiX Toolset 6.0.1
 dotnet tool install --global wix --version 6.0.1
+# Add WiX UI extension
+wix extension add -g WixToolset.UI.wixext
 ```
 
 ### Build Steps
