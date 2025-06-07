@@ -153,8 +153,9 @@ jobs:
           Write-Host "Output path: $outputPath"
           Write-Host "Publish directory: $publishDir"
 
-          # Use wix build command
-          $wixCommand = "wix build RVToolsMerge.wxs -define PublishDir=`"$publishDir`" -out `"$outputPath`""
+          # Use wix build command with UI extension
+          $wixCommand = "wix build RVToolsMerge.wxs -ext WixToolset.UI.wixext -define PublishDir=`"$publishDir`" -out `"$outputPath`""
+
           Write-Host "Executing: $wixCommand"
 
           Invoke-Expression $wixCommand
