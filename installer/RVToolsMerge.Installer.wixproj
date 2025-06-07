@@ -1,17 +1,21 @@
-<Project Sdk="WixToolset.Sdk/6.0.1">
-  <PropertyGroup>
+<Project Sdk="WixToolset.Sdk/6.0.1">  <PropertyGroup>
     <OutputType>Package</OutputType>
     <TargetFramework>net9</TargetFramework>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <SuppressValidation>true</SuppressValidation>
+    <WixCabsEmbedCab>true</WixCabsEmbedCab>
+    <WixCabsCompressionLevel>high</WixCabsCompressionLevel>
   </PropertyGroup>
 
   <PropertyGroup>
     <DefineConstants>PublishDir=$(PublishDir)</DefineConstants>
   </PropertyGroup>
-
   <ItemGroup>
     <Compile Include="RVToolsMerge.wxs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="WixToolset.UI.wixext" Version="6.0.1" />
   </ItemGroup>
 
 </Project>

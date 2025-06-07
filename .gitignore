@@ -119,3 +119,8 @@ coverage/
 /src/RVToolsMerge/Output/*.xlsx
 *.xlsx
 /publish/
+
+# WiX installation files
+*.wixpdb
+*.msi
+*.dll
