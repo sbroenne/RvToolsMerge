@@ -110,6 +110,8 @@ jobs:
         run: |
           # Install WiX toolset
           dotnet tool install --global wix
+          # Add WiX UI extension
+          wix extension add -g WixToolset.UI.wixext
         shell: pwsh
 
       - name: Create MSI installer (Windows only)
