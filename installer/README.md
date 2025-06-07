@@ -21,7 +21,7 @@ The Windows MSI installer provides:
 -   **Add/Remove Programs integration** with proper uninstall support
 -   **Application icon** embedded throughout the installation experience
 -   **License agreement** display during installation (when License.rtf is present)
--   **Upgrade support** for version updates
+-   **Version upgrade support** with automatic detection and seamless updates to newer versions
 
 ## Automatic Build Process
 
@@ -181,13 +181,77 @@ build-msi.bat
 -   **MSI installation logs**: Use `msiexec /i installer.msi /l*v install.log` to generate detailed installation logs
 -   **WiX build logs**: WiX provides detailed build output for troubleshooting
 
-## Version Management
+## Version Management and Upgrade Support
 
-When releasing new versions:
+### Automatic Version Upgrades
 
-1. **Version binding**: The MSI version is automatically extracted from the executable using `!(bind.FileVersion.RVToolsMerge.exe)`
-2. **Upgrade support**: The MSI includes major upgrade logic to handle version updates
-3. **GUID management**: Component and upgrade GUIDs should remain stable across versions
+The MSI installer **fully supports upgrading to newer versions** with the following features:
+
+1. **Major Upgrade Logic**: Configured with `<MajorUpgrade>` element that automatically:
+
+    - Detects existing installations
+    - Removes the previous version before installing the new version
+    - Prevents downgrades with clear error message: "A newer version of RVToolsMerge is already installed."
+    - Maintains user settings and PATH environment variable
+
+2. **Version Binding**: The MSI version is automatically extracted from the executable using `!(bind.FileVersion.RVToolsMerge.exe)`
+
+    - Ensures MSI version always matches the application version
+    - No manual version updates required in installer configuration
+
+3. **GUID Management**:
+    - **ProductCode**: Changes with each version to trigger upgrades (`F3E4D5C6-B7A8-9C0D-1E2F-3A4B5C6D7E8F`)
+    - **UpgradeCode**: Remains stable across all versions (`A7B8C9D0-E1F2-4A5B-8C9D-0E1F2A5B8C9D`)
+    - **Component GUIDs**: Use automatic generation (`Guid="*"`) for proper upgrade handling
+
+### Upgrade Process
+
+When a user installs a newer version:
+
+1. **Detection**: Windows Installer detects the existing installation using the UpgradeCode
+2. **Removal**: Previous version is automatically uninstalled
+3. **Installation**: New version is installed to the same location
+4. **Preservation**: User PATH settings and installation directory are preserved
+5. **Completion**: User can immediately use the new version from command line
+
+### Silent Upgrades
+
+Upgrade installations work seamlessly with silent installation modes:
+
+```cmd
+# Silent upgrade to newer version
+msiexec /i "RVToolsMerge-1.4.0-win-x64.msi" /qn
+
+# Upgrade with basic progress indicator
+msiexec /i "RVToolsMerge-1.4.0-win-x64.msi" /qb
+
+# Upgrade with detailed logging
+msiexec /i "RVToolsMerge-1.4.0-win-x64.msi" /qn /L*V "upgrade.log"
+```
+
+### Enterprise Upgrade Deployment
+
+For enterprise environments, upgrades can be deployed using:
+
+-   **Group Policy Software Installation**: Deploy newer MSI to automatically upgrade all domain computers
+-   **SCCM/ConfigMgr**: Create upgrade deployments with detection rules
+-   **PowerShell DSC**: Use Package resource with newer version requirement
+-   **Automated deployment scripts**: Include upgrade logic in deployment automation
+
+### Winget Package Manager Upgrades
+
+When published to winget, users can upgrade using:
+
+```powershell
+# Check for available upgrades
+winget upgrade RvToolsMerge.RvToolsMerge
+
+# Upgrade to latest version
+winget upgrade RvToolsMerge.RvToolsMerge
+
+# Upgrade all installed packages
+winget upgrade --all
+```
 
 ## Security Considerations
 
