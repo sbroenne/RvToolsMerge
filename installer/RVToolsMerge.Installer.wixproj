@@ -1,18 +1,22 @@
-<Project Sdk="WiX.SDK/6.0.1">
+<Project Sdk="WixToolset.Sdk/6.0.1">
   <PropertyGroup>
     <OutputType>Package</OutputType>
-    <TargetFramework>net472</TargetFramework>
-    <OutputPath>bin\$(Configuration)\</OutputPath>
-    <IntermediateOutputPath>obj\$(Configuration)\</IntermediateOutputPath>
+    <TargetFramework>net9</TargetFramework>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <SuppressValidation>true</SuppressValidation>
   </PropertyGroup>
 
   <PropertyGroup>
-    <DefineConstants>
-      PublishDir=$(PublishDir)
-    </DefineConstants>
+    <DefineConstants>PublishDir=$(PublishDir)</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Include="RVToolsMerge.wxs" />
   </ItemGroup>
+
+<ItemGroup>
+  <PackageReference Include="WixToolset.UI.wixext" />
+</ItemGroup>
+
+
 </Project>

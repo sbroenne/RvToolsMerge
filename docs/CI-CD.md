@@ -23,6 +23,8 @@ The Build workflow (`build.yml`) is a reusable workflow that handles building an
     -   Builds the application in the specified configuration
     -   Runs all tests
     -   When building in Release mode, publishes platform-specific self-contained executables
+    -   For Windows builds in Release mode, creates MSI installers using WiX Toolset 6.0.1
+    -   Uploads both executable and MSI artifacts for release builds
 
 ## .NET CI Workflow
 
@@ -87,8 +89,10 @@ The automated version management and release process follows these steps:
 10. Create and push a version tag (vX.Y.Z) once the PR is merged
 11. If release creation is enabled:
     - Build release artifacts for all supported platforms (Windows x64/ARM64, Linux x64, macOS ARM64)
+    - Create MSI installers for Windows platforms using WiX Toolset 6.0.1
+    - Generate winget manifests with calculated MSI SHA256 hashes
     - Create platform-specific ZIP archives
-    - Create GitHub Release with release notes and download links
+    - Create GitHub Release with release notes, download links, and winget manifests
 
 ## Release Process Guide
 
@@ -102,6 +106,44 @@ To create a new release:
 
 Code coverage is now handled exclusively by the dedicated code-coverage.yml workflow to optimize workflow performance while maintaining comprehensive test coverage reporting.
 
+## MSI Installer and WiX Integration
+
+The project includes automated MSI installer generation for Windows platforms using WiX Toolset 6.0.1:
+
+### MSI Build Process
+
+1. **Automatic Trigger**: MSI installers are built during Release configuration builds on Windows runners
+2. **WiX Installation**: The build workflow automatically installs WiX Toolset 6.0.1 and required extensions
+3. **Version Extraction**: MSI version is automatically extracted from the compiled executable
+4. **Multi-Architecture**: Creates MSI files for both x64 and ARM64 Windows architectures
+5. **File Naming**: MSI files follow the pattern `RVToolsMerge-{version}-{runtime}.msi`
+
+### Winget Integration
+
+The release process includes automated Windows Package Manager (winget) manifest generation:
+
+1. **Template Processing**: Uses templates in `.github/winget-templates/` to generate manifests
+2. **SHA256 Calculation**: Automatically calculates and includes MSI file hashes
+3. **Version Synchronization**: Ensures winget package version matches release version
+4. **Artifact Upload**: Generated manifests are included in GitHub releases
+5. **Community Distribution**: Manifests can be submitted to Microsoft's winget-pkgs repository
+
+### Manual MSI Build
+
+For local development and testing, MSI installers can be built manually:
+
+```powershell
+# Install WiX Toolset
+dotnet tool install --global wix --version 6.0.1
+
+# Publish application
+dotnet publish src/RVToolsMerge/RVToolsMerge.csproj --configuration Release --runtime win-x64 --self-contained true --output publish
+
+# Build MSI
+cd installer
+wix build RVToolsMerge.wxs -define PublishDir="../publish" -out "RVToolsMerge-win-x64.msi" -ext WixToolset.UI.wixext
+```
+
 ## CI/CD Security Considerations
 
 -   GitHub Actions permissions are carefully scoped for each workflow
@@ -113,25 +155,27 @@ Code coverage is now handled exclusively by the dedicated code-coverage.yml work
 
 Common issues and solutions:
 
--   **Version workflow fails**: 
+-   **Version workflow fails**:
     -   Ensure csproj file exists and has proper version elements (`<Version>`, `<AssemblyVersion>`, `<FileVersion>`)
     -   Check that the version format is valid (X.Y.Z format)
     -   Verify that version components don't exceed .NET assembly version limits (0-65535)
     -   Check workflow logs for detailed error messages with validation steps
--   **Release creation fails**: 
+-   **Release creation fails**:
     -   Verify build artifacts are properly generated and version format is correct
-    -   Ensure MSI creation succeeded on Windows runners
-    -   Check that all expected platforms completed their builds
--   **Publication error**: 
+    -   Ensure MSI creation succeeded on Windows runners using WiX Toolset
+    -   Check winget manifest generation completed successfully
+    -   Verify that all expected platforms completed their builds
+    -   Ensure MSI SHA256 hashes were calculated correctly for winget manifests
+-   **Publication error**:
     -   Check for valid GitHub permissions and tokens
     -   Verify that the repository allows Actions to create PRs and releases
     -   Ensure no existing PR conflicts with the version update branch
 -   **Code coverage not found**: Ensure Windows x64 build completes successfully and generates coverage files
--   **Branch creation fails**: 
+-   **Branch creation fails**:
     -   Check for existing version update branches that may conflict
     -   Verify git configuration and push permissions
     -   Ensure the version increment didn't create duplicate branch names
--   **PR auto-merge fails**: 
+-   **PR auto-merge fails**:
     -   Verify repository branch protection rules allow auto-merge
     -   Check that required status checks are configured correctly
     -   Ensure the GitHub token has sufficient permissions

@@ -118,3 +118,4 @@ coverage/
 /src/RVToolsMerge/Input/*.xlsx
 /src/RVToolsMerge/Output/*.xlsx
 *.xlsx
+/publish/

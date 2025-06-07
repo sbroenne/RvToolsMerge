@@ -1,45 +1,57 @@
-<Wix xmlns="http://wixtoolset.org/schemas/v6/wxs">
-  <Package 
-    Name="RVToolsMerge" 
-    Version="!(bind.FileVersion.RVToolsMerge.exe)"
-    Manufacturer="Stefan Broenner" 
-    ProductCode="F3E4D5C6-B7A8-9C0D-1E2F-3A4B5C6D7E8F"
-    UpgradeCode="A7B8C9D0-E1F2-4A5B-8C9D-0E1F2A5B8C9D"
-    Language="1033">
-    
-    <!-- Package properties -->
-    <SummaryInformation
-      Description="A tool to merge multiple RVTools Excel files into a single consolidated file"
-      Manufacturer="Stefan Broenner" />
-    
-    <!-- Installation directory structure -->
-    <StandardDirectory Id="ProgramFilesFolder">
-      <Directory Id="INSTALLFOLDER" Name="RVToolsMerge">
-        <Component Id="MainExecutable">
-          <File Id="RVToolsMerge.exe" 
-                Source="$(var.PublishDir)\RVToolsMerge.exe" 
-                KeyPath="yes" />
-          <Environment Id="PATH" 
-                       Name="PATH" 
-                       Value="[INSTALLFOLDER]" 
-                       Permanent="no" 
-                       Part="last" 
-                       Action="set" 
-                       System="no" />
-        </Component>
-      </Directory>
-    </StandardDirectory>
-    
-    <!-- Add/Remove Programs properties -->
-    <Property Id="ARPHELPLINK" Value="https://github.com/sbroenne/RVToolsMerge" />
-    <Property Id="ARPURLINFOABOUT" Value="https://github.com/sbroenne/RVToolsMerge" />
-    
-    <!-- Feature definition -->
-    <Feature Id="ProductFeature" Title="RVToolsMerge" Level="1">
-      <ComponentRef Id="MainExecutable" />
-    </Feature>
-    
-    <!-- Major upgrade -->
-    <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
-  </Package>
+<!-- WiX 6 installer configuration for RVToolsMerge -->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+    xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
+    <Package
+        Name="RVToolsMerge"
+        Version="!(bind.FileVersion.RVToolsMerge.exe)"
+        Manufacturer="Stefan Broenner"
+        ProductCode="F3E4D5C6-B7A8-9C0D-1E2F-3A4B5C6D7E8F"
+        UpgradeCode="A7B8C9D0-E1F2-4A5B-8C9D-0E1F2A5B8C9D"
+        Language="1033">
+
+        <!-- Package properties -->
+        <SummaryInformation
+            Description="A tool to merge multiple RVTools Excel files into a single consolidated file"
+            Manufacturer="Stefan Broenner" />
+
+        <!-- Installation directory structure -->
+        <StandardDirectory Id="ProgramFilesFolder">
+            <Directory Id="INSTALLFOLDER" Name="RVToolsMerge">
+                <Component Id="MainExecutable">
+                    <File Id="RVToolsMerge.exe"
+                        Source="$(var.PublishDir)\RVToolsMerge.exe"
+                        KeyPath="yes" />
+                    <Environment Id="PATH"
+                        Name="PATH"
+                        Value="[INSTALLFOLDER]"
+                        Permanent="no"
+                        Part="last"
+                        Action="set"
+                        System="no" />
+                </Component>
+            </Directory>
+        </StandardDirectory>
+
+        <!-- Add/Remove Programs properties -->
+        <Property Id="ARPHELPLINK" Value="https://github.com/sbroenne/RVToolsMerge" />
+        <Property Id="ARPURLINFOABOUT" Value="https://github.com/sbroenne/RVToolsMerge" />
+
+        <!-- UI Configuration -->
+        <WixVariable Id="WixUILicenseRtf" Value="License.rtf" />
+
+        <!-- Custom properties for success message -->
+        <Property Id="WIXUI_EXITDIALOGOPTIONALTEXT"
+            Value="RVToolsMerge has been successfully installed! You can now run 'RVToolsMerge' from the command line." />
+
+        <!-- UI Reference -->
+        <ui:WixUI Id="WixUI_Minimal" />
+
+        <!-- Feature definition -->
+        <Feature Id="ProductFeature" Title="RVToolsMerge" Level="1">
+            <ComponentRef Id="MainExecutable" />
+        </Feature>
+
+        <!-- Major upgrade -->
+        <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+    </Package>
 </Wix>
