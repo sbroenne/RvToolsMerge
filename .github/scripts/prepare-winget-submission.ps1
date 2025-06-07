@@ -8,6 +8,8 @@
     This script downloads winget manifests from a GitHub release and prepares them for submission
     to the winget community repository. It can optionally create a branch in your fork.
 
+    The script performs mandatory winget validation - it will fail if winget is not available or validation fails.
+
 .PARAMETER Version
     The version to prepare submission for (e.g., "1.3.4"). If not specified, uses the latest release.
 
@@ -34,6 +36,11 @@
 
 .EXAMPLE
     .\prepare-winget-submission.ps1 -Version "1.3.4" -Repository "myorg/myrepo" -DryRun
+
+.NOTES
+    - Requires winget to be installed and available in PATH
+    - All downloaded manifests are automatically validated with 'winget validate'
+    - Script will exit with error code 1 if validation fails
 #>
 
 param(
@@ -111,10 +118,10 @@ if (-not $Repository) {
     }
 }
 
-Write-Host "🚀 Preparing winget submission for $Repository" -ForegroundColor Green
+Write-Host "Preparing winget submission for $Repository" -ForegroundColor Green
 
 # Get release information
-Write-Host "📋 Getting release information..."
+Write-Host "Getting release information..."
 
 if ($Version) {
     $releaseTag = if ($Version.StartsWith("v")) { $Version } else { "v$Version" }
@@ -129,7 +136,7 @@ try {
     $releaseTag = $release.tag_name
     $releaseVersion = $releaseTag -replace "^v", ""
 
-    Write-Host "✅ Found release: $($release.name) ($releaseTag)" -ForegroundColor Green
+    Write-Host "Found release: $($release.name) ($releaseTag)" -ForegroundColor Green
 }
 catch {
     Write-Error "Could not find release. Please check the version or repository."
@@ -137,14 +144,14 @@ catch {
 }
 
 # Create output directory
-Write-Host "📁 Creating output directory: $OutputDir"
+Write-Host "Creating output directory: $OutputDir"
 if (Test-Path $OutputDir) {
     Remove-Item $OutputDir -Recurse -Force
 }
 New-Item -ItemType Directory -Path $OutputDir | Out-Null
 
 # Download manifest files
-Write-Host "⬬ Downloading winget manifests from release..."
+Write-Host "Downloading winget manifests from release..."
 $manifestDir = Join-Path $OutputDir "manifests"
 New-Item -ItemType Directory -Path $manifestDir | Out-Null
 
@@ -175,42 +182,75 @@ foreach ($manifestFile in $manifestFiles) {
 }
 
 # Validate manifests
-Write-Host "✅ Validating manifests..."
+Write-Host "Validating manifests..."
 foreach ($manifestFile in $manifestFiles) {
     $manifestPath = Join-Path $manifestDir $manifestFile
 
     try {
         # Basic YAML validation using PowerShell's ConvertFrom-Yaml (if available)
-        $content = Get-Content $manifestPath -Raw
-        if ($content -match "PackageIdentifier:\s*RvToolsMerge\.RvToolsMerge") {
-            Write-Host "  ✅ $manifestFile validated" -ForegroundColor Green
+        $content = Get-Content $manifestPath -Raw        if ($content -match "PackageIdentifier:\s*RvToolsMerge\.RvToolsMerge") {
+            Write-Host "  $manifestFile validated" -ForegroundColor Green
         }
         else {
-            Write-Warning "  ⚠️  $manifestFile may have validation issues"
-        }
+            Write-Warning "  $manifestFile may have validation issues"
+        }    
     }
     catch {
-        Write-Warning "  ⚠️  Could not validate $manifestFile: $($_.Exception.Message)"
+        Write-Warning "  Could not validate $manifestFile`: $($_.Exception.Message)"
     }
 }
 
+# Run winget validate - MANDATORY
+Write-Host "Running winget validation..."
+
+# Check if winget is available
+try {
+    $wingetVersion = & winget --version 2>$null
+    if ($LASTEXITCODE -ne 0) {
+        throw "Winget command failed"
+    }
+}
+catch {
+    Write-Error "Winget is not available or not installed. Winget validation is mandatory."
+    Write-Error "Please install winget from: https://github.com/microsoft/winget-cli"
+    Write-Error "Or install via Microsoft Store: ms-appinstaller:?source=https://aka.ms/getwinget"
+    exit 1
+}
+
+Write-Host "Using winget version: $wingetVersion"
+
+# Run winget validate - this must succeed
+$validateResult = & winget validate $manifestDir 2>&1
+if ($LASTEXITCODE -eq 0) {
+    Write-Host "Winget manifest validation passed successfully" -ForegroundColor Green
+    if ($validateResult) {
+        Write-Host $validateResult
+    }
+}
+else {
+    Write-Error "Winget manifest validation failed. This is a mandatory check."
+    Write-Error "Validation output:"
+    Write-Error $validateResult
+    exit 1
+}
+
 # Create submission information
-Write-Host "📝 Creating submission information..."
+Write-Host "Creating submission information..."
 $submissionInfo = @"
 # Winget Package Submission for RVToolsMerge v$releaseVersion
 
 ## Package Information
-- **Package ID**: RvToolsMerge.RvToolsMerge
-- **Version**: $releaseVersion
-- **Release Tag**: $releaseTag
-- **Published**: $($release.published_at)
-- **Repository**: $Repository
+- Package ID: RvToolsMerge.RvToolsMerge
+- Version: $releaseVersion
+- Release Tag: $releaseTag
+- Published: $($release.published_at)
+- Repository: $Repository
 
 ## Submission Details
-- **Fork Repository**: $ForkUrl
-- **Target Branch**: RvToolsMerge-$releaseVersion
-- **Upstream Repository**: https://github.com/microsoft/winget-pkgs
-- **Manifest Path**: manifests/r/RvToolsMerge/RvToolsMerge/$releaseVersion/
+- Fork Repository: $ForkUrl
+- Target Branch: RvToolsMerge-$releaseVersion
+- Upstream Repository: https://github.com/microsoft/winget-pkgs
+- Manifest Path: manifests/r/RvToolsMerge/RvToolsMerge/$releaseVersion/
 
 ## Manifest Files
 - RvToolsMerge.RvToolsMerge.yaml (Version manifest)
@@ -228,26 +268,26 @@ $($release.body)
 
 ## Validation Commands
 To validate the manifests locally, you can use:
-``````
+````
 winget validate --manifest manifests/r/RvToolsMerge/RvToolsMerge/$releaseVersion/
-``````
+````
 "@
 
 $submissionInfoPath = Join-Path $OutputDir "submission-info.md"
 Set-Content -Path $submissionInfoPath -Value $submissionInfo -Encoding UTF8
 
 # Create PR template
-Write-Host "📄 Creating PR template..."
+Write-Host "Creating PR template..."
 $prTemplate = @"
 # RvToolsMerge version $releaseVersion
 
 This PR adds RvToolsMerge version $releaseVersion to the Windows Package Manager repository.
 
 ## Package Information
-- **Package ID**: RvToolsMerge.RvToolsMerge
-- **Version**: $releaseVersion
-- **Publisher**: RvToolsMerge
-- **Release**: $($release.html_url)
+- Package ID: RvToolsMerge.RvToolsMerge
+- Version: $releaseVersion
+- Publisher: RvToolsMerge
+- Release: $($release.html_url)
 
 ## Changes
 - Added RvToolsMerge version $releaseVersion manifests
@@ -278,10 +318,10 @@ $releaseNotesPath = Join-Path $OutputDir "release-notes.md"
 Set-Content -Path $releaseNotesPath -Value $release.body -Encoding UTF8
 
 if ($DryRun) {
-    Write-Host "🏃 Dry run mode - skipping branch creation" -ForegroundColor Yellow
+    Write-Host "Dry run mode - skipping branch creation" -ForegroundColor Yellow
 }
 else {
-    Write-Host "🌿 Creating branch in fork..."
+    Write-Host "Creating branch in fork..."
 
     # Clone fork
     $forkDir = Join-Path $OutputDir "winget-fork"
@@ -331,10 +371,8 @@ Release URL: $($release.html_url)"
 
         # Push to fork
         Write-Host "  Pushing branch: $branchName"
-        git push origin $branchName
-
-        if ($LASTEXITCODE -eq 0) {
-            Write-Host "✅ Branch created successfully!" -ForegroundColor Green
+        git push origin $branchName        if ($LASTEXITCODE -eq 0) {
+            Write-Host "Branch created successfully!" -ForegroundColor Green
             Write-Host ""
             Write-Host "Create pull request at:" -ForegroundColor Cyan
             Write-Host "https://github.com/microsoft/winget-pkgs/compare/master...sbroenne:winget-pkgs:$branchName" -ForegroundColor Blue
@@ -350,10 +388,10 @@ Release URL: $($release.html_url)"
 
 # Summary
 Write-Host ""
-Write-Host "🎉 Winget submission preparation complete!" -ForegroundColor Green
+Write-Host "Winget submission preparation complete!" -ForegroundColor Green
 Write-Host ""
-Write-Host "📦 Package: RvToolsMerge.RvToolsMerge v$releaseVersion"
-Write-Host "📁 Output: $OutputDir"
+Write-Host "Package: RvToolsMerge.RvToolsMerge v$releaseVersion"
+Write-Host "Output: $OutputDir"
 Write-Host ""
 Write-Host "Generated files:" -ForegroundColor Cyan
 Get-ChildItem $OutputDir -Recurse -File | ForEach-Object {
