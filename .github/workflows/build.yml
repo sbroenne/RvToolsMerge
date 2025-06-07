@@ -54,10 +54,6 @@ jobs:
             runtime: linux-arm64
             cache-suffix: "-arm64"
             run-tests: false
-          - os: macos-13 # Intel Mac runner
-            runtime: osx-x64
-            cache-suffix: "-x64"
-            run-tests: true
 
     runs-on: ${{ matrix.os }}
 
@@ -112,19 +108,8 @@ jobs:
       - name: Install WiX Toolset (Windows only)
         if: runner.os == 'Windows' && inputs.configuration == 'Release'
         run: |
-          # Install WiX toolset and extensions
+          # Install WiX toolset
           dotnet tool install --global wix
-
-          # Install WiX UI extension explicitly
-          wix extension add -g WixToolset.UI.wixext
-
-          # Verify installation
-          wix --version
-          wix extension list
-
-          # Additional debug info for troubleshooting
-          Write-Host "WiX installation location:"
-          where wix
         shell: pwsh
 
       - name: Create MSI installer (Windows only)
@@ -163,23 +148,21 @@ jobs:
               exit 1
           }
 
-          # Build MSI using wix command with proper extension
+          # Build MSI using wix command
           $msiName = "RVToolsMerge-$version-${{ matrix.runtime }}.msi"
           $outputPath = Join-Path $outputDir $msiName
           Write-Host "Building MSI: $msiName"
           Write-Host "Output path: $outputPath"
           Write-Host "Publish directory: $publishDir"
 
-          # Use wix build command with explicit extension reference
-          $wixCommand = "wix build RVToolsMerge.wxs -define PublishDir=`"$publishDir`" -out `"$outputPath`" -ext WixToolset.UI.wixext"
+          # Use wix build command
+          $wixCommand = "wix build RVToolsMerge.wxs -define PublishDir=`"$publishDir`" -out `"$outputPath`""
           Write-Host "Executing: $wixCommand"
 
           Invoke-Expression $wixCommand
 
           if ($LASTEXITCODE -ne 0) {
               Write-Error "MSI build failed with exit code: $LASTEXITCODE"
-              Write-Host "Checking WiX extension status:"
-              wix extension list
               Write-Host "WiX version:"
               wix --version
               Write-Host "Current working directory:"

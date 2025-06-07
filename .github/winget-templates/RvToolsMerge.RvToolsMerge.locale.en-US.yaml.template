@@ -13,37 +13,42 @@ License: MIT
 LicenseUrl: https://github.com/sbroenne/RVToolsMerge/blob/main/LICENSE
 Copyright: Copyright © 2025 Stefan Broenner
 CopyrightUrl: https://github.com/sbroenne/RVToolsMerge/blob/main/LICENSE
-ShortDescription: A tool to merge multiple RVTools Excel files into a single consolidated file
+ShortDescription: A command-line tool to merge multiple RVTools Excel files into a single consolidated file
 Description: |-
-  RVToolsMerge is a powerful console application designed to simplify the management of VMware infrastructure data by merging multiple RVTools Excel exports into a single consolidated file.
-  
+  RVToolsMerge is a command-line application for merging one or multiple RVTools export files into a single consolidated file.
+
   Key Features:
-  - Merge multiple RVTools Excel files efficiently
-  - Interactive console interface with progress tracking
-  - Cross-platform support (Windows, Linux, macOS)
-  - Professional MSI installer for Windows
-  - Comprehensive data validation and error handling
-  - Support for all standard RVTools export tabs
-  
-  Perfect for VMware administrators managing multiple vCenter environments who need to consolidate RVTools data for reporting and analysis.
+
+  - Intelligent Sheet Handling: Combines multiple RVTools exports while validating required sheets and columns
+  - Flexible Processing Options: Process single files or entire directories with configurable validation rules
+  - Complete Data Anonymization: Replace sensitive identifiers (VM names, IPs, hosts, clusters) with generic equivalents while maintaining data relationships
+  - Data Protection Features: Mandatory-columns-only mode and minimal data exposure for sharing with external parties
+  - Azure Migrate Validation: Built-in validation for Azure Migrate requirements with detailed reporting
+  - Source Tracking: Optional inclusion of source file information for data lineage
+  - Advanced Filtering: Skip invalid files, ignore missing sheets, exclude empty values
+  - Rich Console Experience: Beautiful console output with progress bars, status indicators, and colorful tables
+
+  Perfect for VMware administrators managing multiple vCenter environments who need to consolidate RVTools data for reporting, analysis, and Azure migration planning through automated command-line workflows.
 Moniker: rvtoolsmerge
 Tags:
 - vmware
-- excel
 - rvtools
+- excel
 - merge
 - virtualization
 - infrastructure
 - vcenter
 - consolidation
 - automation
+- anonymization
+- azure-migrate
+- data-protection
 ReleaseNotes: |-
   {{RELEASE_NOTES}}
 ReleaseNotesUrl: https://github.com/sbroenne/RVToolsMerge/releases/tag/v{{VERSION}}
 PurchaseUrl: https://github.com/sbroenne/RVToolsMerge
 InstallationNotes: |-
-  After installation, RVToolsMerge will be available from the Start Menu and Desktop shortcut.
-  The application provides an interactive console interface to guide you through the merge process.
+  After installation, RVToolsMerge will be available as a command-line tool. Run 'rvtoolsmerge --help' or 'RVToolsMerge --help' to see all available options including anonymization, Azure Migrate validation, and advanced processing features.
 Documentations:
 - DocumentLabel: User Guide
   DocumentUrl: https://github.com/sbroenne/RVToolsMerge/blob/main/README.md
