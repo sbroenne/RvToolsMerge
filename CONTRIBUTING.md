@@ -72,6 +72,8 @@ Before committing any changes, ensure you have completed all of these steps:
     -   [ ] XML documentation comments for public APIs
     -   [ ] Online help system (console application's built-in help in `ConsoleUIService.ShowHelp()`)
     -   [ ] Project structure documentation if files/folders changed
+    -   [ ] `installer/README.md` for WiX installer or MSI-related changes
+    -   [ ] Winget manifest templates if installer changes affect package manager integration
 -   [ ] Commit message follows the guidelines below
 
 **Note**: Documentation updates are mandatory for changes affecting public APIs, configuration, user workflows, project structure, testing approach, or any user-facing functionality.
@@ -125,12 +127,6 @@ Before committing any changes, ensure you have completed all of these steps:
 -   Prefer init-only properties for immutable data
 -   Leverage records for data objects, especially DTOs
 -   Prefer string interpolation over concatenation
--   Use `var` when the type is obvious from the right side of assignment
--   Use the latest C# language features appropriately
--   Embrace `null` handling with nullable reference types
--   Use pattern matching for type checking and data extraction
--   Prefer init-only properties for immutable data
--   Leverage records for data objects, especially DTOs
 
 ### Excel Processing Guidelines
 
@@ -169,10 +165,46 @@ The project maintains comprehensive test coverage (currently 76%) with two disti
     -   Clean up test files and directories after test completion
 
 Additional testing requirements:
+
 -   Write tests for all core functionality
 -   Test with various RVTools export versions and formats
 -   Include edge cases like malformed files, missing data, and extremely large datasets
 -   All tests must pass before any commit (`dotnet test` must show zero failures)
+
+## Windows Installer and Package Management
+
+### WiX Toolset Guidelines
+
+-   Use WiX Toolset 6.0.1 for creating MSI installers
+-   Follow WiX 6 syntax and schema (v4/wxs namespace)
+-   Maintain stable GUIDs for ProductCode and UpgradeCode across versions
+-   Use automatic version binding from executable: `!(bind.FileVersion.RVToolsMerge.exe)`
+-   Include proper upgrade logic with `<MajorUpgrade>` element
+-   Add application to PATH environment variable for command-line access
+-   Integrate with Add/Remove Programs using proper registry properties
+-   Include license agreement display when License.rtf is present
+-   Use WixUI_Minimal for clean, professional installation experience
+
+### MSI Best Practices
+
+-   Create MSI files for both x64 and ARM64 Windows architectures
+-   Name MSI files with version and architecture: `RVToolsMerge-{version}-{runtime}.msi`
+-   Ensure MSI files support silent installation for package managers
+-   Test MSI installation, upgrade, and uninstallation scenarios
+-   Validate MSI files using Windows SDK tools when available
+-   Include proper file versioning and metadata in the executable
+-   Consider code signing for production releases to avoid security warnings
+
+### Windows Package Manager (winget) Integration
+
+-   Maintain winget manifest templates in `.github/winget-templates/`
+-   Ensure MSI ProductCode remains stable for proper package management
+-   Include proper publisher information matching winget manifest
+-   Generate SHA256 hashes automatically for winget manifest integrity
+-   Test winget manifest syntax before release
+-   Follow winget manifest schema v1.6.0 specifications
+-   Include comprehensive package metadata (description, license, tags, documentation links)
+-   Design MSI for silent installation compatibility with winget
 
 ## Pull Request Process
 
