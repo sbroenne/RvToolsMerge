@@ -41,7 +41,7 @@
 
         <!-- Custom properties for success message -->
         <Property Id="WIXUI_EXITDIALOGOPTIONALTEXT"
-            Value="RVToolsMerge has been successfully installed! You can now run 'RVToolsMerge' from the command line." />
+            Value="RVToolsMerge has been successfully installed! Run 'RVToolsMerge --help' to see all available options" />
 
         <!-- UI Reference -->
         <ui:WixUI Id="WixUI_Minimal" />
