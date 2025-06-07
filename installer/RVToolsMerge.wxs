@@ -4,8 +4,7 @@
     <Package
         Name="RVToolsMerge"
         Version="!(bind.FileVersion.RVToolsMerge.exe)"
-        Manufacturer="Stefan Broenner"
-        ProductCode="F3E4D5C6-B7A8-9C0D-1E2F-3A4B5C6D7E8F"
+        Manufacturer="Stefan Broenner" ProductCode="F3E4D5C6-B7A8-9C0D-1E2F-3A4B5C6D7E8F"
         UpgradeCode="A7B8C9D0-E1F2-4A5B-8C9D-0E1F2A5B8C9D"
         Language="1033">
 
@@ -13,6 +12,8 @@
         <SummaryInformation
             Description="A tool to merge multiple RVTools Excel files into a single consolidated file"
             Manufacturer="Stefan Broenner" />
+        <!-- Media and Cabinet configuration -->
+        <Media Id="1" Cabinet="RVToolsMerge.cab" EmbedCab="yes" CompressionLevel="high" />
 
         <!-- Installation directory structure -->
         <StandardDirectory Id="ProgramFilesFolder">
@@ -29,26 +30,47 @@
                         Action="set"
                         System="no" />
                 </Component>
+
+                <!-- Resources directory -->
+                <Directory Id="ResourcesFolder" Name="Resources">
+                    <Directory Id="IconsFolder" Name="Icons">
+                        <Component Id="IconPngFile" Guid="*">
+                            <File Id="AppIconPng"
+                                Source="$(var.PublishDir)\Resources\Icons\app-icon.png"
+                                KeyPath="yes" />
+                        </Component>
+                        <Component Id="IconSvgFile" Guid="*">
+                            <File Id="AppIconSvg"
+                                Source="$(var.PublishDir)\Resources\Icons\app-icon.svg"
+                                KeyPath="yes" />
+                        </Component>
+                    </Directory>
+                </Directory>
             </Directory>
-        </StandardDirectory>
-
-        <!-- Add/Remove Programs properties -->
+        </StandardDirectory>        <!--
+        Add/Remove Programs properties -->
         <Property Id="ARPHELPLINK" Value="https://github.com/sbroenne/RVToolsMerge" />
-        <Property Id="ARPURLINFOABOUT" Value="https://github.com/sbroenne/RVToolsMerge" />
+        <Property Id="ARPURLINFOABOUT" Value="https://github.com/sbroenne/RVToolsMerge" />        <!--
+        Unattended setup properties -->
+        <Property Id="MSIUSEREALADMINDETECTION" Value="1" />
+        <Property Id="MSIINSTALLPERUSER" Value="1" Secure="yes" />
 
-        <!-- UI Configuration -->
+        <!-- Support for silent installation -->
+        <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />
+        <Property Id="ApplicationFolderName" Value="RVToolsMerge" /><!-- UI Configuration -->
         <WixVariable Id="WixUILicenseRtf" Value="License.rtf" />
 
         <!-- Custom properties for success message -->
         <Property Id="WIXUI_EXITDIALOGOPTIONALTEXT"
-            Value="RVToolsMerge has been successfully installed! Run 'RVToolsMerge --help' to see all available options" />
-
-        <!-- UI Reference -->
-        <ui:WixUI Id="WixUI_Minimal" />
+            Value="RVToolsMerge has been successfully installed! Run 'RVToolsMerge --help' to see all available options" />        <!--
+        UI Reference - supports both interactive and silent modes -->
+        <ui:WixUI Id="WixUI_InstallDir" />
 
         <!-- Feature definition -->
         <Feature Id="ProductFeature" Title="RVToolsMerge" Level="1">
             <ComponentRef Id="MainExecutable" />
+            <ComponentRef Id="IconPngFile" />
+            <ComponentRef Id="IconSvgFile" />
         </Feature>
 
         <!-- Major upgrade -->

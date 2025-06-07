@@ -15,6 +15,7 @@ The Windows MSI installer provides:
 
 -   **Professional installation experience** with proper Windows Installer integration and GUI dialogs
 -   **Installation directory selection** allowing users to choose their preferred installation location
+-   **Unattended/Silent installation support** for automated deployments and enterprise scenarios
 -   **Success confirmation dialog** displaying completion message and usage instructions
 -   **Command-line access** by adding RVToolsMerge to the user's PATH environment variable
 -   **Add/Remove Programs integration** with proper uninstall support
@@ -34,6 +35,63 @@ MSI files are automatically created during the CI/CD release process:
 ## Manual Build Process
 
 To build MSI installers locally (Windows only):
+
+## Unattended Installation
+
+The MSI installer supports silent/unattended installation for automated deployments and enterprise scenarios.
+
+### Silent Installation Commands
+
+```powershell
+# Basic silent installation (default location)
+msiexec /i RVToolsMerge.msi /qn
+
+# Silent installation with custom directory
+msiexec /i RVToolsMerge.msi /qn INSTALLFOLDER="C:\Tools\RVToolsMerge"
+
+# Silent installation with logging
+msiexec /i RVToolsMerge.msi /qn /L*V "install.log"
+
+# Silent installation for all users (requires admin privileges)
+msiexec /i RVToolsMerge.msi /qn ALLUSERS=1
+
+# Silent uninstallation
+msiexec /x RVToolsMerge.msi /qn
+```
+
+### Installation Parameters
+
+-   **`/qn`** - Completely silent installation (no UI)
+-   **`/qb`** - Basic UI with progress bar only
+-   **`/qi`** - Reduced UI (minimal dialogs)
+-   **`INSTALLFOLDER="path"`** - Custom installation directory
+-   **`ALLUSERS=1`** - Install for all users (requires admin privileges)
+-   **`/L*V "logfile.log"`** - Generate detailed installation log
+
+### Enterprise Deployment
+
+For enterprise environments, you can deploy the MSI using:
+
+-   **Group Policy Software Installation**
+-   **Microsoft System Center Configuration Manager (SCCM)**
+-   **PowerShell Desired State Configuration (DSC)**
+-   **Ansible, Puppet, or Chef automation tools**
+-   **Custom deployment scripts**
+
+Example PowerShell deployment script:
+
+```powershell
+# Deploy RVToolsMerge silently to multiple machines
+$computers = @("PC1", "PC2", "PC3")
+$msiPath = "\\server\share\RVToolsMerge.msi"
+
+foreach ($computer in $computers) {
+    Invoke-Command -ComputerName $computer -ScriptBlock {
+        param($msi)
+        Start-Process -FilePath "msiexec.exe" -ArgumentList "/i `"$msi`" /qn" -Wait
+    } -ArgumentList $msiPath
+}
+```
 
 ### Prerequisites
 
@@ -72,6 +130,20 @@ build-msi.bat
 
 ## MSI Configuration Details
 
+### Cabinet File Handling
+
+-   **Embedded cabinet**: Cabinet files (`.cab`) are embedded directly in the MSI for single-file distribution
+-   **Compression**: High compression level applied to reduce installer size
+-   **Custom cabinet name**: Uses `RVToolsMerge.cab` for better identification
+
+### Unattended Installation Support
+
+-   **Silent installation**: Supports `/qn`, `/qb`, and `/qi` modes for automated deployment
+-   **Custom installation directory**: Accepts `INSTALLFOLDER` parameter for non-default locations
+-   **User context support**: Can install per-user or for all users based on privileges and parameters
+-   **Enterprise deployment ready**: Compatible with Group Policy, SCCM, and other deployment tools
+-   **Detailed logging**: Supports comprehensive installation logging for troubleshooting
+
 ### Installation Directory
 
 -   **Default**: `C:\Program Files\RVToolsMerge\`
@@ -85,8 +157,9 @@ build-msi.bat
 ### Files Installed
 
 -   **Main executable**: `RVToolsMerge.exe`
--   **Application icons**: `app-icon.ico`, `app-icon.png`, `app-icon.svg`
+-   **Application icons**: `app-icon.png`, `app-icon.svg` (in Resources/Icons subdirectory)
 -   **All dependencies**: Included in the self-contained executable
+-   **Cabinet files**: Embedded `.cab` files containing compressed installation data
 
 ### Registry Integration
 
