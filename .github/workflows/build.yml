@@ -105,15 +105,6 @@ jobs:
         if: runner.os != 'Windows'
         run: chmod +x publish/RVToolsMerge
 
-      - name: Install WiX Toolset (Windows only)
-        if: runner.os == 'Windows' && inputs.configuration == 'Release'
-        run: |
-          # Install WiX toolset
-          dotnet tool install --global wix
-          # Add WiX UI extension
-          wix extension add -g WixToolset.UI.wixext
-        shell: pwsh
-
       - name: Create MSI installer (Windows only)
         if: runner.os == 'Windows' && inputs.configuration == 'Release'
         working-directory: installer
@@ -149,6 +140,11 @@ jobs:
               Write-Error "Invalid version format: $version. Expected format: X.Y.Z or X.Y.Z.W"
               exit 1
           }
+
+          # Install WiX toolset
+          dotnet tool install --global wix
+          # Add WiX UI extension
+          wix extension add WixToolset.UI.wixext
 
           # Build MSI using wix command
           $msiName = "RVToolsMerge-$version-${{ matrix.runtime }}.msi"

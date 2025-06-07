@@ -14,9 +14,4 @@
     <Compile Include="RVToolsMerge.wxs" />
   </ItemGroup>
 
-<ItemGroup>
-  <PackageReference Include="WixToolset.UI.wixext" />
-</ItemGroup>
-
-
 </Project>
