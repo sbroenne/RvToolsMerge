@@ -427,6 +427,18 @@ This project uses GitHub Actions for automated workflows:
 
 Detailed CI/CD documentation is available in [CI-CD.md](/docs/CI-CD.md).
 
+### Infrastructure and Self-Hosted Runners
+
+For development and CI/CD workloads requiring Windows GUI environments or enhanced performance, the project includes Azure infrastructure automation:
+
+-   **Azure GitHub Runner**: Deploy self-hosted Windows runners with full desktop GUI (Windows 10/11 Pro/Enterprise)
+-   **Development Tools**: Pre-configured with Git, VS Code, .NET SDK, Node.js, Python, and Chocolatey
+-   **Cost-Effective Options**: Multiple VM sizes from ~$30-140 USD/month with automatic shutdown policies
+-   **Bicep Infrastructure**: Infrastructure as Code for consistent deployments
+-   **Security**: Network isolation, encrypted storage, and secure credential management
+
+Comprehensive deployment guide available in [Azure GitHub Runner Deployment Guide](/docs/azure-github-runner-deployment.md).
+
 ### Version Management
 
 The project follows [Semantic Versioning](https://semver.org/):
