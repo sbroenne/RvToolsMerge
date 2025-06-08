@@ -45,6 +45,7 @@ jobs:
 
             console.log(`Cleaning up workflow runs older than ${retainDays} days (${cutoffDate.toISOString()})`);
             console.log(`Keeping minimum ${keepMinimumRuns} runs per workflow`);
+            console.log(`Immediately deleting all failed/cancelled runs`);
 
             // Get all workflows
             const workflows = await github.rest.actions.listRepoWorkflows({
@@ -53,6 +54,8 @@ jobs:
             });
 
             let totalDeleted = 0;
+            let immediateDeleted = 0;
+            let ageBasedDeleted = 0;
 
             for (const workflow of workflows.data.workflows) {
               console.log(`\nProcessing workflow: ${workflow.name} (ID: ${workflow.id})`);
@@ -72,19 +75,45 @@ jobs:
                 new Date(b.created_at) - new Date(a.created_at)
               );
 
-              // Keep the minimum number of runs and only delete old ones
-              const runsToProcess = sortedRuns.slice(keepMinimumRuns);
+              // First pass: Delete all failed/cancelled runs immediately
+              const failedOrCancelledRuns = sortedRuns.filter(run =>
+                run.conclusion === 'failure' || run.conclusion === 'cancelled'
+              );
+
+              for (const run of failedOrCancelledRuns) {
+                try {
+                  console.log(`Immediately deleting ${run.conclusion} run ${run.id} from ${run.created_at}`);
+                  await github.rest.actions.deleteWorkflowRun({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    run_id: run.id,
+                  });
+                  immediateDeleted++;
+                  totalDeleted++;
+                } catch (error) {
+                  console.log(`Failed to delete run ${run.id}: ${error.message}`);
+                }
+              }
+
+              // Second pass: Age-based cleanup for remaining runs (excluding failed/cancelled)
+              const remainingRuns = sortedRuns.filter(run =>
+                run.conclusion !== 'failure' && run.conclusion !== 'cancelled'
+              );
+
+              // Keep the minimum number of successful runs and only delete old ones
+              const runsToProcess = remainingRuns.slice(keepMinimumRuns);
 
               for (const run of runsToProcess) {
                 const runDate = new Date(run.created_at);
                 if (runDate < cutoffDate) {
                   try {
-                    console.log(`Deleting run ${run.id} from ${runDate.toISOString()} (${run.status}/${run.conclusion})`);
+                    console.log(`Deleting old run ${run.id} from ${runDate.toISOString()} (${run.status}/${run.conclusion})`);
                     await github.rest.actions.deleteWorkflowRun({
                       owner: context.repo.owner,
                       repo: context.repo.repo,
                       run_id: run.id,
                     });
+                    ageBasedDeleted++;
                     totalDeleted++;
                   } catch (error) {
                     console.log(`Failed to delete run ${run.id}: ${error.message}`);
@@ -95,7 +124,11 @@ jobs:
               }
             }
               console.log(`\nCleanup completed. Total runs deleted: ${totalDeleted}`);
+              console.log(`- Immediate deletions (failed/cancelled): ${immediateDeleted}`);
+              console.log(`- Age-based deletions: ${ageBasedDeleted}`);
             core.setOutput('deleted_count', totalDeleted);
+            core.setOutput('immediate_deleted', immediateDeleted);
+            core.setOutput('age_deleted', ageBasedDeleted);
 
       - name: Summary
         run: |
@@ -103,5 +136,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- **Runs kept per workflow:** ${{ github.event.inputs.keep_runs || '3' }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Maximum retention:** ${{ github.event.inputs.retain_days || '30' }} days" >> $GITHUB_STEP_SUMMARY
-          echo "- **Runs deleted:** ${{ steps.cleanup.outputs.deleted_count || '0' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Total runs deleted:** ${{ steps.cleanup.outputs.deleted_count || '0' }}" >> $GITHUB_STEP_SUMMARY
+          echo "  - **Failed/cancelled (immediate):** ${{ steps.cleanup.outputs.immediate_deleted || '0' }}" >> $GITHUB_STEP_SUMMARY
+          echo "  - **Age-based cleanup:** ${{ steps.cleanup.outputs.age_deleted || '0' }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Cleanup completed:** $(date)" >> $GITHUB_STEP_SUMMARY
