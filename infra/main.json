@@ -5,13 +5,13 @@
     "_generator": {
       "name": "bicep",
       "version": "0.36.1.42791",
-      "templateHash": "3938534319997294370"
+      "templateHash": "7001284406092921860"
     }
   },
   "parameters": {
     "environmentName": {
       "type": "string",
-      "defaultValue": "dev",
+      "defaultValue": "prod",
       "minLength": 3,
       "maxLength": 10,
       "metadata": {
@@ -47,8 +47,9 @@
     },
     "githubRepositoryUrl": {
       "type": "string",
+      "defaultValue": "https://github.com/sbroenne/RvToolsMerge",
       "metadata": {
-        "description": "GitHub repository URL (e.g., https://github.com/username/repo)"
+        "description": "GitHub repository URL (e.g., https://github.com/sbroenne/RvToolsMerge)"
       }
     },
     "runnerName": {
@@ -308,16 +309,17 @@
       "type": "Microsoft.Compute/virtualMachines/extensions",
       "apiVersion": "2024-07-01",
       "name": "[format('{0}/{1}', format('vm-runner-{0}', variables('resourceToken')), 'SetupRunner')]",
+      "location": "[parameters('location')]",
       "properties": {
         "publisher": "Microsoft.Compute",
         "type": "CustomScriptExtension",
         "typeHandlerVersion": "1.10",
         "autoUpgradeMinorVersion": true,
         "settings": {
-          "commandToExecute": "[format('powershell.exe -ExecutionPolicy Unrestricted -Command \"New-Item -Path C:\\setup -ItemType Directory -Force; Set-Content -Path C:\\setup\\repo.txt -Value ''{0}''; Set-Content -Path C:\\setup\\name.txt -Value ''{1}''; winget install --id Git.Git --silent --accept-package-agreements --accept-source-agreements; winget install --id Microsoft.DotNet.SDK.9 --silent --accept-package-agreements --accept-source-agreements; winget install --id OpenJS.NodeJS.LTS --silent --accept-package-agreements --accept-source-agreements; winget install --id Python.Python.3.12 --silent --accept-package-agreements --accept-source-agreements; Write-Host ''Setup completed. Use install-runner.ps1 script to configure GitHub Actions runner.''\"', parameters('githubRepositoryUrl'), parameters('runnerName'))]"
+          "commandToExecute": "[format('powershell.exe -ExecutionPolicy Unrestricted -Command \"New-Item -Path C:\\setup -ItemType Directory -Force; Set-Content -Path C:\\setup\\repo.txt -Value ''{0}''; Set-Content -Path C:\\setup\\name.txt -Value ''{1}''; winget install --id Microsoft.PowerShell --silent --accept-package-agreements --accept-source-agreements; winget install --id Git.Git --silent --accept-package-agreements --accept-source-agreements; winget install --id Microsoft.DotNet.SDK.9 --silent --accept-package-agreements --accept-source-agreements; winget install --id OpenJS.NodeJS.LTS --silent --accept-package-agreements --accept-source-agreements; winget install --id Python.Python.3.12 --silent --accept-package-agreements --accept-source-agreements; Write-Host ''Setup completed. PowerShell 7 and development tools installed. Use install-runner.ps1 script to configure GitHub Actions runner.''\"', parameters('githubRepositoryUrl'), parameters('runnerName'))]"
         },
         "protectedSettings": {
-          "commandToExecute": "[format('powershell.exe -Command \"Set-Content -Path C:\\setup\\token.txt -Value ''{0}''\"', parameters('githubToken'))]"
+          "commandToExecute": "[format('pwsh.exe -Command \"Set-Content -Path C:\\setup\\token.txt -Value ''{0}''\"', parameters('githubToken'))]"
         }
       },
       "dependsOn": [
@@ -357,10 +359,6 @@
     "rdpConnectionString": {
       "type": "string",
       "value": "[format('{0}:3389', reference(resourceId('Microsoft.Network/publicIPAddresses', format('pip-runner-{0}', variables('resourceToken'))), '2024-05-01').dnsSettings.fqdn)]"
-    },
-    "estimatedMonthlyCost": {
-      "type": "string",
-      "value": "~$25 USD (ARM-based efficiency)"
     },
     "azureHybridUseBenefit": {
       "type": "string",

@@ -3,10 +3,10 @@
   "contentVersion": "1.0.0.0",
   "parameters": {
     "environmentName": {
-      "value": "dev"
+      "value": "prod"
     },
     "location": {
-      "value": "East US"
+      "value": "swedencentral"
     },
     "adminUsername": {
       "value": "azureuser"
@@ -18,7 +18,7 @@
       "value": ""
     },
     "githubRepositoryUrl": {
-      "value": "https://github.com/username/repo"
+      "value": "https://github.com/sbroenne/RvToolsMerge"
     },
     "runnerName": {
       "value": "azure-windows-runner-gui"
@@ -30,7 +30,7 @@
       "value": "win11-23h2-pro"
     },
     "enableAHUB": {
-      "value": true
+      "value": false
     }
   }
 }

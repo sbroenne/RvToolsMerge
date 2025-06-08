@@ -3,7 +3,7 @@ targetScope = 'resourceGroup'
 @description('The name of the environment for resource naming')
 @minLength(3)
 @maxLength(10)
-param environmentName string = 'dev'
+param environmentName string = 'prod'
 
 @description('Location for all resources')
 param location string = resourceGroup().location
@@ -20,8 +20,8 @@ param adminPassword string
 @secure()
 param githubToken string
 
-@description('GitHub repository URL (e.g., https://github.com/username/repo)')
-param githubRepositoryUrl string
+@description('GitHub repository URL (e.g., https://github.com/sbroenne/RvToolsMerge)')
+param githubRepositoryUrl string = 'https://github.com/sbroenne/RvToolsMerge'
 
 @description('Name for the GitHub runner')
 param runnerName string = 'azure-windows-runner'
@@ -252,6 +252,7 @@ resource virtualMachine 'Microsoft.Compute/virtualMachines@2024-07-01' = {
 resource setupExtension 'Microsoft.Compute/virtualMachines/extensions@2024-07-01' = {
   parent: virtualMachine
   name: 'SetupRunner'
+  location: location
   properties: {
     publisher: 'Microsoft.Compute'
     type: 'CustomScriptExtension'
