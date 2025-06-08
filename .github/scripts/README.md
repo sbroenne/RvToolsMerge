@@ -21,8 +21,26 @@ Generates Windows Package Manager (winget) manifests from templates during the r
 -   `Arm64MsiPath` - Path to ARM64 MSI installer (required)
 -   `OutputDir` - Output directory for generated manifests (required)
 -   `ReleaseNotes` - Release notes text (optional)
+-   `ValidateWithWinget` - Switch to enable winget validation (optional)
 
 **Called by:** `version-management.yml` workflow during release process
+
+**Examples:**
+
+```powershell
+# Basic usage
+.\generate-winget-manifests.ps1 -Version "1.3.4" -X64MsiPath "path\to\x64.msi" -Arm64MsiPath "path\to\arm64.msi" -OutputDir "output"
+```
+
+```powershell
+# With custom release notes
+.\generate-winget-manifests.ps1 -Version "1.3.4" -X64MsiPath "path\to\x64.msi" -Arm64MsiPath "path\to\arm64.msi" -OutputDir "output" -ReleaseNotes "Bug fixes and improvements"
+```
+
+```powershell
+# Enable winget validation
+.\generate-winget-manifests.ps1 -Version "1.3.4" -X64MsiPath "path\to\x64.msi" -Arm64MsiPath "path\to\arm64.msi" -OutputDir "output" -ValidateWithWinget
+```
 
 ### prepare-winget-submission.ps1
 
