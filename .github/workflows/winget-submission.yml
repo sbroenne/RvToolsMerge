@@ -72,12 +72,11 @@ jobs:
           RELEASE_TAG="${{ steps.get-release.outputs.release_tag }}"
           VERSION="${{ steps.get-release.outputs.version }}"
 
-          echo "Downloading winget manifests from release $RELEASE_TAG"
-
-          # Create directory for manifests
+          echo "Downloading winget manifests from release $RELEASE_TAG"          # Create directory for manifests
           mkdir -p winget-manifests
 
-          # Download manifest files from release assets          MANIFEST_FILES=(
+          # Download manifest files from release assets
+          MANIFEST_FILES=(
             "RvToolsMerge.RvToolsMerge.yaml"
             "RvToolsMerge.RvToolsMerge.installer.yaml"
             "RvToolsMerge.RvToolsMerge.locale.en-US.yaml"
@@ -193,13 +192,14 @@ jobs:
         if: ${{ github.event.inputs.dryRun != 'true' }}
         run: |
           git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-
-      - name: Clone and Update Fork
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"      - name: Clone and Update Fork
         if: ${{ github.event.inputs.dryRun != 'true' }}
-        id: update-fork        run: |
+        id: update-fork
+        run: |
           VERSION="${{ steps.get-release.outputs.version }}"
-          BRANCH_NAME="${{ steps.prepare-submission.outputs.branch_name }}"          echo "Cloning your winget-pkgs fork..."
+          BRANCH_NAME="${{ steps.prepare-submission.outputs.branch_name }}"
+
+          echo "Cloning your winget-pkgs fork..."
           git clone https://${{ secrets.WINGET_SUBMISSION_TOKEN }}@github.com/sbroenne/winget-pkgs.git winget-fork
           cd winget-fork
 
@@ -234,15 +234,16 @@ jobs:
 
           Release URL: https://github.com/${{ github.repository }}/releases/tag/${{ steps.get-release.outputs.release_tag }}"
 
-          echo "manifest_dir=$MANIFEST_DIR" >> $GITHUB_OUTPUT
-
-      - name: Push to Fork
-        if: ${{ github.event.inputs.dryRun != 'true' }}        run: |
+          echo "manifest_dir=$MANIFEST_DIR" >> $GITHUB_OUTPUT      - name: Push to Fork
+        if: ${{ github.event.inputs.dryRun != 'true' }}
+        run: |
           cd winget-fork
           BRANCH_NAME="${{ steps.prepare-submission.outputs.branch_name }}"
 
           # Push the new branch to your fork
-          git push origin "$BRANCH_NAME"          echo "✅ Branch $BRANCH_NAME pushed to https://github.com/sbroenne/winget-pkgs"
+          git push origin "$BRANCH_NAME"
+
+          echo "✅ Branch $BRANCH_NAME pushed to https://github.com/sbroenne/winget-pkgs"
         env:
           GITHUB_TOKEN: ${{ secrets.WINGET_SUBMISSION_TOKEN }}
 
