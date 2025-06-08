@@ -433,98 +433,6 @@ jobs:
         with:
           ref: ${{ needs.create-tag.outputs.tag_name }}
 
-      - name: Install Winget
-        run: |
-          Write-Host "Installing winget and dependencies for unattended operation..."
-
-          try {
-            # Set execution policy and error handling for unattended operation
-            Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser -Force
-            $ErrorActionPreference = "Stop"
-
-            # Install Microsoft.VCLibs (required dependency) - force install to avoid prompts
-            Write-Host "Installing Microsoft.VCLibs dependency..."
-            $vcLibsUrl = "https://aka.ms/Microsoft.VCLibs.x64.14.00.Desktop.appx"
-            $vcLibsPath = "$env:TEMP\Microsoft.VCLibs.x64.14.00.Desktop.appx"
-            Invoke-WebRequest -Uri $vcLibsUrl -OutFile $vcLibsPath -UseBasicParsing
-            Add-AppxPackage -Path $vcLibsPath -ForceApplicationShutdown -ErrorAction SilentlyContinue
-
-            # Install Microsoft.UI.Xaml (required dependency) - force install to avoid prompts
-            Write-Host "Installing Microsoft.UI.Xaml dependency..."
-            $xamlUrl = "https://github.com/microsoft/microsoft-ui-xaml/releases/download/v2.8.6/Microsoft.UI.Xaml.2.8.x64.appx"
-            $xamlPath = "$env:TEMP\Microsoft.UI.Xaml.2.8.x64.appx"
-            Invoke-WebRequest -Uri $xamlUrl -OutFile $xamlPath -UseBasicParsing
-            Add-AppxPackage -Path $xamlPath -ForceApplicationShutdown -ErrorAction SilentlyContinue
-
-            # Install App Installer (contains winget) - force install to avoid prompts
-            Write-Host "Installing App Installer (winget)..."
-            $wingetUrl = "https://aka.ms/getwinget"
-            $wingetPath = "$env:TEMP\Microsoft.DesktopAppInstaller.msixbundle"
-            Invoke-WebRequest -Uri $wingetUrl -OutFile $wingetPath -UseBasicParsing
-            Add-AppxPackage -Path $wingetPath -ForceApplicationShutdown -ErrorAction SilentlyContinue
-
-            # Wait for installation to complete
-            Write-Host "Waiting for installations to complete..."
-            Start-Sleep -Seconds 15
-
-            # Refresh environment and find winget executable
-            $env:PATH = [System.Environment]::GetEnvironmentVariable("PATH", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("PATH", "User")
-
-            # Try multiple common locations for winget
-            $wingetLocations = @(
-              "$env:LOCALAPPDATA\Microsoft\WindowsApps\winget.exe",
-              "$env:ProgramFiles\WindowsApps\Microsoft.DesktopAppInstaller_*\winget.exe",
-              "$env:USERPROFILE\AppData\Local\Microsoft\WindowsApps\winget.exe"
-            )
-
-            $wingetExe = $null
-            foreach ($location in $wingetLocations) {
-              $found = Get-ChildItem -Path (Split-Path $location -Parent) -Filter "winget.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
-              if ($found) {
-                $wingetExe = $found.FullName
-                break
-              }
-            }
-
-            # If not found in common locations, search more broadly
-            if (-not $wingetExe) {
-              Write-Host "Searching for winget executable..."
-              $wingetExe = Get-ChildItem -Path "$env:LOCALAPPDATA" -Filter "winget.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1 | Select-Object -ExpandProperty FullName
-            }
-
-            if ($wingetExe -and (Test-Path $wingetExe)) {
-              Write-Host "Winget found at: $wingetExe"
-
-              # Add winget directory to PATH for this session
-              $wingetDir = Split-Path $wingetExe -Parent
-              $env:PATH = "$wingetDir;$env:PATH"
-
-              # Test winget with version check and accept source agreements upfront
-              Write-Host "Testing winget installation..."
-              & $wingetExe --version
-
-              # Accept source agreements to avoid prompts during manifest generation
-              Write-Host "Accepting winget source agreements..."
-              & $wingetExe source update --accept-source-agreements
-
-              Write-Host "Winget successfully installed and configured for unattended operation"
-            } else {
-              throw "Winget executable not found after installation"
-            }
-
-            # Clean up temporary files
-            Remove-Item -Path $vcLibsPath -ErrorAction SilentlyContinue
-            Remove-Item -Path $xamlPath -ErrorAction SilentlyContinue
-            Remove-Item -Path $wingetPath -ErrorAction SilentlyContinue
-
-          } catch {
-            Write-Error "Failed to install winget: $($_.Exception.Message)"
-            Write-Host "Available AppX packages:"
-            Get-AppxPackage | Where-Object { $_.Name -like "*AppInstaller*" -or $_.Name -like "*Xaml*" -or $_.Name -like "*VCLibs*" } | Format-Table Name, Version
-            exit 1
-          }
-        shell: pwsh
-
       - name: Get Version from Tag
         id: get-version
         run: |
@@ -590,15 +498,9 @@ jobs:
           See the full release notes at: https://github.com/sbroenne/RVToolsMerge/releases/tag/v$version
           "@
 
+          # Generate manifests without winget validation
           & .github/scripts/generate-winget-manifests.ps1 -Version $version -X64MsiPath $x64MsiPath -Arm64MsiPath $arm64MsiPath -OutputDir $outputDir -ReleaseNotes $releaseNotes
         shell: pwsh
-
-      - name: Upload Winget Manifests
-        uses: actions/upload-artifact@v4
-        with:
-          name: winget-manifests-${{ steps.get-version.outputs.version }}
-          path: winget-manifests/*.yaml
-          retention-days: 30
 
   create-release:
     name: Create GitHub Release
