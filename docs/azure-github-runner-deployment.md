@@ -6,7 +6,7 @@ This guide provides comprehensive instructions for deploying a self-hosted GitHu
 
 The deployment creates a secure Windows environment specifically designed for code signing workflows:
 
--   **Windows VM with GUI**: Full Windows desktop environment (Windows 10/11 Pro/Enterprise) for code signing tools
+-   **Windows VM with GUI**: Full Windows desktop environment (Windows 11 Pro) for code signing tools
 -   **Signing Tools**: Pre-installed with .NET SDK, Windows SDK, and signtool.exe for authenticode signing
 -   **Standard Storage**: 128GB Standard SSD for secure certificate storage and build artifacts
 -   **Network Security**: Configured with appropriate security groups for RDP and outbound access
@@ -65,26 +65,38 @@ The deployment creates a secure Windows environment specifically designed for co
 
 ## Deployment Method
 
-### Azure CLI with Bicep
+### Azure CLI with Bicep (cmd)
 
 ```cmd
 rem Create resource group (specify your preferred Azure region)
 az group create --name rg-github-runner-dev --location swedencentral
 
-rem Deploy infrastructure
+rem Deploy infrastructure - basic deployment without parameters file
+az deployment group create ^
+  --resource-group rg-github-runner-dev ^
+  --template-file infra\main.bicep ^
+  --parameters adminPassword="YourSecurePassword123!" ^
+  --parameters githubToken="ghp_xxxxxxxxxxxxxxxxxxxx" ^
+  --parameters githubRepositoryUrl="https://github.com/username/RvToolsMerge" ^
+  --parameters runnerName="azure-windows-runner-gui" ^
+  --parameters enableAHUB=false ^
+  --parameters location="swedencentral" ^
+  --parameters environmentName="dev"
+```
+
+**Alternative with parameters file** (if `main.parameters.dev.json` exists):
+
+```cmd
 az deployment group create ^
   --resource-group rg-github-runner-dev ^
   --template-file infra\main.bicep ^
   --parameters infra\main.parameters.dev.json ^
   --parameters adminPassword="YourSecurePassword123!" ^
   --parameters githubToken="ghp_xxxxxxxxxxxxxxxxxxxx" ^
-  --parameters githubRepositoryUrl="https://github.com/username/RvToolsMerge" ^
-  --parameters runnerName="azure-windows-runner-gui" ^
-  --parameters enableAHUB=false ^
-  --parameters location="swedencentral"
+  --parameters githubRepositoryUrl="https://github.com/username/RvToolsMerge"
 ```
 
-**Note**: The parameters file (`main.parameters.dev.json`) contains default values for most parameters. You can override the `location` parameter to deploy to a different Azure region. The default is `swedencentral`.
+**Note**: If you don't have a parameters file, use the first command. The deployment will use default values for optional parameters.
 
 ## Parameter Validation and Requirements
 
@@ -235,6 +247,32 @@ Monitor: CPU and memory usage in Azure portal
 Current: Standard_B2as_v2 (2 vCPU, 8GB RAM) - AMD-based for efficiency
 Upgrade options: Standard_B4as_v2 (4 vCPU, 16GB RAM) or Standard_B8as_v2 (8 vCPU, 32GB RAM)
 Action: Resize VM through Azure portal or update vmSize parameter in deployment
+```
+
+### Common Deployment Issues
+
+**1. Template file not found**
+
+```
+Error: The template file 'infra\main.bicep' could not be found
+Solution: Verify you're running the command from the project root directory
+Check: Ensure the infra\main.bicep file exists in your project
+```
+
+**2. Parameters file not found**
+
+```
+Error: The parameter file 'infra\main.parameters.dev.json' could not be found
+Solution: Either create the parameters file or use inline parameters (see basic deployment above)
+Alternative: Remove the --parameters infra\main.parameters.dev.json line
+```
+
+**3. Missing required parameters**
+
+```
+Error: The template deployment is not valid
+Solution: Ensure all required parameters are provided (adminPassword, githubToken, githubRepositoryUrl)
+Check: Verify parameter names match exactly (case-sensitive)
 ```
 
 ### Debugging Commands

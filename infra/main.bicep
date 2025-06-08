@@ -33,7 +33,7 @@ param vmSize string = 'Standard_B2as_v2'
 param windowsVersion string = 'win11-23h2-pro'
 
 @description('Enable Azure Hybrid Use Benefit for Windows Client licensing')
-param enableAHUB bool = true
+param enableAHUB bool = false
 
 // Generate a unique suffix for resource names
 var resourceToken = toLower(uniqueString(subscription().id, environmentName, location))
@@ -258,11 +258,8 @@ resource setupExtension 'Microsoft.Compute/virtualMachines/extensions@2024-07-01
     type: 'CustomScriptExtension'
     typeHandlerVersion: '1.10'
     autoUpgradeMinorVersion: true
-    settings: {
-      commandToExecute: 'powershell.exe -ExecutionPolicy Unrestricted -Command "New-Item -Path C:\\setup -ItemType Directory -Force; Set-Content -Path C:\\setup\\repo.txt -Value \'${githubRepositoryUrl}\'; Set-Content -Path C:\\setup\\name.txt -Value \'${runnerName}\'; winget install --id Microsoft.PowerShell --silent --accept-package-agreements --accept-source-agreements; winget install --id Git.Git --silent --accept-package-agreements --accept-source-agreements; winget install --id Microsoft.DotNet.SDK.9 --silent --accept-package-agreements --accept-source-agreements; winget install --id OpenJS.NodeJS.LTS --silent --accept-package-agreements --accept-source-agreements; winget install --id Python.Python.3.12 --silent --accept-package-agreements --accept-source-agreements; Write-Host \'Setup completed. PowerShell 7 and development tools installed. Use install-runner.ps1 script to configure GitHub Actions runner.\'"'
-    }
     protectedSettings: {
-      commandToExecute: 'pwsh.exe -Command "Set-Content -Path C:\\setup\\token.txt -Value \'${githubToken}\'"'
+      commandToExecute: 'powershell.exe -ExecutionPolicy Unrestricted -Command "New-Item -Path C:\\setup -ItemType Directory -Force; Set-Content -Path C:\\setup\\repo.txt -Value \'${githubRepositoryUrl}\'; Set-Content -Path C:\\setup\\name.txt -Value \'${runnerName}\'; Set-Content -Path C:\\setup\\token.txt -Value \'${githubToken}\'; winget install --id Microsoft.PowerShell --silent --accept-package-agreements --accept-source-agreements; winget install --id Git.Git --silent --accept-package-agreements --accept-source-agreements; winget install --id Microsoft.DotNet.SDK.9 --silent --accept-package-agreements --accept-source-agreements; winget install --id OpenJS.NodeJS.LTS --silent --accept-package-agreements --accept-source-agreements; winget install --id Python.Python.3.12 --silent --accept-package-agreements --accept-source-agreements; Write-Host \'Setup completed. PowerShell 7 and development tools installed. Use install-runner.ps1 script to configure GitHub Actions runner.\'"'
     }
   }
 }
