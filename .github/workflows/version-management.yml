@@ -502,6 +502,13 @@ jobs:
           & .github/scripts/generate-winget-manifests.ps1 -Version $version -X64MsiPath $x64MsiPath -Arm64MsiPath $arm64MsiPath -OutputDir $outputDir -ReleaseNotes $releaseNotes
         shell: pwsh
 
+      - name: Upload Winget Manifests
+        uses: actions/upload-artifact@v4
+        with:
+          name: winget-manifests-${{ steps.get-version.outputs.version }}
+          path: winget-manifests/
+          retention-days: 30
+
   create-release:
     name: Create GitHub Release
     needs: [bump-version, create-tag, build-release, generate-winget-manifests]
@@ -710,7 +717,7 @@ jobs:
           files: |
             release-files/*.zip
             release-files/*.msi
-            winget-manifests/*/*.yaml
+            winget-manifests/**/*.yaml
           fail_on_unmatched_files: true
           generate_release_notes: true
           body: |

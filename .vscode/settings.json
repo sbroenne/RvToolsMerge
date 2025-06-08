@@ -1,16 +1,17 @@
 {
-    "editor.formatOnSave": true,
-    "editor.codeActionsOnSave": {
-        "source.organizeImports": "always"
-    },
-    "dotnet.defaultSolution": "RVToolsMerge.sln",
-    "csharp.format.enable": true,
-    "files.exclude": {
-        "**/bin": true,
-        "**/obj": true,
-        "**/.vs": true,
-        "**/.vscode/*.log": true
-    },
-    "csharp.suppressDotnetRestoreNotification": false,
-    "explorer.excludeGitIgnore": false
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.organizeImports": "always"
+  },
+  "dotnet.defaultSolution": "RVToolsMerge.sln",
+  "csharp.format.enable": true,
+  "files.exclude": {
+    "**/bin": true,
+    "**/obj": true,
+    "**/.vs": true,
+    "**/.vscode/*.log": true
+  },
+  "csharp.suppressDotnetRestoreNotification": false,
+  "explorer.excludeGitIgnore": false,
+  "sarif-viewer.connectToGithubCodeScanning": "on"
 }

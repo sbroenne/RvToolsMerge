@@ -11,6 +11,7 @@ RVToolsMerge uses GitHub Actions for all CI/CD pipelines. The main workflows are
 3. **Code Coverage** - Generates code coverage reports and badges for the project
 4. **Security Scanning** - Includes CodeQL analysis, dependency review, and vulnerability scanning
 5. **Auto Labeling** - Automatically adds labels to pull requests based on file changes
+6. **Workflow Cleanup** - Automatically cleans up old workflow runs to maintain repository hygiene
 
 ## Build Workflow
 
@@ -48,6 +49,28 @@ The Code Coverage workflow (`code-coverage.yml`) generates detailed coverage rep
     -   Generates HTML coverage reports and badges
     -   Publishes coverage badge to GitHub Pages
     -   Makes reports available as workflow artifacts
+
+## Workflow Cleanup
+
+The Workflow Cleanup workflow (`cleanup-workflow-runs.yml`) maintains repository hygiene by automatically removing old workflow runs:
+
+-   **Trigger**:
+    -   Scheduled daily at 2 AM UTC
+    -   Manual workflow dispatch with optional parameters
+-   **Platform**: Ubuntu
+-   **Parameters** (manual dispatch only):
+    -   `keep_runs`: Number of runs to keep for each workflow (default: 3)
+    -   `retain_days`: Number of days to retain workflow runs (default: 30)
+-   **Function**:
+    -   Keeps only the latest runs of each workflow (configurable via manual trigger)
+    -   Removes runs older than the specified retention period (configurable via manual trigger)
+    -   Cleans up runs with all conclusion states (cancelled, failure, success, skipped)
+    -   Provides summary of cleanup actions performed
+-   **Benefits**:
+    -   Reduces repository storage usage
+    -   Improves workflow run browsing performance
+    -   Maintains relevant run history while removing clutter
+    -   Configurable retention settings for different cleanup scenarios
 
 ## Version Management & Release Workflow
 
@@ -171,6 +194,12 @@ Common issues and solutions:
     -   Verify that the repository allows Actions to create PRs and releases
     -   Ensure no existing PR conflicts with the version update branch
 -   **Code coverage not found**: Ensure Windows x64 build completes successfully and generates coverage files
+-   **Workflow cleanup fails**:
+    -   Verify the GITHUB_TOKEN has sufficient permissions for Actions scope
+    -   Check if any workflow runs are currently in progress (they cannot be deleted)
+    -   Ensure the cleanup action has proper access to repository Actions
+    -   Review retention settings if unexpected runs are being deleted
+    -   Verify that custom retention day values are valid positive integers
 -   **Branch creation fails**:
     -   Check for existing version update branches that may conflict
     -   Verify git configuration and push permissions
