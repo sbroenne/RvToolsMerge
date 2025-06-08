@@ -168,19 +168,50 @@ function Invoke-TemplateProcessing {
     }
 }
 
+# Function to escape text for YAML literal block scalar
+function ConvertTo-YamlLiteralBlock {
+    param([string]$Text)
+
+    if ([string]::IsNullOrEmpty($Text)) {
+        return ""
+    }
+
+    # Split into lines and process each line
+    $lines = $Text -split "`r`n|`r|`n"
+    $escapedLines = @()
+
+    foreach ($line in $lines) {
+        # Trim trailing whitespace but preserve leading indentation
+        $trimmedLine = $line.TrimEnd()
+
+        # For YAML literal block scalars (|-), we need to indent each line by 2 spaces
+        # relative to the field name. Most content doesn't need escaping in literal blocks.
+        if ($trimmedLine.Length -eq 0) {
+            $escapedLines += "  "  # Empty line with proper indentation
+        } else {
+            # Add 2-space indentation for proper YAML formatting
+            $escapedLines += "  $trimmedLine"
+        }
+    }
+
+    return $escapedLines -join "`n"
+}
+
 # Prepare replacement values
+$escapedReleaseNotes = ConvertTo-YamlLiteralBlock -Text $ReleaseNotes
+
 $replacements = @{
     "VERSION"       = $Version
     "X64_SHA256"    = $x64Hash
     "ARM64_SHA256"  = $arm64Hash
-    "RELEASE_NOTES" = $ReleaseNotes
+    "RELEASE_NOTES" = $escapedReleaseNotes
 }
 
 Write-Host "Template replacements:"
 Write-Host "  VERSION: $Version"
 Write-Host "  X64_SHA256: $x64Hash"
 Write-Host "  ARM64_SHA256: $arm64Hash"
-Write-Host "  RELEASE_NOTES: $($ReleaseNotes.Length) characters"
+Write-Host "  RELEASE_NOTES: $($escapedReleaseNotes.Length) characters (YAML-escaped)"
 
 # Process each template
 $templates = @(
