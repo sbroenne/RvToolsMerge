@@ -187,12 +187,14 @@ jobs:
           EOF
 
           echo "branch_name=RvToolsMerge-$VERSION" >> $GITHUB_OUTPUT
-
       - name: Setup Git Configuration
         if: ${{ github.event.inputs.dryRun != 'true' }}
+        id: setup-git
         run: |
           git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"      - name: Clone and Update Fork
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Clone and Update Fork
         if: ${{ github.event.inputs.dryRun != 'true' }}
         id: update-fork
         run: |
@@ -234,7 +236,9 @@ jobs:
 
           Release URL: https://github.com/${{ github.repository }}/releases/tag/${{ steps.get-release.outputs.release_tag }}"
 
-          echo "manifest_dir=$MANIFEST_DIR" >> $GITHUB_OUTPUT      - name: Push to Fork
+          echo "manifest_dir=$MANIFEST_DIR" >> $GITHUB_OUTPUT
+
+      - name: Push to Fork
         if: ${{ github.event.inputs.dryRun != 'true' }}
         run: |
           cd winget-fork
