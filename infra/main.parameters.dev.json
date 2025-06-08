@@ -24,10 +24,13 @@
       "value": "azure-windows-runner-gui"
     },
     "vmSize": {
-      "value": "Standard_B2ms"
+      "value": "Standard_B2as_v2"
     },
     "windowsVersion": {
       "value": "win11-23h2-pro"
+    },
+    "enableAHUB": {
+      "value": true
     }
   }
 }

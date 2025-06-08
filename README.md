@@ -429,13 +429,21 @@ Detailed CI/CD documentation is available in [CI-CD.md](/docs/CI-CD.md).
 
 ### Infrastructure and Self-Hosted Runners
 
-For development and CI/CD workloads requiring Windows GUI environments or enhanced performance, the project includes Azure infrastructure automation:
+For CI/CD workloads requiring code signing of release artifacts, the project includes Azure infrastructure automation for deploying secure Windows-based GitHub runners:
 
--   **Azure GitHub Runner**: Deploy self-hosted Windows runners with full desktop GUI (Windows 10/11 Pro/Enterprise)
--   **Development Tools**: Pre-configured with Git, VS Code, .NET SDK, Node.js, Python, and Chocolatey
--   **Cost-Effective Options**: Multiple VM sizes from ~$30-140 USD/month with automatic shutdown policies
--   **Bicep Infrastructure**: Infrastructure as Code for consistent deployments
--   **Security**: Network isolation, encrypted storage, and secure credential management
+-   **Azure GitHub Runner**: Deploy self-hosted Windows runners for artifact signing workflows
+-   **Code Signing Environment**: Secure Windows environment with access to code signing certificates and tools
+-   **Signing Tools**: Pre-configured with .NET SDK, Windows SDK, and signtool.exe for authenticode signing
+-   **Security Isolation**: Network-isolated environment with encrypted storage for certificate security
+-   **Cost-Effective**: Multiple VM sizes from ~$23-135 USD/month with automatic shutdown policies
+-   **Bicep Infrastructure**: Infrastructure as Code for consistent and repeatable deployments
+
+The self-hosted runners enable:
+
+-   **Authenticode Signing**: Sign .exe files and MSI installers with trusted certificates
+-   **Enhanced Security**: Dedicated signing environment separate from public GitHub runners
+-   **Certificate Management**: Secure storage and access to code signing certificates
+-   **Trusted Releases**: Provide users with signed, verifiable release artifacts
 
 Comprehensive deployment guide available in [Azure GitHub Runner Deployment Guide](/docs/azure-github-runner-deployment.md).
 

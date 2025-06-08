@@ -38,6 +38,14 @@ The .NET CI workflow (`dotnet.yml`) is triggered on code changes:
     -   Builds the application in Debug configuration
     -   Runs all tests
 
+## Azure Infrastructure Requirements
+
+For self-hosted runners and Azure deployments:
+
+-   **Operating System**: Windows 11 Pro (23H2) only
+-   **Platform Support**: Standardized on Windows 11 Pro for consistency and optimal Azure Hybrid Use Benefit licensing
+-   **Azure Hybrid Use Benefit**: Enabled by default for up to 40% cost savings with proper Windows Client licensing
+
 ## Code Coverage Workflow
 
 The Code Coverage workflow (`code-coverage.yml`) generates detailed coverage reports and badges:

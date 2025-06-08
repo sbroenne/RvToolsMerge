@@ -26,24 +26,14 @@ param githubRepositoryUrl string
 @description('Name for the GitHub runner')
 param runnerName string = 'azure-windows-runner'
 
-@description('VM size for the GitHub runner (suitable for Windows GUI with Visual Studio)')
-@allowed([
-  'Standard_B2ms' // 2 vCPU, 8 GB RAM - Good for basic development
-  'Standard_B4ms' // 4 vCPU, 16 GB RAM - Better for Visual Studio
-  'Standard_D2s_v3' // 2 vCPU, 8 GB RAM - Premium SSD, good performance
-  'Standard_D4s_v3' // 4 vCPU, 16 GB RAM - Premium SSD, excellent for development
-  'Standard_E2s_v3' // 2 vCPU, 16 GB RAM - Memory optimized
-])
-param vmSize string = 'Standard_B2ms'
+@description('VM size for the GitHub runner (ARM-based for cost efficiency)')
+param vmSize string = 'Standard_B2as_v2'
 
-@description('Windows version to deploy')
-@allowed([
-  'win11-23h2-pro'
-  'win10-22h2-pro'
-  'win11-23h2-ent'
-  'win10-22h2-ent'
-])
+@description('Windows 11 Pro version (fixed for consistency and optimal AHUB licensing)')
 param windowsVersion string = 'win11-23h2-pro'
+
+@description('Enable Azure Hybrid Use Benefit for Windows Client licensing')
+param enableAHUB bool = true
 
 // Generate a unique suffix for resource names
 var resourceToken = toLower(uniqueString(subscription().id, environmentName, location))
@@ -237,7 +227,7 @@ resource virtualMachine 'Microsoft.Compute/virtualMachines@2024-07-01' = {
         caching: 'ReadWrite'
         createOption: 'FromImage'
         managedDisk: {
-          storageAccountType: 'Premium_LRS'
+          storageAccountType: 'StandardSSD_LRS'
         }
         diskSizeGB: 128
       }
@@ -254,6 +244,7 @@ resource virtualMachine 'Microsoft.Compute/virtualMachines@2024-07-01' = {
         enabled: true
       }
     }
+    licenseType: enableAHUB ? 'Windows_Client' : null
   }
 }
 
@@ -267,7 +258,10 @@ resource setupExtension 'Microsoft.Compute/virtualMachines/extensions@2024-07-01
     typeHandlerVersion: '1.10'
     autoUpgradeMinorVersion: true
     settings: {
-      commandToExecute: 'powershell.exe -ExecutionPolicy Unrestricted -Command "New-Item -Path C:\\setup -ItemType Directory -Force; Set-Content -Path C:\\setup\\token.txt -Value \'${githubToken}\'; Set-Content -Path C:\\setup\\repo.txt -Value \'${githubRepositoryUrl}\'; Set-Content -Path C:\\setup\\name.txt -Value \'${runnerName}\'; Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString(\'https://community.chocolatey.org/install.ps1\')); choco install -y git vscode dotnet-sdk nodejs python; Write-Host \'Setup completed. Use install-runner.ps1 script to configure GitHub Actions runner.\'"'
+      commandToExecute: 'powershell.exe -ExecutionPolicy Unrestricted -Command "New-Item -Path C:\\setup -ItemType Directory -Force; Set-Content -Path C:\\setup\\repo.txt -Value \'${githubRepositoryUrl}\'; Set-Content -Path C:\\setup\\name.txt -Value \'${runnerName}\'; winget install --id Git.Git --silent --accept-package-agreements --accept-source-agreements; winget install --id Microsoft.DotNet.SDK.9 --silent --accept-package-agreements --accept-source-agreements; winget install --id OpenJS.NodeJS.LTS --silent --accept-package-agreements --accept-source-agreements; winget install --id Python.Python.3.12 --silent --accept-package-agreements --accept-source-agreements; Write-Host \'Setup completed. Use install-runner.ps1 script to configure GitHub Actions runner.\'"'
+    }
+    protectedSettings: {
+      commandToExecute: 'powershell.exe -Command "Set-Content -Path C:\\setup\\token.txt -Value \'${githubToken}\'"'
     }
   }
 }
@@ -281,10 +275,5 @@ output managedIdentityId string = managedIdentity.id
 output virtualNetworkId string = virtualNetwork.id
 output adminUsername string = adminUsername
 output rdpConnectionString string = '${publicIP.properties.dnsSettings.fqdn}:3389'
-output estimatedMonthlyCost string = vmSize == 'Standard_B2ms'
-  ? '~$30 USD'
-  : vmSize == 'Standard_B4ms'
-      ? '~$60 USD'
-      : vmSize == 'Standard_D2s_v3'
-          ? '~$70 USD'
-          : vmSize == 'Standard_D4s_v3' ? '~$140 USD' : vmSize == 'Standard_E2s_v3' ? '~$90 USD' : '~$30-140 USD'
+output estimatedMonthlyCost string = '~$23 USD (ARM-based efficiency + Standard SSD)'
+output azureHybridUseBenefit string = enableAHUB ? 'Enabled (up to 40% savings)' : 'Disabled'

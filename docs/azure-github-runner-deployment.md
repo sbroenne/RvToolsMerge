@@ -1,14 +1,14 @@
 # Azure GitHub Runner Deployment Guide
 
-This guide provides comprehensive instructions for deploying a self-hosted GitHub Actions runner on Azure using Windows with GUI (not Server Core) for development and CI/CD purposes.
+This guide provides comprehensive instructions for deploying a self-hosted GitHub Actions runner on Azure using Windows with GUI for code signing and artifact security purposes.
 
 ## Overview
 
-The deployment creates:
+The deployment creates a secure Windows environment specifically designed for code signing workflows:
 
--   **Windows VM with GUI**: Full Windows desktop environment (Windows 10/11 Pro/Enterprise)
--   **Development Tools**: Pre-installed with Git, VS Code, .NET SDK, Node.js, Python, and Chocolatey
--   **Premium Storage**: 128GB Premium SSD for better performance
+-   **Windows VM with GUI**: Full Windows desktop environment (Windows 10/11 Pro/Enterprise) for code signing tools
+-   **Signing Tools**: Pre-installed with .NET SDK, Windows SDK, and signtool.exe for authenticode signing
+-   **Standard Storage**: 128GB Standard SSD for secure certificate storage and build artifacts
 -   **Network Security**: Configured with appropriate security groups for RDP and outbound access
 -   **GitHub Runner**: Automatically configured as a self-hosted runner
 
@@ -33,26 +33,38 @@ The deployment creates:
     -   `admin:org` (if deploying to organization repositories)
     -   `workflow` (Update GitHub Action workflows)
 
-## VM Size Options and Costs
+## VM Configuration
 
-| VM Size             | vCPUs | RAM   | Storage    | Est. Monthly Cost\* | Best For                          |
-| ------------------- | ----- | ----- | ---------- | ------------------- | --------------------------------- |
-| **Standard_B2ms**   | 2     | 8 GB  | 16 GB temp | ~$30 USD            | Light development, basic CI/CD    |
-| **Standard_B4ms**   | 4     | 16 GB | 32 GB temp | ~$60 USD            | Medium development workloads      |
-| **Standard_D2s_v3** | 2     | 8 GB  | 16 GB temp | ~$70 USD            | Consistent performance needs      |
-| **Standard_D4s_v3** | 4     | 16 GB | 32 GB temp | ~$140 USD           | Heavy development, complex builds |
-| **Standard_E2s_v3** | 2     | 16 GB | 32 GB temp | ~$120 USD           | Memory-intensive applications     |
+**Fixed VM Size**: The infrastructure uses `Standard_B2as_v2` (ARM-based) optimized for code signing workflows:
 
-\*Costs are estimates for East US region and don't include storage (~$15/month) and networking (~$5/month).
+-   **Specifications**: 2 vCPU, 8 GB RAM, ARM64 architecture
+-   **Cost**: Approximately $23 USD per month (before AHUB savings)
+-   **Performance**: Sufficient for code signing operations and artifact processing
+-   **Efficiency**: ARM-based processors provide excellent price-performance ratio for signing workloads
+-   **Security**: Isolated environment for certificate management and signing operations
 
-## Windows Version Options
+## Cost Optimization
 
-| Version            | Description             | Best For                     |
-| ------------------ | ----------------------- | ---------------------------- |
-| **win11-23h2-pro** | Windows 11 Professional | Modern development (default) |
-| **win10-22h2-pro** | Windows 10 Professional | Legacy compatibility needs   |
-| **win11-23h2-ent** | Windows 11 Enterprise   | Enterprise environments      |
-| **win10-22h2-ent** | Windows 10 Enterprise   | Enterprise with legacy needs |
+### Azure Hybrid Use Benefit (AHUB)
+
+**Enabled by Default**: The deployment automatically enables Azure Hybrid Use Benefit for Windows client licensing, which can provide up to 40% savings on compute costs if you have eligible Windows licenses.
+
+**Requirements for AHUB**:
+
+-   Valid Windows 10/11 Pro or Enterprise licenses with active Software Assurance
+-   Compliance with Microsoft licensing terms
+-   Only available for Windows client VMs (not Windows Server)
+
+**To disable AHUB**: Set `enableAHUB` parameter to `false` in the deployment.
+
+## Windows Version Support
+
+**Fixed Configuration**: The infrastructure is configured to use Windows 11 Professional (23H2) exclusively for optimal code signing compatibility and Azure Hybrid Use Benefit support.
+
+-   **Consistent Platform**: All deployments use the same Windows version for predictable signing behavior
+-   **AHUB Optimization**: Windows 11 Pro provides the best cost optimization with Azure Hybrid Use Benefit
+-   **Signing Tools Compatibility**: Full compatibility with Windows SDK, signtool.exe, and modern signing requirements
+-   **Security Features**: Latest Windows security features for certificate protection
 
 ## Deployment Methods
 
@@ -85,18 +97,25 @@ The deployment creates:
 
 ### Method 2: PowerShell with Parameters
 
+For secure credential handling, use SecureString parameters:
+
 ```powershell
+# Convert sensitive strings to SecureString for security
+$securePassword = ConvertTo-SecureString "YourSecurePassword123!" -AsPlainText -Force
+$secureToken = ConvertTo-SecureString "ghp_xxxxxxxxxxxxxxxxxxxx" -AsPlainText -Force
+
 .\scripts\deploy.ps1 `
   -EnvironmentName "dev" `
   -Location "eastus" `
   -AdminUsername "azureuser" `
-  -AdminPassword "YourSecurePassword123!" `
-  -GitHubToken "ghp_xxxxxxxxxxxxxxxxxxxx" `
+  -AdminPassword $securePassword `
+  -GitHubToken $secureToken `
   -GitHubRepositoryUrl "https://github.com/username/RvToolsMerge" `
   -RunnerName "azure-windows-dev" `
-  -VmSize "Standard_B2ms" `
-  -WindowsVersion "win11-23h2-pro"
+  -EnableAHUB $true
 ```
+
+> **Security Note**: The script now uses SecureString parameters for sensitive data (passwords and tokens) to prevent accidental exposure in logs or process lists.
 
 ### Method 3: Azure CLI with Bicep
 
@@ -111,7 +130,8 @@ az deployment group create ^
   --parameters infra\main.parameters.dev.json ^
   --parameters adminPassword="YourSecurePassword123!" ^
   --parameters githubToken="ghp_xxxxxxxxxxxxxxxxxxxx" ^
-  --parameters githubRepositoryUrl="https://github.com/username/RvToolsMerge"
+  --parameters githubRepositoryUrl="https://github.com/username/RvToolsMerge" ^
+  --parameters enableAHUB=true
 ```
 
 ## Post-Deployment Configuration
@@ -153,17 +173,20 @@ az vm run-command invoke ^
   --scripts "Get-Content C:\runner-install.log"
 ```
 
-## Pre-Installed Development Tools
+## Pre-Installed Signing and Build Tools
 
-The VM comes with the following tools pre-installed:
+The VM comes with the following tools pre-installed for code signing and artifact creation:
 
--   **Chocolatey** package manager
--   **Git** for version control
--   **Visual Studio Code** with common extensions
--   **.NET 8 SDK** for .NET development
--   **Node.js LTS** for JavaScript/TypeScript projects
--   **Python 3.11** for Python development
--   **Windows PowerShell** and **PowerShell Core**
+-   **Windows Package Manager (winget)** for native package management
+-   **Git** for version control and source code access
+-   **.NET 9 SDK** for building .NET applications and creating signed artifacts
+-   **Node.js LTS** for JavaScript/TypeScript build processes
+-   **Python 3.12** for build automation scripts
+-   **Windows PowerShell** and **PowerShell Core** for signing automation
+-   **Windows SDK** (available) with signtool.exe for authenticode signing
+-   **MSBuild** for building and packaging applications
+
+> **Note**: The infrastructure uses winget (Windows Package Manager) instead of third-party package managers like Chocolatey. Winget is Microsoft's native package manager for Windows, providing better security, reliability, and integration for code signing environments.
 
 ## Security Considerations
 
@@ -175,17 +198,21 @@ The VM comes with the following tools pre-installed:
 
 ### Credential Management
 
--   Admin credentials are required for RDP access
+-   Admin credentials are required for RDP access to the signing environment
 -   GitHub token is stored securely and used only for runner registration
--   Consider using Azure Key Vault for production deployments
+-   **Code signing certificates** should be stored in Azure Key Vault for production deployments
+-   Consider using Hardware Security Modules (HSM) for high-value signing certificates
 
 ### Recommended Security Practices
 
-1. Use strong, unique passwords (minimum 12 characters)
+1. Use strong, unique passwords (minimum 12 characters) for VM access
 2. Rotate GitHub tokens regularly
-3. Monitor Azure Activity Logs for unauthorized access
-4. Consider using Azure Bastion for secure RDP access
-5. Implement Just-In-Time (JIT) access if available
+3. **Store signing certificates securely** using Azure Key Vault or dedicated HSM
+4. **Limit certificate access** to only the signing workflows that require them
+5. Monitor Azure Activity Logs for unauthorized access
+6. Consider using Azure Bastion for secure RDP access without exposing VM to internet
+7. Implement Just-In-Time (JIT) access if available
+8. **Audit signing operations** and maintain logs of all code signing activities
 
 ## Troubleshooting
 
@@ -267,7 +294,7 @@ az vm start --resource-group rg-github-runner-dev --name vm-github-runner-dev
 2. **Use smaller VM sizes** for light workloads
 3. **Monitor usage** with Azure Cost Management
 4. **Set up billing alerts** to track spending
-5. **Use dev/test pricing** if you have Visual Studio subscriptions
+5. **Leverage Azure Hybrid Use Benefit** for Windows Client licensing cost savings
 
 ## Advanced Configuration
 
@@ -275,10 +302,10 @@ az vm start --resource-group rg-github-runner-dev --name vm-github-runner-dev
 
 The deployment includes a custom script extension that:
 
--   Installs Chocolatey package manager
--   Installs common development tools
--   Configures GitHub runner with your repository
--   Sets up logging and error handling
+-   Installs winget package manager and signing tools
+-   Installs build and signing tools (.NET SDK, Windows SDK, signtool)
+-   Configures GitHub runner with your repository for signing workflows
+-   Sets up logging and error handling for signing operations
 
 ### Scaling to Multiple Runners
 
