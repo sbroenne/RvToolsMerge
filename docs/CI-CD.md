@@ -12,6 +12,7 @@ RVToolsMerge uses GitHub Actions for all CI/CD pipelines. The main workflows are
 4. **Security Scanning** - Includes CodeQL analysis, dependency review, and vulnerability scanning
 5. **Auto Labeling** - Automatically adds labels to pull requests based on file changes
 6. **Workflow Cleanup** - Automatically cleans up old workflow runs to maintain repository hygiene
+7. **Winget Submission** - Manual workflow for preparing and submitting packages to the Windows Package Manager repository
 
 ## Build Workflow
 
@@ -72,6 +73,35 @@ The Workflow Cleanup workflow (`cleanup-workflow-runs.yml`) maintains repository
     -   Maintains relevant run history while removing clutter
     -   Configurable retention settings for different cleanup scenarios
 
+## Winget Submission Workflow
+
+The Winget Submission workflow (`winget-submission.yml`) automates the preparation and submission of RVToolsMerge to the Windows Package Manager repository:
+
+-   **Trigger**: Manual workflow dispatch only
+-   **Inputs**:
+    -   `releaseTag`: Specific release tag to process (e.g., "v1.3.4") or empty for latest release
+    -   `dryRun`: Set to `true` for testing without creating branches (default: false)
+-   **Platform**: Ubuntu
+-   **Prerequisites**:
+    -   Fork of `microsoft/winget-pkgs` repository at `https://github.com/sbroenne/winget-pkgs`
+    -   Personal access token with `repo` scope stored as `WINGET_SUBMISSION_TOKEN` repository secret
+    -   GitHub release with required winget manifest files
+-   **Function**:
+    -   Downloads winget manifests from the specified or latest GitHub release
+    -   Validates manifest files and YAML syntax
+    -   Creates submission branch in the forked winget-pkgs repository
+    -   Prepares complete submission information and PR template
+    -   Provides direct links for creating pull requests to Microsoft's repository
+-   **Required Manifest Files**:
+    -   `RvToolsMerge.RvToolsMerge.yaml` (version manifest)
+    -   `RvToolsMerge.RvToolsMerge.installer.yaml` (installer manifest)
+    -   `RvToolsMerge.RvToolsMerge.locale.en-US.yaml` (locale manifest)
+-   **Artifacts Generated**:
+    -   Validated winget manifests
+    -   Submission information with package details
+    -   Pull request template for winget community submission
+    -   Release notes extracted from GitHub release
+
 ## Version Management & Release Workflow
 
 The Version Management & Release workflow (`version-management.yml`) handles systematic version increments and optional release creation:
@@ -124,6 +154,14 @@ To create a new release:
 1. Use the Version Management & Release workflow to increment the version
 2. Choose whether to create a release immediately by setting `createRelease` to true
 3. The workflow will automatically build and publish the release if enabled
+
+To submit to Windows Package Manager (winget):
+
+1. Ensure a GitHub release exists with winget manifest files
+2. Use the Winget Submission workflow with the desired release tag
+3. Test with `dryRun: true` first to validate the submission
+4. Run without dry run to create the submission branch
+5. Use the provided PR creation link to submit to Microsoft's winget-pkgs repository
 
 ## Code Coverage in Releases
 
@@ -200,6 +238,13 @@ Common issues and solutions:
     -   Ensure the cleanup action has proper access to repository Actions
     -   Review retention settings if unexpected runs are being deleted
     -   Verify that custom retention day values are valid positive integers
+-   **Winget submission fails**:
+    -   Ensure the fork repository exists and is accessible (`https://github.com/sbroenne/winget-pkgs`)
+    -   Verify the personal access token (`WINGET_SUBMISSION_TOKEN`) has correct permissions
+    -   Check that all required manifest files are present in the GitHub release
+    -   Validate manifest files have correct YAML syntax
+    -   Ensure the release tag format is correct (e.g., "v1.3.4")
+    -   Test with dry run first to identify issues before actual submission
 -   **Branch creation fails**:
     -   Check for existing version update branches that may conflict
     -   Verify git configuration and push permissions
