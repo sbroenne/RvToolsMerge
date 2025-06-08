@@ -17,10 +17,19 @@ RVToolsMerge is a tool for combining and processing multiple RVTools exports fro
 
 ## Pre-Commit Requirements
 
-Before each commit, the following mandatory steps must be completed:
+Before each commit, the following steps must be completed based on the types of files changed:
+
+### For .NET Code Changes
+
+When modifying any .NET-related files (`.cs`, `.csproj`, `.sln`, `.config`, `.json` configuration files, or any files in `src/`, `test/`, or `tests/` directories), the following mandatory steps must be completed:
 
 -   **Build Verification**: Run `dotnet build` on the entire solution and ensure it builds successfully with zero errors and zero warnings
 -   **Test Execution**: Run `dotnet test` and ensure all tests pass with zero failures and zero skipped tests
+
+### For All Changes
+
+Regardless of file types changed, the following requirements apply:
+
 -   **Code Compliance**: Verify that all new and modified code follows the coding standards defined in this document
 -   **Documentation Updates**: **MANDATORY** - Update relevant documentation if the changes affect:
     -   Public APIs, interfaces, or method signatures
@@ -33,19 +42,21 @@ Before each commit, the following mandatory steps must be completed:
     -   Security considerations or features
     -   Installation or deployment procedures
 
-### Documentation Update Checklist
+### .NET File Types That Trigger Build/Test Requirements
 
-When making changes, verify if any of the following documentation requires updates:
+The following file extensions and directory changes require full build and test verification:
 
--   [ ] `README.md` - Main project documentation, usage instructions, features
--   [ ] `CONTRIBUTING.md` - Development guidelines and contribution process
--   [ ] `docs/` directory files - Specialized documentation (code coverage, CI/CD, etc.)
--   [ ] Inline code documentation (XML comments for public APIs)
--   [ ] Online help system - Console application's built-in help (`ConsoleUIService.ShowHelp()` and related methods)
--   [ ] Project structure diagrams if files/folders are added or reorganized
--   [ ] Version information and changelogs if applicable
+-   `.cs` (C# source files)
+-   `.csproj` (Project files)
+-   `.sln` (Solution files)
+-   `.config` (Configuration files)
+-   `appsettings.json`, `launchSettings.json`, and other JSON configuration files
+-   Any files in `src/`, `test/`, `tests/`, or `bin/` directories
+-   NuGet package reference files (`packages.config`, `Directory.Build.props`, etc.)
 
-**Failure to update documentation when required will result in commit rejection.**
+### Documentation-Only Changes
+
+For changes that only affect documentation files (`.md`, `.txt`, `.rst`) and do not modify any .NET code or configuration, build and test execution may be skipped, but code compliance and documentation update requirements still apply.
 
 ## Coding Standards
 

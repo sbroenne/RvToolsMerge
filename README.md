@@ -423,6 +423,7 @@ This project uses GitHub Actions for automated workflows:
 | **Security**          | CodeQL scanning and vulnerability checks            |
 | **Version & Release** | Manual version bumps with optional release creation |
 | **Dependencies**      | Automated dependency management with Dependabot     |
+| **Workflow Cleanup**  | Automated cleanup of old workflow runs              |
 
 Detailed CI/CD documentation is available in [CI-CD.md](/docs/CI-CD.md).
 

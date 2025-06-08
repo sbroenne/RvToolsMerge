@@ -1,0 +1,52 @@
+name: Cleanup Workflow Runs
+
+on:
+  # Run daily at 2 AM UTC to clean up old workflow runs
+  schedule:
+    - cron: "0 2 * * *"
+
+  # Allow manual triggering of the cleanup
+  workflow_dispatch:
+    inputs:
+      keep_runs:
+        description: "Number of runs to keep for each workflow"
+        required: false
+        default: "3"
+        type: string
+      retain_days:
+        description: "Number of days to retain workflow runs"
+        required: false
+        default: "30"
+        type: string
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  cleanup:
+    name: Clean up old workflow runs
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Clean up workflow runs
+        uses: Mattraks/delete-workflow-runs@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          retain_days: ${{ github.event.inputs.retain_days || '30' }}
+          keep_minimum_runs: ${{ github.event.inputs.keep_runs || '3' }}
+          delete_workflow_pattern: "*"
+          delete_workflow_by_state_pattern: "cancelled,failure,success"
+          delete_run_by_conclusion_pattern: "cancelled,failure,success,skipped"
+
+      - name: Summary
+        run: |
+          echo "### Workflow Cleanup Summary :broom:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Runs kept per workflow:** ${{ github.event.inputs.keep_runs || '3' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Maximum retention:** ${{ github.event.inputs.retain_days || '30' }} days" >> $GITHUB_STEP_SUMMARY
+          echo "- **Cleanup completed:** $(date)" >> $GITHUB_STEP_SUMMARY

@@ -16,6 +16,8 @@ on:
 permissions:
   contents: read
   actions: read
+  # Note: This workflow requires a personal access token (WINGET_SUBMISSION_TOKEN)
+  # with repo scope to push to the winget-pkgs fork.
 
 jobs:
   prepare-winget-submission:
@@ -75,8 +77,7 @@ jobs:
           # Create directory for manifests
           mkdir -p winget-manifests
 
-          # Download manifest files from release assets
-          MANIFEST_FILES=(
+          # Download manifest files from release assets          MANIFEST_FILES=(
             "RvToolsMerge.RvToolsMerge.yaml"
             "RvToolsMerge.RvToolsMerge.installer.yaml"
             "RvToolsMerge.RvToolsMerge.locale.en-US.yaml"
@@ -87,7 +88,11 @@ jobs:
             if gh release download "$RELEASE_TAG" --pattern "$manifest" --dir winget-manifests; then
               echo "✅ Downloaded $manifest"
             else
-              echo "::error::Failed to download $manifest from release $RELEASE_TAG"
+              echo "::warning::Failed to download $manifest from release $RELEASE_TAG, checking if it exists in release assets"
+              # List all assets to help debug missing manifests
+              echo "Available assets in release $RELEASE_TAG:"
+              gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name'
+              echo "::error::Required manifest $manifest not found in release assets"
               exit 1
             fi
           done
@@ -192,13 +197,10 @@ jobs:
 
       - name: Clone and Update Fork
         if: ${{ github.event.inputs.dryRun != 'true' }}
-        id: update-fork
-        run: |
+        id: update-fork        run: |
           VERSION="${{ steps.get-release.outputs.version }}"
-          BRANCH_NAME="${{ steps.prepare-submission.outputs.branch_name }}"
-
-          echo "Cloning your winget-pkgs fork..."
-          git clone https://github.com/sbroenne/winget-pkgs.git winget-fork
+          BRANCH_NAME="${{ steps.prepare-submission.outputs.branch_name }}"          echo "Cloning your winget-pkgs fork..."
+          git clone https://${{ secrets.WINGET_SUBMISSION_TOKEN }}@github.com/sbroenne/winget-pkgs.git winget-fork
           cd winget-fork
 
           # Add upstream remote
@@ -235,15 +237,14 @@ jobs:
           echo "manifest_dir=$MANIFEST_DIR" >> $GITHUB_OUTPUT
 
       - name: Push to Fork
-        if: ${{ github.event.inputs.dryRun != 'true' }}
-        run: |
+        if: ${{ github.event.inputs.dryRun != 'true' }}        run: |
           cd winget-fork
           BRANCH_NAME="${{ steps.prepare-submission.outputs.branch_name }}"
 
           # Push the new branch to your fork
-          git push origin "$BRANCH_NAME"
-
-          echo "✅ Branch $BRANCH_NAME pushed to https://github.com/sbroenne/winget-pkgs"
+          git push origin "$BRANCH_NAME"          echo "✅ Branch $BRANCH_NAME pushed to https://github.com/sbroenne/winget-pkgs"
+        env:
+          GITHUB_TOKEN: ${{ secrets.WINGET_SUBMISSION_TOKEN }}
 
       - name: Generate Pull Request Information
         if: ${{ github.event.inputs.dryRun != 'true' }}
