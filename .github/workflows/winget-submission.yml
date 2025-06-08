@@ -165,14 +165,6 @@ jobs:
           - RvToolsMerge.RvToolsMerge.installer.yaml (Installer manifest)
           - RvToolsMerge.RvToolsMerge.locale.en-US.yaml (Locale manifest)
 
-          ## Release Notes
-          EOF
-
-          # Append release notes
-          cat release_notes.md >> submission-info.md
-
-          cat >> submission-info.md << EOF
-
           ## Next Steps
           1. Review the generated manifests in the winget-manifests/ directory
           2. If this was not a dry run, a new branch should be created in your fork
