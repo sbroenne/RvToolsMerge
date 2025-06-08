@@ -491,12 +491,7 @@ jobs:
           $outputDir = "winget-manifests"
 
           # Create a basic release notes string - in a real scenario this could be extracted from CHANGELOG or release notes
-          $releaseNotes = @"
-          ## What's New in v$version
-
-          This release includes improvements and updates to RVToolsMerge.
-          See the full release notes at: https://github.com/sbroenne/RVToolsMerge/releases/tag/v$version
-          "@
+          $releaseNotes = "See the full release notes at: https://github.com/sbroenne/RVToolsMerge/releases/tag/v$version"
 
           # Generate manifests without winget validation
           & .github/scripts/generate-winget-manifests.ps1 -Version $version -X64MsiPath $x64MsiPath -Arm64MsiPath $arm64MsiPath -OutputDir $outputDir -ReleaseNotes $releaseNotes

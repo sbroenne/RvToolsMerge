@@ -43,8 +43,7 @@ Tags:
 - anonymization
 - azure-migrate
 - data-protection
-ReleaseNotes: |-
-  {{RELEASE_NOTES}}
+ReleaseNotes: {{RELEASE_NOTES}}
 ReleaseNotesUrl: https://github.com/sbroenne/RVToolsMerge/releases/tag/v{{VERSION}}
 PurchaseUrl: https://github.com/sbroenne/RVToolsMerge
 InstallationNotes: |-
