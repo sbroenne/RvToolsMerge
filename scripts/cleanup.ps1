@@ -1,11 +1,15 @@
-# Cleanup Script for GitHub Actions Runner
+#!/usr/bin/env pwsh
+# Cleanup Script for GitHub Actions Runner (PowerShell 7)
 # This script removes all Azure resources created for the GitHub runner
+#
+# Requirements: PowerShell 7.0 or later (cross-platform)
+# Install: https://aka.ms/powershell
 
 param(
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [string]$EnvironmentName = "dev",
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$Force
 )
 
@@ -17,7 +21,8 @@ Write-Host "================================" -ForegroundColor Red
 # Check if Azure CLI is installed
 try {
     az --version | Out-Null
-} catch {
+}
+catch {
     Write-Host "❌ Azure CLI is not installed. Please install it from https://aka.ms/InstallAzureCLI" -ForegroundColor Red
     exit 1
 }
@@ -25,7 +30,8 @@ try {
 # Check if user is logged in
 try {
     az account show | Out-Null
-} catch {
+}
+catch {
     Write-Host "🔐 Please log in to Azure..." -ForegroundColor Yellow
     az login
 }
@@ -42,7 +48,8 @@ try {
     Write-Host "📁 Found resource group: $resourceGroup" -ForegroundColor Yellow
     Write-Host "   Location: $($rgInfo.location)" -ForegroundColor White
     Write-Host "   Tags: $($rgInfo.tags | ConvertTo-Json -Compress)" -ForegroundColor White
-} catch {
+}
+catch {
     Write-Host "❌ Resource group '$resourceGroup' not found." -ForegroundColor Red
     exit 1
 }
@@ -58,7 +65,8 @@ try {
     if ($resources.Count -eq 0) {
         Write-Host "   No resources found in the resource group." -ForegroundColor White
     }
-} catch {
+}
+catch {
     Write-Host "   Could not list resources." -ForegroundColor Red
 }
 
@@ -88,7 +96,8 @@ try {
     Write-Host "   az group show --name $resourceGroup" -ForegroundColor White
     Write-Host "   (This command will fail when deletion is complete)" -ForegroundColor White
 
-} catch {
+}
+catch {
     Write-Host "`n❌ Cleanup failed: $($_.Exception.Message)" -ForegroundColor Red
     Write-Host "You may need to manually delete resources in the Azure Portal." -ForegroundColor Red
     exit 1

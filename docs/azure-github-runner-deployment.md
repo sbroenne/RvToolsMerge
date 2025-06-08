@@ -17,7 +17,7 @@ The deployment creates a secure Windows environment specifically designed for co
 ### Required Software
 
 -   [Azure CLI](https://aka.ms/InstallAzureCLI) installed and configured
--   PowerShell 5.1 or later
+-   [PowerShell 7](https://aka.ms/powershell) or later (cross-platform PowerShell)
 -   Active Azure subscription with appropriate permissions
 
 ### Required Permissions
@@ -29,25 +29,23 @@ The deployment creates a secure Windows environment specifically designed for co
 ### GitHub Requirements
 
 -   GitHub Personal Access Token with the following scopes:
-    -   `repo` (Full control of repositories)
-    -   `admin:org` (if deploying to organization repositories)
-    -   `workflow` (Update GitHub Action workflows)
+    -   `repo` (Full control of repositories) — required for repository-level runners.
+    -   `admin:repo_hook` (Full control of repository hooks) — required to manage runner registration and webhook events.
 
 ## VM Configuration
 
-**Fixed VM Size**: The infrastructure uses `Standard_B2as_v2` (ARM-based) optimized for code signing workflows:
+**Fixed VM Size**: The infrastructure uses `Standard_B2as_v2` (**AMD-based**) optimized for code signing workflows:
 
--   **Specifications**: 2 vCPU, 8 GB RAM, ARM64 architecture
--   **Cost**: Approximately $23 USD per month (before AHUB savings)
+-   **Specifications**: 2 vCPU, 8 GB RAM, AMD-based architecture
 -   **Performance**: Sufficient for code signing operations and artifact processing
--   **Efficiency**: ARM-based processors provide excellent price-performance ratio for signing workloads
+-   **Efficiency**: AMD-based processors provide excellent price-performance ratio for signing workloads
 -   **Security**: Isolated environment for certificate management and signing operations
 
 ## Cost Optimization
 
 ### Azure Hybrid Use Benefit (AHUB)
 
-**Enabled by Default**: The deployment automatically enables Azure Hybrid Use Benefit for Windows client licensing, which can provide up to 40% savings on compute costs if you have eligible Windows licenses.
+**Enabled by Default**: The deployment automatically enables Azure Hybrid Use Benefit for Windows client licensing, which can provide significant savings on compute costs if you have eligible Windows licenses.
 
 **Requirements for AHUB**:
 
@@ -86,14 +84,24 @@ The deployment creates a secure Windows environment specifically designed for co
 3. **Run the deployment script**:
 
     ```cmd
-    powershell -ExecutionPolicy Bypass -File scripts\deploy.ps1
+    pwsh -ExecutionPolicy Bypass -File scripts\deploy.ps1
     ```
 
 4. **Follow the interactive prompts**:
     - VM admin password (minimum 12 characters)
-    - GitHub Personal Access Token
-    - GitHub repository URL
+    - GitHub Personal Access Token (with `repo` and `admin:repo_hook` scopes)
+    - GitHub repository URL (e.g., https://github.com/username/RvToolsMerge)
     - Confirm deployment settings
+
+**Script Features**:
+
+-   **Interactive Mode**: Prompts for missing required parameters
+-   **Validation**: Checks Azure CLI installation and login status
+-   **Security**: Uses SecureString for sensitive data handling
+-   **Progress Tracking**: Shows deployment progress with status indicators
+-   **Error Handling**: Provides detailed error messages and troubleshooting guidance
+-   **Output Display**: Shows connection details and next steps after successful deployment
+-   **Cross-Platform**: Designed for PowerShell 7 with cross-platform compatibility
 
 ### Method 2: PowerShell with Parameters
 
@@ -111,11 +119,28 @@ $secureToken = ConvertTo-SecureString "ghp_xxxxxxxxxxxxxxxxxxxx" -AsPlainText -F
   -AdminPassword $securePassword `
   -GitHubToken $secureToken `
   -GitHubRepositoryUrl "https://github.com/username/RvToolsMerge" `
-  -RunnerName "azure-windows-dev" `
+  -RunnerName "azure-windows-runner" `
+  -VmSize "Standard_B2as_v2" `
+  -WindowsVersion "win11-23h2-pro" `
   -EnableAHUB $true
 ```
 
-> **Security Note**: The script now uses SecureString parameters for sensitive data (passwords and tokens) to prevent accidental exposure in logs or process lists.
+**Available Parameters:**
+
+-   `EnvironmentName`: Environment suffix for resource naming (default: "dev")
+-   `Location`: Azure region for deployment (default: "eastus")
+-   `AdminUsername`: VM administrator username (default: "azureuser")
+-   `AdminPassword`: SecureString containing VM admin password (minimum 12 characters)
+-   `GitHubToken`: SecureString containing GitHub Personal Access Token
+-   `GitHubRepositoryUrl`: GitHub repository URL for runner registration
+-   `RunnerName`: Name for the GitHub runner (default: "azure-windows-runner")
+-   `VmSize`: Azure VM size (default: "Standard_B2as_v2")
+-   `WindowsVersion`: Windows version (default: "win11-23h2-pro")
+-   `EnableAHUB`: Enable Azure Hybrid Use Benefit (default: $true)
+
+> **Security Note**: The script uses SecureString parameters for sensitive data (passwords and tokens) to prevent accidental exposure in logs or process lists.
+
+> **PowerShell 7 Required**: Use PowerShell 7 (`pwsh`) for cross-platform compatibility and enhanced security features.
 
 ### Method 3: Azure CLI with Bicep
 
@@ -131,8 +156,49 @@ az deployment group create ^
   --parameters adminPassword="YourSecurePassword123!" ^
   --parameters githubToken="ghp_xxxxxxxxxxxxxxxxxxxx" ^
   --parameters githubRepositoryUrl="https://github.com/username/RvToolsMerge" ^
+  --parameters runnerName="azure-windows-runner-gui" ^
   --parameters enableAHUB=true
 ```
+
+**Note**: The parameters file (`main.parameters.dev.json`) contains default values for most parameters. You only need to override the secure parameters and repository-specific values.
+
+## Parameter Validation and Requirements
+
+### Required Parameters
+
+The deployment scripts and Bicep template enforce the following validation rules:
+
+**adminPassword**:
+
+-   Minimum 12 characters
+-   Must meet Azure VM password complexity requirements
+-   Handled as SecureString in PowerShell scripts
+
+**githubToken**:
+
+-   Must be a valid GitHub Personal Access Token
+-   Required scopes: `repo` and `admin:repo_hook`
+-   Handled as SecureString in PowerShell scripts
+
+**githubRepositoryUrl**:
+
+-   Must be a valid GitHub repository URL format
+-   Example: `https://github.com/username/repository`
+-   Used for runner registration and API calls
+
+**environmentName**:
+
+-   Minimum 3 characters, maximum 10 characters
+-   Used as suffix for Azure resource naming
+-   Helps organize multiple deployments
+
+### Optional Parameters with Defaults
+
+**vmSize**: `Standard_B2as_v2` (ARM-based for cost efficiency)
+**windowsVersion**: `win11-23h2-pro` (fixed for AHUB compatibility)
+**enableAHUB**: `true` (enables Azure Hybrid Use Benefit)
+**location**: Uses resource group location or specified region
+**adminUsername**: `azureuser` (default administrator account)
 
 ## Post-Deployment Configuration
 
@@ -141,8 +207,10 @@ az deployment group create ^
 Check your GitHub repository:
 
 1. Go to **Settings** → **Actions** → **Runners**
-2. Look for your runner name (e.g., "azure-windows-runner-gui")
+2. Look for your runner name (e.g., "azure-windows-runner" or the name you specified)
 3. Status should show as "Idle" (green)
+
+**Monitor Installation Progress**: The runner installation typically takes 5-10 minutes after VM deployment completes.
 
 ### 2. Access the Virtual Machine
 
@@ -161,6 +229,12 @@ Username: azureuser
 Password: [your-password]
 ```
 
+**Default Runner Names**:
+
+-   Interactive script: "azure-windows-runner"
+-   Parameters file: "azure-windows-runner-gui"
+-   The actual name depends on the deployment method and parameters used
+
 ### 3. Monitor Installation Progress
 
 To check the runner installation status:
@@ -173,6 +247,13 @@ az vm run-command invoke ^
   --scripts "Get-Content C:\runner-install.log"
 ```
 
+**Installation Log Location**: The runner installation creates a detailed log at `C:\runner-install.log` on the VM, which includes:
+
+-   Download and extraction progress
+-   GitHub API communication
+-   Service installation status
+-   Error details if installation fails
+
 ## Pre-Installed Signing and Build Tools
 
 The VM comes with the following tools pre-installed for code signing and artifact creation:
@@ -182,7 +263,7 @@ The VM comes with the following tools pre-installed for code signing and artifac
 -   **.NET 9 SDK** for building .NET applications and creating signed artifacts
 -   **Node.js LTS** for JavaScript/TypeScript build processes
 -   **Python 3.12** for build automation scripts
--   **Windows PowerShell** and **PowerShell Core** for signing automation
+-   **Windows PowerShell** and **PowerShell 7** for signing automation and cross-platform scripting
 -   **Windows SDK** (available) with signtool.exe for authenticode signing
 -   **MSBuild** for building and packaging applications
 
@@ -231,7 +312,8 @@ Action: Request quota increase if needed
 ```
 Check: Runner installation log on the VM
 Command: Get-Content C:\runner-install.log
-Common causes: Invalid GitHub token, network issues, incorrect repository URL
+Additional Check: Service status with Get-Service -Name "actions.runner.*"
+Common causes: Invalid GitHub token, network issues, incorrect repository URL, insufficient token permissions
 ```
 
 **3. Can't RDP to VM**
@@ -245,9 +327,11 @@ Action: Update NSG rules if your IP changed
 **4. VM Performance Issues**
 
 ```
-Solution: Consider upgrading to a larger VM size
+Solution: Consider upgrading to a larger ARM-based VM size for better performance
 Monitor: CPU and memory usage in Azure portal
-Action: Resize VM through Azure portal
+Current: Standard_B2as_v2 (2 vCPU, 8GB RAM) - ARM-based for efficiency
+Upgrade options: Standard_B4as_v2 (4 vCPU, 16GB RAM) or Standard_B8as_v2 (8 vCPU, 32GB RAM)
+Action: Resize VM through Azure portal or update vmSize parameter in deployment
 ```
 
 ### Debugging Commands
@@ -270,12 +354,36 @@ az deployment group show --resource-group rg-github-runner-dev --name main
 Get-Service -Name "actions.runner.*"
 ```
 
+**View runner installation logs** (on the VM):
+
+```powershell
+Get-Content C:\runner-install.log
+```
+
+**Check runner diagnostic logs** (on the VM):
+
+```powershell
+Get-ChildItem C:\actions-runner\_diag -Filter "*.log"
+```
+
+> **Note**: Commands marked "on the VM" should be run directly on the deployed Windows VM via RDP. Local deployment commands use PowerShell 7 (`pwsh`).
+
 ## Cleanup and Cost Management
 
 ### Remove All Resources
 
+To completely remove all Azure resources created by the deployment:
+
 ```cmd
-powershell -ExecutionPolicy Bypass -File scripts\cleanup.ps1 -EnvironmentName dev
+pwsh -ExecutionPolicy Bypass -File scripts\cleanup.ps1 -EnvironmentName dev
+```
+
+**Interactive Confirmation**: The cleanup script requires explicit confirmation by typing 'DELETE' to prevent accidental resource deletion.
+
+**Force Cleanup** (skip confirmation):
+
+```cmd
+pwsh -ExecutionPolicy Bypass -File scripts\cleanup.ps1 -EnvironmentName dev -Force
 ```
 
 ### Stop VM When Not in Use
@@ -290,11 +398,13 @@ az vm start --resource-group rg-github-runner-dev --name vm-github-runner-dev
 
 ### Cost Optimization Tips
 
-1. **Stop VMs when not in use** - Use auto-shutdown policies
-2. **Use smaller VM sizes** for light workloads
+1. **Stop VMs when not in use** - Use auto-shutdown policies or manual stop/start
+2. **Use ARM-based VM sizes** for better price-performance (already configured with Standard_B2as_v2)
 3. **Monitor usage** with Azure Cost Management
 4. **Set up billing alerts** to track spending
-5. **Leverage Azure Hybrid Use Benefit** for Windows Client licensing cost savings
+5. **Leverage Azure Hybrid Use Benefit** for Windows Client licensing cost savings (enabled by default)
+
+**Estimated Monthly Cost**: Approximately $23 USD for the Standard_B2as_v2 ARM-based VM with Standard SSD storage (not including networking costs).
 
 ## Advanced Configuration
 
@@ -304,16 +414,39 @@ The deployment includes a custom script extension that:
 
 -   Installs winget package manager and signing tools
 -   Installs build and signing tools (.NET SDK, Windows SDK, signtool)
--   Configures GitHub runner with your repository for signing workflows
--   Sets up logging and error handling for signing operations
+-   Downloads and configures GitHub Actions Runner with your repository
+-   Installs the runner as a Windows service for automatic startup
+-   Sets up comprehensive logging and error handling for all operations
+-   Validates service installation and provides diagnostic information
+
+**Script Location**: The runner installation script is located at `scripts/install-runner.ps1` and handles:
+
+-   Downloading the latest GitHub Actions Runner release
+-   Configuring the runner with proper authentication tokens
+-   Installing and starting the Windows service
+-   Comprehensive error logging and troubleshooting information
 
 ### Scaling to Multiple Runners
 
 To deploy multiple runners:
 
-1. Use different `runnerName` values
-2. Deploy to different resource groups or regions
-3. Consider using Azure Virtual Machine Scale Sets for automatic scaling
+1. Use different `EnvironmentName` values to create separate resource groups
+2. Use different `RunnerName` values to distinguish runners in GitHub
+3. Deploy to different Azure regions for geographic distribution
+4. Consider using Azure Virtual Machine Scale Sets for automatic scaling
+
+**Example for multiple environments**:
+
+```cmd
+rem Deploy development runner
+pwsh -ExecutionPolicy Bypass -File scripts\deploy.ps1 -EnvironmentName "dev" -RunnerName "azure-windows-dev"
+
+rem Deploy staging runner
+pwsh -ExecutionPolicy Bypass -File scripts\deploy.ps1 -EnvironmentName "staging" -RunnerName "azure-windows-staging"
+
+rem Deploy production runner
+pwsh -ExecutionPolicy Bypass -File scripts\deploy.ps1 -EnvironmentName "prod" -RunnerName "azure-windows-prod"
+```
 
 ### Integration with Azure DevOps
 

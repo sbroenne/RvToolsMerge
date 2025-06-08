@@ -258,10 +258,10 @@ resource setupExtension 'Microsoft.Compute/virtualMachines/extensions@2024-07-01
     typeHandlerVersion: '1.10'
     autoUpgradeMinorVersion: true
     settings: {
-      commandToExecute: 'powershell.exe -ExecutionPolicy Unrestricted -Command "New-Item -Path C:\\setup -ItemType Directory -Force; Set-Content -Path C:\\setup\\repo.txt -Value \'${githubRepositoryUrl}\'; Set-Content -Path C:\\setup\\name.txt -Value \'${runnerName}\'; winget install --id Git.Git --silent --accept-package-agreements --accept-source-agreements; winget install --id Microsoft.DotNet.SDK.9 --silent --accept-package-agreements --accept-source-agreements; winget install --id OpenJS.NodeJS.LTS --silent --accept-package-agreements --accept-source-agreements; winget install --id Python.Python.3.12 --silent --accept-package-agreements --accept-source-agreements; Write-Host \'Setup completed. Use install-runner.ps1 script to configure GitHub Actions runner.\'"'
+      commandToExecute: 'powershell.exe -ExecutionPolicy Unrestricted -Command "New-Item -Path C:\\setup -ItemType Directory -Force; Set-Content -Path C:\\setup\\repo.txt -Value \'${githubRepositoryUrl}\'; Set-Content -Path C:\\setup\\name.txt -Value \'${runnerName}\'; winget install --id Microsoft.PowerShell --silent --accept-package-agreements --accept-source-agreements; winget install --id Git.Git --silent --accept-package-agreements --accept-source-agreements; winget install --id Microsoft.DotNet.SDK.9 --silent --accept-package-agreements --accept-source-agreements; winget install --id OpenJS.NodeJS.LTS --silent --accept-package-agreements --accept-source-agreements; winget install --id Python.Python.3.12 --silent --accept-package-agreements --accept-source-agreements; Write-Host \'Setup completed. PowerShell 7 and development tools installed. Use install-runner.ps1 script to configure GitHub Actions runner.\'"'
     }
     protectedSettings: {
-      commandToExecute: 'powershell.exe -Command "Set-Content -Path C:\\setup\\token.txt -Value \'${githubToken}\'"'
+      commandToExecute: 'pwsh.exe -Command "Set-Content -Path C:\\setup\\token.txt -Value \'${githubToken}\'"'
     }
   }
 }
@@ -275,5 +275,4 @@ output managedIdentityId string = managedIdentity.id
 output virtualNetworkId string = virtualNetwork.id
 output adminUsername string = adminUsername
 output rdpConnectionString string = '${publicIP.properties.dnsSettings.fqdn}:3389'
-output estimatedMonthlyCost string = '~$23 USD (ARM-based efficiency + Standard SSD)'
 output azureHybridUseBenefit string = enableAHUB ? 'Enabled (up to 40% savings)' : 'Disabled'

@@ -186,6 +186,11 @@ For changes that only affect documentation files (`.md`, `.txt`, `.rst`) and do 
 -   Use .NET 9 features and capabilities throughout the application
 -   Take advantage of .NET 9's performance improvements for Excel processing
 -   Utilize .NET 9's improved JSON serialization for configuration files
+-   **Use PowerShell 7** for all PowerShell scripts in the project:
+    -   Include `#!/usr/bin/env pwsh` shebang for cross-platform compatibility
+    -   Leverage PowerShell 7's enhanced security features and cross-platform support
+    -   Use `pwsh` instead of `powershell` in documentation and command examples
+    -   Take advantage of PowerShell 7's improved performance and modern language features
 -   Always use Spectre.Console for all console output, following official best practices:
     -   Use `AnsiConsole.Write` instead of `AnsiConsole.Markup` for better performance
     -   Consider `Live` displays for dynamic content that changes frequently
@@ -222,6 +227,8 @@ For changes that only affect documentation files (`.md`, `.txt`, `.rst`) and do 
 ## Cross-Platform Compatibility
 
 -   Ensure the application runs properly on Windows, Linux, and macOS
+-   **Use PowerShell 7 for all scripts** instead of Windows PowerShell for cross-platform compatibility
+-   Include `#!/usr/bin/env pwsh` shebang in PowerShell scripts for Unix-like systems
 -   Use `Path.DirectorySeparatorChar` instead of hardcoded path separators (`\` or `/`)
 -   Use `Environment.NewLine` instead of hardcoded newline characters
 -   Consider terminal size differences between platforms for UI layouts

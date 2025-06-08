@@ -1,5 +1,9 @@
-# GitHub Actions Runner Deployment Script (PowerShell)
+#!/usr/bin/env pwsh
+# GitHub Actions Runner Deployment Script (PowerShell 7)
 # This script helps deploy the GitHub self-hosted runner to Azure
+#
+# Requirements: PowerShell 7.0 or later (cross-platform)
+# Install: https://aka.ms/powershell
 #
 # Parameters:
 # - AdminPassword: SecureString containing the VM administrator password (minimum 12 characters)

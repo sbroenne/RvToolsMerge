@@ -1,11 +1,18 @@
+#!/usr/bin/env pwsh
+# GitHub Actions Runner Installation Script (PowerShell 7)
+# This script installs and configures the GitHub Actions Runner on Windows
+#
+# Requirements: PowerShell 7.0 or later (cross-platform)
+# Install: https://aka.ms/powershell
+
 param(
-    [Parameter(Mandatory=$true)]
+    [Parameter(Mandatory = $true)]
     [string]$GitHubToken,
 
-    [Parameter(Mandatory=$true)]
+    [Parameter(Mandatory = $true)]
     [string]$RepositoryUrl,
 
-    [Parameter(Mandatory=$true)]
+    [Parameter(Mandatory = $true)]
     [string]$RunnerName
 )
 
@@ -55,7 +62,7 @@ try {
     Write-Log "Getting registration token from GitHub API..."
     $headers = @{
         "Authorization" = "token $GitHubToken"
-        "Accept" = "application/vnd.github.v3+json"
+        "Accept"        = "application/vnd.github.v3+json"
     }
 
     $tokenResponse = Invoke-RestMethod -Uri "https://api.github.com/repos/$repoOwner/$repoName/actions/runners/registration-token" -Method POST -Headers $headers
@@ -103,11 +110,13 @@ try {
     $service = Get-Service -Name "actions.runner.*" -ErrorAction SilentlyContinue
     if ($service -and $service.Status -eq "Running") {
         Write-Log "Service verification: GitHub Actions Runner service is running"
-    } else {
+    }
+    else {
         Write-Log "Warning: Service verification failed - service may not be running properly"
     }
 
-} catch {
+}
+catch {
     Write-Log "ERROR: $($_.Exception.Message)"
     Write-Log "Stack trace: $($_.ScriptStackTrace)"
 
