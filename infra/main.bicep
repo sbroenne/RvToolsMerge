@@ -16,16 +16,6 @@ param adminUsername string = 'azureuser'
 @minLength(12)
 param adminPassword string
 
-@description('GitHub Personal Access Token for runner registration')
-@secure()
-param githubToken string
-
-@description('GitHub repository URL (e.g., https://github.com/sbroenne/RvToolsMerge)')
-param githubRepositoryUrl string = 'https://github.com/sbroenne/RvToolsMerge'
-
-@description('Name for the GitHub runner')
-param runnerName string = 'azure-windows-runner'
-
 @description('VM size for the GitHub runner (ARM-based for cost efficiency)')
 param vmSize string = 'Standard_B2as_v2'
 
@@ -245,22 +235,6 @@ resource virtualMachine 'Microsoft.Compute/virtualMachines@2024-07-01' = {
       }
     }
     licenseType: enableAHUB ? 'Windows_Client' : null
-  }
-}
-
-// Custom Script Extension to install development tools and setup GitHub runner
-resource setupExtension 'Microsoft.Compute/virtualMachines/extensions@2024-07-01' = {
-  parent: virtualMachine
-  name: 'SetupRunner'
-  location: location
-  properties: {
-    publisher: 'Microsoft.Compute'
-    type: 'CustomScriptExtension'
-    typeHandlerVersion: '1.10'
-    autoUpgradeMinorVersion: true
-    protectedSettings: {
-      commandToExecute: 'powershell.exe -ExecutionPolicy Unrestricted -Command "New-Item -Path C:\\setup -ItemType Directory -Force; Set-Content -Path C:\\setup\\repo.txt -Value \'${githubRepositoryUrl}\'; Set-Content -Path C:\\setup\\name.txt -Value \'${runnerName}\'; Set-Content -Path C:\\setup\\token.txt -Value \'${githubToken}\'; winget install --id Microsoft.PowerShell --silent --accept-package-agreements --accept-source-agreements; winget install --id Git.Git --silent --accept-package-agreements --accept-source-agreements; winget install --id Microsoft.DotNet.SDK.9 --silent --accept-package-agreements --accept-source-agreements; winget install --id OpenJS.NodeJS.LTS --silent --accept-package-agreements --accept-source-agreements; winget install --id Python.Python.3.12 --silent --accept-package-agreements --accept-source-agreements; Write-Host \'Setup completed. PowerShell 7 and development tools installed. Use install-runner.ps1 script to configure GitHub Actions runner.\'"'
-    }
   }
 }
 
