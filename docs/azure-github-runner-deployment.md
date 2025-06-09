@@ -146,6 +146,9 @@ winget install --id Git.Git --silent --accept-package-agreements --accept-source
 
 # Install .NET 9 SDK
 winget install --id Microsoft.DotNet.SDK.9 --silent --accept-package-agreements --accept-source-agreements
+
+# Install PowerShell 7 (required for GitHub Actions workflows)
+winget install --id Microsoft.PowerShell --silent --accept-package-agreements --accept-source-agreements
 ```
 
 **Windows SDK Installation**:
@@ -208,10 +211,14 @@ Follow the exact commands provided in the GitHub web interface. They will look s
 
 ```cmd
 # Configure the runner (use the exact commands from GitHub web interface)
-.\config.cmd --url https://github.com/sbroenne/RvToolsMerge --token [YOUR-TOKEN] --name azure-windows-runner --work "_work" --unattended --replace
+.\config.cmd --url https://github.com/sbroenne/RvToolsMerge --token [YOUR-TOKEN] --name azure-windows-runner --work "_work" --labels codesign-runner --unattended --replace
 ```
 
-**Important**: Use the exact configuration command provided by GitHub, including the specific token and URL shown on the runner setup page.
+**Important**:
+
+-   Use the exact configuration command provided by GitHub, including the specific token and URL shown on the runner setup page
+-   Add `--labels codesign-runner` to identify this runner as dedicated to code signing workflows
+-   The `codesign-runner` label allows GitHub Actions workflows to specifically target this runner for signing operations
 
 **Step 5: Test the Runner**
 
@@ -264,6 +271,7 @@ Check your GitHub repository:
 1. Go to **Settings** → **Actions** → **Runners**
 2. Look for your runner name (e.g., "azure-windows-runner")
 3. Status should show as "Idle" (green)
+4. Verify the `codesign-runner` label is displayed on the runner
 
 ## Available Tools on the VM
 
@@ -272,9 +280,9 @@ After manual installation, the VM will have the following tools available:
 -   **Windows 11 Pro**: Base operating system with GUI
 -   **Git**: Version control and source code access
 -   **.NET 9 SDK**: Building .NET applications and creating signed artifacts
--   **PowerShell 7**: Cross-platform automation and scripting
+-   **PowerShell 7**: Cross-platform automation and scripting (required for GitHub Actions workflows)
 -   **Windows PowerShell** (built-in): Windows-specific scripting
--   **Windows SDK** (available via winget): Tools including signtool.exe for authenticode signing
+-   **Windows SDK**: Tools including signtool.exe for authenticode signing
 -   **MSBuild**: Building and packaging applications
 
 ## Security Considerations
