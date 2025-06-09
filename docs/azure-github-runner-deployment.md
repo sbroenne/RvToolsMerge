@@ -26,9 +26,13 @@ The deployment creates a secure Windows environment specifically designed for co
 
 ### GitHub Requirements (for manual setup)
 
--   GitHub Personal Access Token with the following scopes:
-    -   `repo` (Full control of repositories) — required for repository-level runners.
-    -   `admin:repo_hook` (Full control of repository hooks) — required to manage runner registration and webhook events.
+**Repository Admin Access Required**
+
+-   Repository admin access to generate registration tokens through the GitHub web interface
+-   Navigate to **Settings** → **Actions** → **Runners** → **New self-hosted runner**
+-   Copy the provided registration token (valid for 1 hour)
+
+**Note**: No Personal Access Token (PAT) is required. The registration token generated through the GitHub web interface is sufficient for runner setup and expires after 1 hour for security.
 
 ## VM Configuration
 
@@ -169,11 +173,18 @@ Set-Location "C:\actions-runner"
 
 **Step 2: Download Latest GitHub Actions Runner**
 
+Download the latest GitHub Actions runner manually:
+
+1. Go to [GitHub Actions Runner releases](https://github.com/actions/runner/releases/latest)
+2. Download the latest `actions-runner-win-x64-[version].zip` file
+3. Extract to `C:\actions-runner` directory
+
+Alternatively, use PowerShell to download:
+
 ```powershell
-# Get the latest release
-$latestRelease = Invoke-RestMethod -Uri "https://api.github.com/repos/actions/runner/releases/latest"
-$windowsAsset = $latestRelease.assets | Where-Object { $_.name -like "*win-x64*" }
-$downloadUrl = $windowsAsset.browser_download_url
+# Download the latest stable release (check GitHub releases page for current version)
+$runnerVersion = "2.311.0"  # Update this to the latest version
+$downloadUrl = "https://github.com/actions/runner/releases/download/v$runnerVersion/actions-runner-win-x64-$runnerVersion.zip"
 
 # Download and extract
 Invoke-WebRequest -Uri $downloadUrl -OutFile "actions-runner-win-x64.zip"
@@ -185,40 +196,22 @@ Remove-Item "actions-runner-win-x64.zip"
 
 Generate a registration token from your GitHub repository:
 
-1. Go to your GitHub repository
+1. Go to your GitHub repository: https://github.com/sbroenne/RvToolsMerge
 2. Navigate to **Settings** → **Actions** → **Runners**
 3. Click **New self-hosted runner**
 4. Select **Windows** and **x64**
-5. Copy the configuration token from the displayed command
-
-Alternatively, use the GitHub API with your Personal Access Token:
-
-```powershell
-# Replace with your repository details and GitHub token
-$repoOwner = "your-username"
-$repoName = "your-repository"
-$githubToken = "ghp_xxxxxxxxxxxxxxxxxxxx"
-
-$headers = @{
-    "Authorization" = "token $githubToken"
-    "Accept" = "application/vnd.github.v3+json"
-}
-
-$tokenResponse = Invoke-RestMethod -Uri "https://api.github.com/repos/$repoOwner/$repoName/actions/runners/registration-token" -Method POST -Headers $headers
-$registrationToken = $tokenResponse.token
-Write-Output "Registration Token: $registrationToken"
-```
+5. Copy the configuration commands from the displayed instructions
 
 **Step 4: Configure the Runner**
 
-```powershell
-# Configure the runner (replace with your details)
-$repositoryUrl = "https://github.com/your-username/your-repository"
-$runnerName = "azure-windows-runner"
-$registrationToken = "A************" # Token from Step 3
+Follow the exact commands provided in the GitHub web interface. They will look similar to this (but use the actual commands from your GitHub page):
 
-.\config.cmd --url $repositoryUrl --token $registrationToken --name $runnerName --work "_work" --unattended --replace
+```cmd
+# Configure the runner (use the exact commands from GitHub web interface)
+.\config.cmd --url https://github.com/sbroenne/RvToolsMerge --token [YOUR-TOKEN] --name azure-windows-runner --work "_work" --unattended --replace
 ```
+
+**Important**: Use the exact configuration command provided by GitHub, including the specific token and URL shown on the runner setup page.
 
 **Step 5: Test the Runner**
 
@@ -227,26 +220,41 @@ $registrationToken = "A************" # Token from Step 3
 .\run.cmd --once
 ```
 
-**Step 6: Install as Windows Service (Optional)**
+**Step 6: Run as Interactive Process (Required for Code Signing)**
+
+> **Important**: For code signing workflows, the runner must run as an interactive process in a user session, not as a Windows service. Code signing certificates are only accessible in interactive sessions.
+
+**Option A: Run Interactively (Recommended for Code Signing)**
 
 ```powershell
-# Install as Windows service for automatic startup
-.\svc.cmd install
-
-# Start the service
-.\svc.cmd start
-
-# Check service status
-.\svc.cmd status
+# Start runner interactively (keeps terminal open)
+.\run.cmd
 ```
 
-**Alternative: Run as Background Process**
-
-If you prefer not to install as a service:
+**Option B: Run as Background Process in Interactive Session**
 
 ```powershell
-# Start runner as background process
-Start-Process -FilePath ".\run.cmd" -WorkingDirectory "C:\actions-runner" -WindowStyle Hidden
+# Start runner as background process while maintaining interactive session
+Start-Process -FilePath ".\run.cmd" -WorkingDirectory "C:\actions-runner" -WindowStyle Minimized
+```
+
+**Important Notes for Code Signing**:
+
+-   The VM must remain logged in with the user session active
+-   Do not run the runner as a Windows service for code signing workflows
+-   Code signing certificates (especially those stored in Windows Certificate Store) require an interactive desktop session
+-   Consider using automatic login or keeping the RDP session connected
+
+**Step 7: Verify Interactive Session**
+
+Ensure the runner is running in an interactive session:
+
+```powershell
+# Check if runner process is running in current session
+Get-Process -Name "Runner.Listener" -IncludeUserName | Select-Object Name, UserName, SessionId
+
+# Verify current session ID
+query session $env:USERNAME
 ```
 
 ### 4. Verify Runner Registration
