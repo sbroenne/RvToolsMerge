@@ -108,6 +108,17 @@ public class CommandLineParser : ICommandLineParser
                 case "-e" or "--skip-empty-values":
                     options.SkipRowsWithEmptyMandatoryValues = true;
                     break;
+                case "--max-vinfo-rows":
+                    if (i + 1 < args.Length)
+                    {
+                        i++; // Always consume the next argument
+                        if (int.TryParse(args[i], out int maxRows) && maxRows > 0)
+                        {
+                            options.MaxVInfoRows = maxRows;
+                        }
+                        // If parsing fails or value is invalid, silently ignore (maintain backward compatibility)
+                    }
+                    break;
                 default:
                     processedArgs.Add(args[i]);
                     break;

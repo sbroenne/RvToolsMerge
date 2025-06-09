@@ -68,4 +68,13 @@ public class MergeOptions
     /// Default is false.
     /// </summary>
     public bool EnableAzureMigrateValidation { get; set; } = false;
+
+    /// <summary>
+    /// Gets or sets the maximum number of vInfo rows to process.
+    /// When set to a positive value, only the first N rows from the vInfo sheet will be included in the output.
+    /// This is useful for creating sample files with anonymization and mandatory columns features.
+    /// When null or zero, all rows will be processed.
+    /// Default is null (no limit).
+    /// </summary>
+    public int? MaxVInfoRows { get; set; } = null;
 }
