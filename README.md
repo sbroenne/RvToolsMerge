@@ -69,13 +69,13 @@ These protection features make RVToolsMerge ideal for:
 
 RVToolsMerge processes key sheets from RVTools exports with specific validation requirements for each sheet type.
 
-For detailed information about supported sheets and their required columns, see [Supported Sheets Documentation](docs/SupportedSheets.md).
+For detailed information about supported sheets and their required columns, see [Supported Sheets Documentation](docs/rvtools-supported-sheets.md).
 
 ## Column Name Mappings
 
 The application standardizes column names across different RVTools exports. This helps handle variations in column naming between different versions of RVTools.
 
-For a complete reference of all column mappings, see [Column Mappings Documentation](docs/ColumnMappings.md).
+For a complete reference of all column mappings, see [Column Mappings Documentation](docs/rvtools-column-mappings.md).
 
 ## Installation
 
@@ -206,7 +206,7 @@ When anonymization is enabled, an additional Excel file is created alongside the
 
 After processing is complete, a summary of anonymization statistics per file is displayed, showing how many items of each type were anonymized from each source file.
 
-For more details on how anonymization is implemented, see the [Column Mappings Documentation](docs/ColumnMappings.md).
+For more details on how anonymization is implemented, see the [Column Mappings Documentation](docs/rvtools-column-mappings.md).
 
 ### Mandatory Columns Only Mode (-M, --only-mandatory-columns)
 
@@ -425,7 +425,27 @@ This project uses GitHub Actions for automated workflows:
 | **Dependencies**      | Automated dependency management with Dependabot     |
 | **Workflow Cleanup**  | Automated cleanup of old workflow runs              |
 
-Detailed CI/CD documentation is available in [CI-CD.md](/docs/CI-CD.md).
+Detailed CI/CD documentation is available in [continuous-integration.md](/docs/continuous-integration.md).
+
+### Infrastructure and Self-Hosted Runners
+
+For CI/CD workloads requiring code signing of release artifacts, the project includes Azure infrastructure automation for deploying secure Windows-based GitHub runners:
+
+-   **Azure GitHub Runner**: Deploy self-hosted Windows runners for artifact signing workflows
+-   **Code Signing Environment**: Secure Windows environment with access to code signing certificates and tools
+-   **Signing Tools**: Pre-configured with .NET SDK, Windows SDK, and signtool.exe for authenticode signing
+-   **Security Isolation**: Network-isolated environment with encrypted storage for certificate security
+-   **Cost-Effective**: Multiple VM sizes from ~$23-135 USD/month with automatic shutdown policies
+-   **Bicep Infrastructure**: Infrastructure as Code for consistent and repeatable deployments
+
+The self-hosted runners enable:
+
+-   **Authenticode Signing**: Sign .exe files and MSI installers with trusted certificates
+-   **Enhanced Security**: Dedicated signing environment separate from public GitHub runners
+-   **Certificate Management**: Secure storage and access to code signing certificates
+-   **Trusted Releases**: Provide users with signed, verifiable release artifacts
+
+Comprehensive deployment guide available in [Azure GitHub Runner Deployment Guide](/docs/azure-github-runner-deployment.md).
 
 ### Version Management
 
