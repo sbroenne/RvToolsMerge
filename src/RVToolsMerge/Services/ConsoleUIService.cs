@@ -67,6 +67,7 @@ public class ConsoleUIService
         optionsTable.AddRow("[yellow]--skip-empty-values[/]", FormatOptionStatus(options.SkipRowsWithEmptyMandatoryValues));
         optionsTable.AddRow("[yellow]--debug[/]", FormatOptionStatus(options.DebugMode));
         optionsTable.AddRow("[yellow]--azure-migrate[/]", FormatOptionStatus(options.EnableAzureMigrateValidation));
+        optionsTable.AddRow("[yellow]--max-vinfo-rows[/]", options.MaxVInfoRows?.ToString() ?? "[grey]No limit[/]");
 
         return optionsTable;
     }
@@ -221,6 +222,11 @@ public class ConsoleUIService
         AnsiConsole.MarkupLine("                            and enforces a limit of 20,000 VMs. Rows that fail validation");
         AnsiConsole.MarkupLine("                            are moved to a separate file.");
         AnsiConsole.MarkupLine("                            [grey]Default: disabled[/]");
+        AnsiConsole.MarkupLine("  [yellow]--max-vinfo-rows N[/]        Limit the number of vInfo rows to process.");
+        AnsiConsole.MarkupLine("                            Only the first N VM entries will be included in the output.");
+        AnsiConsole.MarkupLine("                            Other sheets will be filtered to match the selected VMs.");
+        AnsiConsole.MarkupLine("                            Useful for creating sample files with anonymization.");
+        AnsiConsole.MarkupLine("                            [grey]Default: no limit[/]");
         AnsiConsole.WriteLine();
         AnsiConsole.MarkupLine("[bold yellow]Note:[/] All processing options are disabled by default. You must explicitly");
         AnsiConsole.MarkupLine("      enable features by specifying the corresponding command-line options.");

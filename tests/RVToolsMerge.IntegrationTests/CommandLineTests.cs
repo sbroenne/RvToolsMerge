@@ -199,6 +199,59 @@ public class CommandLineTests
     }
 
     /// <summary>
+    /// Tests parsing of the MaxVInfoRows option.
+    /// </summary>
+    [Fact]
+    public void ParseArguments_MaxVInfoRows_SetsOptionCorrectly()
+    {
+        // Arrange
+        var options = new MergeOptions();
+        string[] args =
+        {
+            "--max-vinfo-rows",
+            "100",
+            "/tmp/rvtools_test/test.xlsx",
+            "/tmp/output.xlsx"
+        };
+
+        // Act
+        bool helpRequested = _commandLineParser.ParseArguments(args, options, out string? inputPath, out string? outputPath);
+
+        // Assert
+        Assert.False(helpRequested);
+        Assert.Equal("/tmp/rvtools_test/test.xlsx", inputPath);
+        Assert.Equal("/tmp/output.xlsx", outputPath);
+        Assert.Equal(100, options.MaxVInfoRows);
+    }
+
+    /// <summary>
+    /// Tests that invalid MaxVInfoRows values are ignored (for backward compatibility).
+    /// </summary>
+    [Theory]
+    [InlineData("--max-vinfo-rows", "abc")] // Invalid number
+    [InlineData("--max-vinfo-rows", "-10")] // Negative number
+    [InlineData("--max-vinfo-rows", "0")] // Zero
+    public void ParseArguments_InvalidMaxVInfoRows_IgnoresOption(string option, string value)
+    {
+        // Arrange
+        var options = new MergeOptions();
+        string[] args =
+        {
+            option,
+            value,
+            "/tmp/rvtools_test/test.xlsx"
+        };
+
+        // Act
+        bool helpRequested = _commandLineParser.ParseArguments(args, options, out string? inputPath, out string? outputPath);
+
+        // Assert
+        Assert.False(helpRequested);
+        Assert.Equal("/tmp/rvtools_test/test.xlsx", inputPath);
+        Assert.Null(options.MaxVInfoRows); // Should remain null (default)
+    }
+
+    /// <summary>
     /// Tests validation of input path in ApplicationRunner.
     /// </summary>
     [Fact]

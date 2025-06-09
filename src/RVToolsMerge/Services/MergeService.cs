@@ -485,6 +485,12 @@ public class MergeService : IMergeService
             _consoleUiService.DisplayInfo("[yellow]Azure Migrate validation enabled[/] - Additional validation rules will be applied and rows that fail will be moved to a separate file.");
         }
 
+        // Display MaxVInfoRows message if enabled
+        if (options.MaxVInfoRows.HasValue)
+        {
+            _consoleUiService.DisplayInfo($"[yellow]vInfo row limiting enabled[/] - Only the first {options.MaxVInfoRows.Value} vInfo rows will be processed. Other sheets (vPartition, vMemory, vHost) will be filtered to match the selected VMs and hosts.");
+        }
+
         // Create a dictionary to store Azure Migrate validation results if enabled
         Dictionary<string, AzureMigrateValidationResult>? azureMigrateValidationResults = null;
         if (options.EnableAzureMigrateValidation)
@@ -495,6 +501,15 @@ public class MergeService : IMergeService
                 azureMigrateValidationResults[sheetName] = new AzureMigrateValidationResult();
             }
         }
+
+        // Global counter for vInfo rows processed across all files
+        int globalVInfoRowsProcessed = 0;
+        
+        // Set to store VM UUIDs from limited vInfo rows for sheet synchronization
+        HashSet<string> includedVmUuids = new HashSet<string>();
+        
+        // Set to store Host names from limited vInfo rows for vHost sheet synchronization
+        HashSet<string> includedHostNames = new HashSet<string>();
 
         await Task.Run(() =>
         {
@@ -529,6 +544,12 @@ public class MergeService : IMergeService
                             vmUuidIndex = commonColumns[sheetName].IndexOf("VM UUID");
                             osConfigIndex = commonColumns[sheetName].IndexOf("OS according to the configuration file");
                         }
+
+                        // Get VM UUID column index for sheet synchronization
+                        int sheetVmUuidIndex = commonColumns[sheetName].IndexOf("VM UUID");
+                        
+                        // Get Host column index for vHost sheet synchronization
+                        int sheetHostIndex = commonColumns[sheetName].IndexOf("Host");
 
                         foreach (var filePath in validFilePaths)
                         {
@@ -567,6 +588,13 @@ public class MergeService : IMergeService
                             // Extract data rows
                             for (int row = 2; row <= lastRow; row++)
                             {
+                                // Check vInfo row limit if applicable
+                                if (sheetName == "vInfo" && options.MaxVInfoRows.HasValue && globalVInfoRowsProcessed >= options.MaxVInfoRows.Value)
+                                {
+                                    // We've reached the limit for vInfo rows, skip the rest
+                                    break;
+                                }
+
                                 var rowData = new XLCellValue[commonColumns[sheetName].Count];
 
                                 // Only fill data for columns that exist in this file
@@ -674,7 +702,56 @@ public class MergeService : IMergeService
 
                                 if (!skipRowDueToAzureMigrateValidation)
                                 {
-                                    mergedData[sheetName].Add(rowData);
+                                    // For vInfo sheet, collect VM UUID and Host if we have MaxVInfoRows limiting enabled
+                                    if (sheetName == "vInfo" && options.MaxVInfoRows.HasValue)
+                                    {
+                                        if (sheetVmUuidIndex >= 0)
+                                        {
+                                            var vmUuid = rowData[sheetVmUuidIndex].ToString();
+                                            if (!string.IsNullOrEmpty(vmUuid))
+                                            {
+                                                includedVmUuids.Add(vmUuid);
+                                            }
+                                        }
+                                        
+                                        if (sheetHostIndex >= 0)
+                                        {
+                                            var hostName = rowData[sheetHostIndex].ToString();
+                                            if (!string.IsNullOrEmpty(hostName))
+                                            {
+                                                includedHostNames.Add(hostName);
+                                            }
+                                        }
+                                    }
+
+                                    // For non-vInfo sheets, check if we should filter based on vInfo limiting
+                                    bool shouldIncludeRow = true;
+                                    if (sheetName != "vInfo" && options.MaxVInfoRows.HasValue)
+                                    {
+                                        // Filter sheets with VM UUIDs based on included VM UUIDs
+                                        if (sheetVmUuidIndex >= 0 && includedVmUuids.Count > 0)
+                                        {
+                                            var vmUuid = rowData[sheetVmUuidIndex].ToString();
+                                            shouldIncludeRow = string.IsNullOrEmpty(vmUuid) || includedVmUuids.Contains(vmUuid);
+                                        }
+                                        // Filter vHost sheet based on included Host names
+                                        else if (sheetName == "vHost" && sheetHostIndex >= 0 && includedHostNames.Count > 0)
+                                        {
+                                            var hostName = rowData[sheetHostIndex].ToString();
+                                            shouldIncludeRow = string.IsNullOrEmpty(hostName) || includedHostNames.Contains(hostName);
+                                        }
+                                    }
+
+                                    if (shouldIncludeRow)
+                                    {
+                                        mergedData[sheetName].Add(rowData);
+                                    }
+                                    
+                                    // Increment global vInfo row counter if this is a vInfo sheet and row was included
+                                    if (sheetName == "vInfo" && shouldIncludeRow)
+                                    {
+                                        globalVInfoRowsProcessed++;
+                                    }
                                 }
                             }
 
