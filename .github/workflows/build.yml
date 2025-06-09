@@ -27,35 +27,40 @@ env:
   DOTNET_CLI_TELEMETRY_OPTOUT: "true"
 
 jobs:
-  # Build job that runs tests and coverage using matrix strategy for all platforms
+  # Build job with conditional runner selection based on platform
   build-all-platforms:
     strategy:
       fail-fast: false
       matrix:
         include:
-          - os: windows-latest
-            runtime: win-x64
+          - runtime: win-x64
             cache-suffix: ""
             run-tests: true
-          - os: ubuntu-latest
-            runtime: linux-x64
+            create-msi: true
+            os: windows
+          - runtime: linux-x64
             cache-suffix: ""
             run-tests: true
-          - os: macos-latest
-            runtime: osx-arm64
+            create-msi: false
+            os: linux
+          - runtime: osx-arm64
             cache-suffix: ""
             run-tests: true
+            create-msi: false
+            os: macos
           # Cross-compilation builds (no native tests)
-          - os: windows-latest
-            runtime: win-arm64
+          - runtime: win-arm64
             cache-suffix: "-arm64"
             run-tests: false
-          - os: ubuntu-latest
-            runtime: linux-arm64
+            create-msi: true
+            os: windows
+          - runtime: linux-arm64
             cache-suffix: "-arm64"
             run-tests: false
+            create-msi: false
+            os: linux
 
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.os == 'windows' && vars.SELF_HOSTED_RUNNER || matrix.os == 'linux' && 'ubuntu-latest' || matrix.os == 'macos' && 'macos-latest' }}
 
     steps:
       - name: Checkout code
@@ -102,11 +107,11 @@ jobs:
         run: dotnet publish src/RVToolsMerge/RVToolsMerge.csproj --configuration ${{ inputs.configuration }} --runtime ${{ matrix.runtime }} --self-contained true -p:PublishSingleFile=true -p:PublishTrimmed=true --no-restore --output publish
 
       - name: Make executable on Unix
-        if: runner.os != 'Windows'
+        if: matrix.os != 'windows'
         run: chmod +x publish/RVToolsMerge
 
       - name: Create MSI installer (Windows only)
-        if: runner.os == 'Windows' && inputs.configuration == 'Release'
+        if: matrix.os == 'windows' && inputs.configuration == 'Release'
         working-directory: installer
         run: |
           $publishDir = Join-Path $env:GITHUB_WORKSPACE "publish"
@@ -192,7 +197,7 @@ jobs:
           retention-days: 30
 
       - name: Upload MSI artifact (Windows only)
-        if: runner.os == 'Windows' && inputs.configuration == 'Release'
+        if: matrix.os == 'windows' && inputs.configuration == 'Release'
         uses: actions/upload-artifact@v4
         with:
           name: RVToolsMerge-${{ matrix.runtime }}-msi

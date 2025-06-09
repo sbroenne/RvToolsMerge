@@ -69,13 +69,13 @@ These protection features make RVToolsMerge ideal for:
 
 RVToolsMerge processes key sheets from RVTools exports with specific validation requirements for each sheet type.
 
-For detailed information about supported sheets and their required columns, see [Supported Sheets Documentation](docs/SupportedSheets.md).
+For detailed information about supported sheets and their required columns, see [Supported Sheets Documentation](docs/rvtools-supported-sheets.md).
 
 ## Column Name Mappings
 
 The application standardizes column names across different RVTools exports. This helps handle variations in column naming between different versions of RVTools.
 
-For a complete reference of all column mappings, see [Column Mappings Documentation](docs/ColumnMappings.md).
+For a complete reference of all column mappings, see [Column Mappings Documentation](docs/rvtools-column-mappings.md).
 
 ## Installation
 
@@ -206,7 +206,7 @@ When anonymization is enabled, an additional Excel file is created alongside the
 
 After processing is complete, a summary of anonymization statistics per file is displayed, showing how many items of each type were anonymized from each source file.
 
-For more details on how anonymization is implemented, see the [Column Mappings Documentation](docs/ColumnMappings.md).
+For more details on how anonymization is implemented, see the [Column Mappings Documentation](docs/rvtools-column-mappings.md).
 
 ### Mandatory Columns Only Mode (-M, --only-mandatory-columns)
 
@@ -425,7 +425,7 @@ This project uses GitHub Actions for automated workflows:
 | **Dependencies**      | Automated dependency management with Dependabot     |
 | **Workflow Cleanup**  | Automated cleanup of old workflow runs              |
 
-Detailed CI/CD documentation is available in [CI-CD.md](/docs/CI-CD.md).
+Detailed CI/CD documentation is available in [continuous-integration.md](/docs/continuous-integration.md).
 
 ### Infrastructure and Self-Hosted Runners
 
