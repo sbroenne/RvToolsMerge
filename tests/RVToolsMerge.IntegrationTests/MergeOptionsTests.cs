@@ -284,11 +284,11 @@ public class MergeOptionsTests : IntegrationTestBase
             Assert.Equal(4, vMemoryLastRow); // 3 VM memory entries + header row (one per VM)
         }
 
-        // Verify vHost is NOT limited (it doesn't have VM UUIDs, so it should have all hosts)
+        // Verify vHost is now limited to only hosts referenced by the limited vInfo rows
         if (outputWorkbook.TryGetWorksheet("vHost", out var outputVHostSheet))
         {
             var vHostLastRow = outputVHostSheet.LastRowUsed()?.RowNumber() ?? 1;
-            Assert.Equal(4, vHostLastRow); // 3 hosts + header row (not limited by VM count)
+            Assert.Equal(3, vHostLastRow); // 2 hosts + header row (filtered to match the 3 VMs from vInfo)
         }
     }
 }

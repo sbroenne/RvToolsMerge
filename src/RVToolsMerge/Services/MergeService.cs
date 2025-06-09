@@ -488,7 +488,7 @@ public class MergeService : IMergeService
         // Display MaxVInfoRows message if enabled
         if (options.MaxVInfoRows.HasValue)
         {
-            _consoleUiService.DisplayInfo($"[yellow]vInfo row limiting enabled[/] - Only the first {options.MaxVInfoRows.Value} vInfo rows will be processed. Other sheets will be filtered to match the selected VMs.");
+            _consoleUiService.DisplayInfo($"[yellow]vInfo row limiting enabled[/] - Only the first {options.MaxVInfoRows.Value} vInfo rows will be processed. Other sheets (vPartition, vMemory, vHost) will be filtered to match the selected VMs and hosts.");
         }
 
         // Create a dictionary to store Azure Migrate validation results if enabled
@@ -507,6 +507,9 @@ public class MergeService : IMergeService
         
         // Set to store VM UUIDs from limited vInfo rows for sheet synchronization
         HashSet<string> includedVmUuids = new HashSet<string>();
+        
+        // Set to store Host names from limited vInfo rows for vHost sheet synchronization
+        HashSet<string> includedHostNames = new HashSet<string>();
 
         await Task.Run(() =>
         {
@@ -544,6 +547,9 @@ public class MergeService : IMergeService
 
                         // Get VM UUID column index for sheet synchronization
                         int sheetVmUuidIndex = commonColumns[sheetName].IndexOf("VM UUID");
+                        
+                        // Get Host column index for vHost sheet synchronization
+                        int sheetHostIndex = commonColumns[sheetName].IndexOf("Host");
 
                         foreach (var filePath in validFilePaths)
                         {
@@ -696,22 +702,44 @@ public class MergeService : IMergeService
 
                                 if (!skipRowDueToAzureMigrateValidation)
                                 {
-                                    // For vInfo sheet, collect VM UUID if we have MaxVInfoRows limiting enabled
-                                    if (sheetName == "vInfo" && options.MaxVInfoRows.HasValue && sheetVmUuidIndex >= 0)
+                                    // For vInfo sheet, collect VM UUID and Host if we have MaxVInfoRows limiting enabled
+                                    if (sheetName == "vInfo" && options.MaxVInfoRows.HasValue)
                                     {
-                                        var vmUuid = rowData[sheetVmUuidIndex].ToString();
-                                        if (!string.IsNullOrEmpty(vmUuid))
+                                        if (sheetVmUuidIndex >= 0)
                                         {
-                                            includedVmUuids.Add(vmUuid);
+                                            var vmUuid = rowData[sheetVmUuidIndex].ToString();
+                                            if (!string.IsNullOrEmpty(vmUuid))
+                                            {
+                                                includedVmUuids.Add(vmUuid);
+                                            }
+                                        }
+                                        
+                                        if (sheetHostIndex >= 0)
+                                        {
+                                            var hostName = rowData[sheetHostIndex].ToString();
+                                            if (!string.IsNullOrEmpty(hostName))
+                                            {
+                                                includedHostNames.Add(hostName);
+                                            }
                                         }
                                     }
 
-                                    // For non-vInfo sheets with VM UUIDs, check if we should filter based on vInfo limiting
+                                    // For non-vInfo sheets, check if we should filter based on vInfo limiting
                                     bool shouldIncludeRow = true;
-                                    if (sheetName != "vInfo" && options.MaxVInfoRows.HasValue && sheetVmUuidIndex >= 0 && includedVmUuids.Count > 0)
+                                    if (sheetName != "vInfo" && options.MaxVInfoRows.HasValue)
                                     {
-                                        var vmUuid = rowData[sheetVmUuidIndex].ToString();
-                                        shouldIncludeRow = string.IsNullOrEmpty(vmUuid) || includedVmUuids.Contains(vmUuid);
+                                        // Filter sheets with VM UUIDs based on included VM UUIDs
+                                        if (sheetVmUuidIndex >= 0 && includedVmUuids.Count > 0)
+                                        {
+                                            var vmUuid = rowData[sheetVmUuidIndex].ToString();
+                                            shouldIncludeRow = string.IsNullOrEmpty(vmUuid) || includedVmUuids.Contains(vmUuid);
+                                        }
+                                        // Filter vHost sheet based on included Host names
+                                        else if (sheetName == "vHost" && sheetHostIndex >= 0 && includedHostNames.Count > 0)
+                                        {
+                                            var hostName = rowData[sheetHostIndex].ToString();
+                                            shouldIncludeRow = string.IsNullOrEmpty(hostName) || includedHostNames.Contains(hostName);
+                                        }
                                     }
 
                                     if (shouldIncludeRow)

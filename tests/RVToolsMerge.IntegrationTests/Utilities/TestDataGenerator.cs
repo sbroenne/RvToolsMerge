@@ -110,14 +110,14 @@ public class TestDataGenerator
             vInfoSheet.Cell(i + 1, 6).Value = 4096 * i;    // Memory in MB
             vInfoSheet.Cell(i + 1, 7).Value = 2048 * i;    // In Use MiB
             vInfoSheet.Cell(i + 1, 8).Value = $"Windows Server 201{i % 2 + 8}";
-            vInfoSheet.Cell(i + 1, 9).Value = "FALSE";
-            vInfoSheet.Cell(i + 1, 10).Value = DateTime.Now.AddDays(-i * 10).ToShortDateString(); // Creation Date
-            vInfoSheet.Cell(i + 1, 11).Value = i % 3 + 1; // 1-3 NICs
-            vInfoSheet.Cell(i + 1, 12).Value = i % 2 + 1; // 1-2 Disks
-            vInfoSheet.Cell(i + 1, 13).Value = 8192 * i; // Provisioned MiB
-            vInfoSheet.Cell(i + 1, 14).Value = $"DC{(i % 2) + 1}"; // Datacenter
-            vInfoSheet.Cell(i + 1, 15).Value = $"Cluster{(i % 3) + 1}"; // Cluster
-            vInfoSheet.Cell(i + 1, 16).Value = $"Host{i}"; // Host
+            vInfoSheet.Cell(i + 1, 9).Value = "Datacenter1";
+            vInfoSheet.Cell(i + 1, 10).Value = "Cluster1";
+            vInfoSheet.Cell(i + 1, 11).Value = $"Host{i}"; // Host
+            vInfoSheet.Cell(i + 1, 12).Value = "FALSE"; // SRM Placeholder
+            vInfoSheet.Cell(i + 1, 13).Value = DateTime.Now.AddDays(-i * 10).ToShortDateString(); // Creation Date
+            vInfoSheet.Cell(i + 1, 14).Value = i % 3 + 1; // 1-3 NICs
+            vInfoSheet.Cell(i + 1, 15).Value = i % 2 + 1; // 1-2 Disks
+            vInfoSheet.Cell(i + 1, 16).Value = 8192 * i; // Provisioned MiB
         }
 
         // Add additional required sheets with alternative headers
