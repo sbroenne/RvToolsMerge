@@ -13,6 +13,21 @@ on:
         type: string
         default: ""
         description: "Git reference (tag, branch, or commit) to build from"
+  workflow_dispatch:
+    inputs:
+      configuration:
+        required: false
+        type: choice
+        default: "Debug"
+        description: "Build configuration"
+        options:
+          - "Debug"
+          - "Release"
+      ref:
+        required: false
+        type: string
+        default: ""
+        description: "Git reference (tag, branch, or commit) to build from (leave empty for current branch)"
 
 permissions:
   contents: read
