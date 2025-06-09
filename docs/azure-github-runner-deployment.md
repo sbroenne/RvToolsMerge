@@ -146,6 +146,9 @@ winget install --id Git.Git --silent --accept-package-agreements --accept-source
 
 # Install .NET 9 SDK
 winget install --id Microsoft.DotNet.SDK.9 --silent --accept-package-agreements --accept-source-agreements
+
+# Install PowerShell 7 (required for GitHub Actions workflows)
+winget install --id Microsoft.PowerShell --silent --accept-package-agreements --accept-source-agreements
 ```
 
 **Windows SDK Installation**:
@@ -277,9 +280,9 @@ After manual installation, the VM will have the following tools available:
 -   **Windows 11 Pro**: Base operating system with GUI
 -   **Git**: Version control and source code access
 -   **.NET 9 SDK**: Building .NET applications and creating signed artifacts
--   **PowerShell 7**: Cross-platform automation and scripting
+-   **PowerShell 7**: Cross-platform automation and scripting (required for GitHub Actions workflows)
 -   **Windows PowerShell** (built-in): Windows-specific scripting
--   **Windows SDK** (available via winget): Tools including signtool.exe for authenticode signing
+-   **Windows SDK**: Tools including signtool.exe for authenticode signing
 -   **MSBuild**: Building and packaging applications
 
 ## Security Considerations
