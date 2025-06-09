@@ -16,7 +16,7 @@ param adminUsername string = 'azureuser'
 @minLength(12)
 param adminPassword string
 
-@description('VM size for the GitHub runner (ARM-based for cost efficiency)')
+@description('VM size for the GitHub runner (AMD-based for cost efficiency)')
 param vmSize string = 'Standard_B2as_v2'
 
 @description('Windows 11 Pro version (fixed for consistency and optimal AHUB licensing)')
