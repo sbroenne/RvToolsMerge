@@ -176,4 +176,68 @@ public class MergeOptionsTests : IntegrationTestBase
         var lastRow = vInfoSheet.LastRowUsed()?.RowNumber() ?? 1;
         Assert.Equal(4, lastRow); // 3 VMs from valid file + header row
     }
+
+    /// <summary>
+    /// Tests the MaxVInfoRows option to limit the number of vInfo rows processed.
+    /// </summary>
+    [Fact]
+    public async Task MergeFiles_WithMaxVInfoRowsLimit_LimitsRows()
+    {
+        // Arrange
+        var filePath = TestDataGenerator.CreateValidRVToolsFile("limit_vinfo_rows.xlsx", numVMs: 10);
+        string[] filesToMerge = [filePath];
+        string outputPath = GetOutputFilePath("limited_vinfo_output.xlsx");
+        var options = CreateDefaultMergeOptions();
+        options.MaxVInfoRows = 3; // Limit to 3 vInfo rows
+        var validationIssues = new List<ValidationIssue>();
+
+        // Act
+        await MergeService.MergeFilesAsync(filesToMerge, outputPath, options, validationIssues);
+
+        // Assert
+        // Verify the output file exists
+        Assert.True(FileSystem.File.Exists(outputPath));
+
+        // Verify the output file by reading it - should have only 3 vInfo rows + header
+        using var outputWorkbook = new XLWorkbook(outputPath);
+        Assert.True(outputWorkbook.TryGetWorksheet("vInfo", out var outputVInfoSheet));
+        var lastRow = outputVInfoSheet.LastRowUsed()?.RowNumber() ?? 1;
+        Assert.Equal(4, lastRow); // 3 limited VMs + header row
+
+        // Verify other sheets are not affected by the vInfo limit
+        if (outputWorkbook.TryGetWorksheet("vHost", out var outputVHostSheet))
+        {
+            var vHostLastRow = outputVHostSheet.LastRowUsed()?.RowNumber() ?? 1;
+            // vHost should have all its rows (not limited)
+            Assert.True(vHostLastRow > 1); // Should have data beyond just header
+        }
+    }
+
+    /// <summary>
+    /// Tests that setting MaxVInfoRows to null has no limiting effect.
+    /// </summary>
+    [Fact]
+    public async Task MergeFiles_WithMaxVInfoRowsNull_DoesNotLimit()
+    {
+        // Arrange
+        var filePath = TestDataGenerator.CreateValidRVToolsFile("no_limit_vinfo_rows.xlsx", numVMs: 5);
+        string[] filesToMerge = [filePath];
+        string outputPath = GetOutputFilePath("unlimited_vinfo_output.xlsx");
+        var options = CreateDefaultMergeOptions();
+        options.MaxVInfoRows = null; // No limit
+        var validationIssues = new List<ValidationIssue>();
+
+        // Act
+        await MergeService.MergeFilesAsync(filesToMerge, outputPath, options, validationIssues);
+
+        // Assert
+        // Verify the output file exists
+        Assert.True(FileSystem.File.Exists(outputPath));
+
+        // Verify the output file by reading it - should have all 5 vInfo rows + header
+        using var outputWorkbook = new XLWorkbook(outputPath);
+        Assert.True(outputWorkbook.TryGetWorksheet("vInfo", out var outputVInfoSheet));
+        var lastRow = outputVInfoSheet.LastRowUsed()?.RowNumber() ?? 1;
+        Assert.Equal(6, lastRow); // 5 VMs + header row
+    }
 }

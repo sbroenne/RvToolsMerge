@@ -564,9 +564,19 @@ public class MergeService : IMergeService
                                 .Where(idx => idx >= 0)
                                 .ToList();
 
+                            // Track vInfo rows processed for limiting functionality
+                            int vInfoRowsProcessed = 0;
+
                             // Extract data rows
                             for (int row = 2; row <= lastRow; row++)
                             {
+                                // Check vInfo row limit if applicable
+                                if (sheetName == "vInfo" && options.MaxVInfoRows.HasValue && vInfoRowsProcessed >= options.MaxVInfoRows.Value)
+                                {
+                                    // We've reached the limit for vInfo rows, skip the rest
+                                    break;
+                                }
+
                                 var rowData = new XLCellValue[commonColumns[sheetName].Count];
 
                                 // Only fill data for columns that exist in this file
@@ -675,6 +685,12 @@ public class MergeService : IMergeService
                                 if (!skipRowDueToAzureMigrateValidation)
                                 {
                                     mergedData[sheetName].Add(rowData);
+                                    
+                                    // Increment vInfo row counter if this is a vInfo sheet
+                                    if (sheetName == "vInfo")
+                                    {
+                                        vInfoRowsProcessed++;
+                                    }
                                 }
                             }
 
