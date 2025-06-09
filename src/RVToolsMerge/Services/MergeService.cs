@@ -485,6 +485,12 @@ public class MergeService : IMergeService
             _consoleUiService.DisplayInfo("[yellow]Azure Migrate validation enabled[/] - Additional validation rules will be applied and rows that fail will be moved to a separate file.");
         }
 
+        // Display MaxVInfoRows message if enabled
+        if (options.MaxVInfoRows.HasValue)
+        {
+            _consoleUiService.DisplayInfo($"[yellow]vInfo row limiting enabled[/] - Only the first {options.MaxVInfoRows.Value} vInfo rows will be processed. Other sheets will be filtered to match the selected VMs.");
+        }
+
         // Create a dictionary to store Azure Migrate validation results if enabled
         Dictionary<string, AzureMigrateValidationResult>? azureMigrateValidationResults = null;
         if (options.EnableAzureMigrateValidation)
@@ -495,6 +501,12 @@ public class MergeService : IMergeService
                 azureMigrateValidationResults[sheetName] = new AzureMigrateValidationResult();
             }
         }
+
+        // Global counter for vInfo rows processed across all files
+        int globalVInfoRowsProcessed = 0;
+        
+        // Set to store VM UUIDs from limited vInfo rows for sheet synchronization
+        HashSet<string> includedVmUuids = new HashSet<string>();
 
         await Task.Run(() =>
         {
@@ -530,6 +542,9 @@ public class MergeService : IMergeService
                             osConfigIndex = commonColumns[sheetName].IndexOf("OS according to the configuration file");
                         }
 
+                        // Get VM UUID column index for sheet synchronization
+                        int sheetVmUuidIndex = commonColumns[sheetName].IndexOf("VM UUID");
+
                         foreach (var filePath in validFilePaths)
                         {
                             var fileName = _fileSystem.Path.GetFileName(filePath);
@@ -564,14 +579,11 @@ public class MergeService : IMergeService
                                 .Where(idx => idx >= 0)
                                 .ToList();
 
-                            // Track vInfo rows processed for limiting functionality
-                            int vInfoRowsProcessed = 0;
-
                             // Extract data rows
                             for (int row = 2; row <= lastRow; row++)
                             {
                                 // Check vInfo row limit if applicable
-                                if (sheetName == "vInfo" && options.MaxVInfoRows.HasValue && vInfoRowsProcessed >= options.MaxVInfoRows.Value)
+                                if (sheetName == "vInfo" && options.MaxVInfoRows.HasValue && globalVInfoRowsProcessed >= options.MaxVInfoRows.Value)
                                 {
                                     // We've reached the limit for vInfo rows, skip the rest
                                     break;
@@ -684,12 +696,33 @@ public class MergeService : IMergeService
 
                                 if (!skipRowDueToAzureMigrateValidation)
                                 {
-                                    mergedData[sheetName].Add(rowData);
-                                    
-                                    // Increment vInfo row counter if this is a vInfo sheet
-                                    if (sheetName == "vInfo")
+                                    // For vInfo sheet, collect VM UUID if we have MaxVInfoRows limiting enabled
+                                    if (sheetName == "vInfo" && options.MaxVInfoRows.HasValue && sheetVmUuidIndex >= 0)
                                     {
-                                        vInfoRowsProcessed++;
+                                        var vmUuid = rowData[sheetVmUuidIndex].ToString();
+                                        if (!string.IsNullOrEmpty(vmUuid))
+                                        {
+                                            includedVmUuids.Add(vmUuid);
+                                        }
+                                    }
+
+                                    // For non-vInfo sheets with VM UUIDs, check if we should filter based on vInfo limiting
+                                    bool shouldIncludeRow = true;
+                                    if (sheetName != "vInfo" && options.MaxVInfoRows.HasValue && sheetVmUuidIndex >= 0 && includedVmUuids.Count > 0)
+                                    {
+                                        var vmUuid = rowData[sheetVmUuidIndex].ToString();
+                                        shouldIncludeRow = string.IsNullOrEmpty(vmUuid) || includedVmUuids.Contains(vmUuid);
+                                    }
+
+                                    if (shouldIncludeRow)
+                                    {
+                                        mergedData[sheetName].Add(rowData);
+                                    }
+                                    
+                                    // Increment global vInfo row counter if this is a vInfo sheet and row was included
+                                    if (sheetName == "vInfo" && shouldIncludeRow)
+                                    {
+                                        globalVInfoRowsProcessed++;
                                     }
                                 }
                             }

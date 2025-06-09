@@ -240,4 +240,55 @@ public class MergeOptionsTests : IntegrationTestBase
         var lastRow = outputVInfoSheet.LastRowUsed()?.RowNumber() ?? 1;
         Assert.Equal(6, lastRow); // 5 VMs + header row
     }
+
+    /// <summary>
+    /// Tests that other sheets with VM UUIDs are synchronized with limited vInfo rows.
+    /// </summary>
+    [Fact]
+    public async Task MergeFiles_WithMaxVInfoRowsLimit_SynchronizesVmRelatedSheets()
+    {
+        // Arrange
+        var filePath = TestDataGenerator.CreateValidRVToolsFile("sync_sheets_test.xlsx", numVMs: 10, numHosts: 3);
+        string[] filesToMerge = [filePath];
+        string outputPath = GetOutputFilePath("synchronized_sheets_output.xlsx");
+        var options = CreateDefaultMergeOptions();
+        options.MaxVInfoRows = 3; // Limit to 3 vInfo rows
+        var validationIssues = new List<ValidationIssue>();
+
+        // Act
+        await MergeService.MergeFilesAsync(filesToMerge, outputPath, options, validationIssues);
+
+        // Assert
+        // Verify the output file exists
+        Assert.True(FileSystem.File.Exists(outputPath));
+
+        using var outputWorkbook = new XLWorkbook(outputPath);
+        
+        // Verify vInfo is limited to 3 rows + header = 4 total
+        Assert.True(outputWorkbook.TryGetWorksheet("vInfo", out var outputVInfoSheet));
+        var vInfoLastRow = outputVInfoSheet.LastRowUsed()?.RowNumber() ?? 1;
+        Assert.Equal(4, vInfoLastRow); // 3 limited VMs + header row
+
+        // Verify vPartition is also limited (should only have data for the 3 VMs from vInfo)
+        // Each VM has 2 partitions, so 3 VMs = 6 partitions + 1 header = 7 rows
+        if (outputWorkbook.TryGetWorksheet("vPartition", out var outputVPartitionSheet))
+        {
+            var vPartitionLastRow = outputVPartitionSheet.LastRowUsed()?.RowNumber() ?? 1;
+            Assert.Equal(7, vPartitionLastRow); // 6 VM partitions + header row (2 partitions per VM)
+        }
+
+        // Verify vMemory is also limited (should only have data for the 3 VMs from vInfo)
+        if (outputWorkbook.TryGetWorksheet("vMemory", out var outputVMemorySheet))
+        {
+            var vMemoryLastRow = outputVMemorySheet.LastRowUsed()?.RowNumber() ?? 1;
+            Assert.Equal(4, vMemoryLastRow); // 3 VM memory entries + header row (one per VM)
+        }
+
+        // Verify vHost is NOT limited (it doesn't have VM UUIDs, so it should have all hosts)
+        if (outputWorkbook.TryGetWorksheet("vHost", out var outputVHostSheet))
+        {
+            var vHostLastRow = outputVHostSheet.LastRowUsed()?.RowNumber() ?? 1;
+            Assert.Equal(4, vHostLastRow); // 3 hosts + header row (not limited by VM count)
+        }
+    }
 }
