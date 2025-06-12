@@ -135,4 +135,4 @@ The templates use the following placeholder variables:
 
 ## ProductCode
 
-The MSI installer uses a fixed ProductCode (`F3E4D5C6-B7A8-9C0D-1E2F-3A4B5C6D7E8F`) to ensure compatibility with winget package management and proper upgrade handling.
+The MSI installer uses an auto-generated ProductCode (`ProductCode="*"`) that changes with each version to ensure proper upgrade handling while maintaining winget compatibility through the stable UpgradeCode (`A7B8C9D0-E1F2-4A5B-8C9D-0E1F2A5B8C9D`).

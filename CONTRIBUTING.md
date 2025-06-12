@@ -177,7 +177,8 @@ Additional testing requirements:
 
 -   Use WiX Toolset 6.0.1 for creating MSI installers
 -   Follow WiX 6 syntax and schema (v4/wxs namespace)
--   Maintain stable GUIDs for ProductCode and UpgradeCode across versions
+-   Use auto-generated ProductCode (`ProductCode="*"`) to enable proper version upgrades
+-   Maintain stable UpgradeCode across all versions for upgrade detection
 -   Use automatic version binding from executable: `!(bind.FileVersion.RVToolsMerge.exe)`
 -   Include proper upgrade logic with `<MajorUpgrade>` element
 -   Add application to PATH environment variable for command-line access
@@ -198,7 +199,8 @@ Additional testing requirements:
 ### Windows Package Manager (winget) Integration
 
 -   Maintain winget manifest templates in `.github/winget-templates/`
--   Ensure MSI ProductCode remains stable for proper package management
+-   Use auto-generated ProductCode in MSI for proper upgrade handling
+-   Ensure stable UpgradeCode across versions for package upgrade detection
 -   Include proper publisher information matching winget manifest
 -   Generate SHA256 hashes automatically for winget manifest integrity
 -   Test winget manifest syntax before release
