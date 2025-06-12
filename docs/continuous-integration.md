@@ -27,6 +27,26 @@ The Build workflow (`build.yml`) is a reusable workflow that handles building an
     -   When building in Release mode, publishes platform-specific self-contained executables
     -   For Windows builds in Release mode, creates MSI installers using WiX Toolset 6.0.1
     -   Uploads both executable and MSI artifacts for release builds
+    -   **Code signing support**: Optionally signs Windows executables and MSI installers when enabled
+
+### Code Signing
+
+Code signing is supported for Windows artifacts (executables and MSI installers) and is enabled only during release builds:
+
+-   **Trigger**: Only enabled for release builds when `enableCodeSigning` parameter is set to `true`
+-   **Runner**: Uses self-hosted runner with `codesign-runner` label when code signing is enabled
+-   **Fallback**: Uses GitHub-hosted `windows-latest` runner when code signing is disabled
+-   **Requirements**:
+    -   Self-hosted Windows runner with signtool.exe from Windows SDK
+    -   Code signing certificate installed in Windows Certificate Store
+    -   Interactive user session (not Windows service) for certificate access
+-   **Process**:
+    1. Signs the published executable with SHA256 digest and timestamp
+    2. Creates the MSI installer
+    3. Signs the MSI installer with SHA256 digest and timestamp
+    4. Verifies signatures for both executable and MSI
+-   **Certificates**: Uses best available certificate from Windows Certificate Store (`/a` flag)
+-   **Timestamping**: Uses DigiCert timestamp server for long-term signature validity
 
 ## .NET CI Workflow
 
@@ -149,7 +169,8 @@ The automated version management and release process follows these steps:
 9. Attempt to auto-merge the PR with retry logic
 10. Create and push a version tag (vX.Y.Z) once the PR is merged
 11. If release creation is enabled:
-    - Build release artifacts for all supported platforms (Windows x64/ARM64, Linux x64, macOS ARM64)
+    - Build release artifacts for all supported platforms (Windows x64/ARM64, Linux x64, macOS ARM64) with code signing enabled
+    - Sign Windows executables and MSI installers using the self-hosted runner
     - Create MSI installers for Windows platforms using WiX Toolset 6.0.1
     - Generate winget manifests with calculated MSI SHA256 hashes
     - Create platform-specific ZIP archives
