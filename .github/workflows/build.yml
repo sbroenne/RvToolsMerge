@@ -13,6 +13,11 @@ on:
         type: string
         default: ""
         description: "Git reference (tag, branch, or commit) to build from"
+      enableCodeSigning:
+        required: false
+        type: boolean
+        default: false
+        description: "Enable code signing for Windows artifacts (requires self-hosted runner)"
   workflow_dispatch:
     inputs:
       configuration:
@@ -28,6 +33,11 @@ on:
         type: string
         default: ""
         description: "Git reference (tag, branch, or commit) to build from (leave empty for current branch)"
+      enableCodeSigning:
+        required: false
+        type: boolean
+        default: false
+        description: "Enable code signing for Windows artifacts (requires self-hosted runner)"
 
 permissions:
   contents: read
@@ -75,7 +85,7 @@ jobs:
             create-msi: false
             os: linux
 
-    runs-on: ${{ matrix.os == 'windows' && vars.SELF_HOSTED_RUNNER || matrix.os == 'linux' && 'ubuntu-latest' || matrix.os == 'macos' && 'macos-latest' }}
+    runs-on: ${{ matrix.os == 'windows' && inputs.enableCodeSigning && vars.SELF_HOSTED_RUNNER || matrix.os == 'windows' && 'windows-latest' || matrix.os == 'linux' && 'ubuntu-latest' || matrix.os == 'macos' && 'macos-latest' }}
 
     steps:
       - name: Checkout code
@@ -124,6 +134,53 @@ jobs:
       - name: Make executable on Unix
         if: matrix.os != 'windows'
         run: chmod +x publish/RVToolsMerge
+
+      - name: Code sign executable (Windows only)
+        if: matrix.os == 'windows' && inputs.enableCodeSigning
+        working-directory: publish
+        run: |
+          # Get the path to signtool
+          $signtoolPath = Get-ChildItem -Path "${env:ProgramFiles(x86)}\Windows Kits\10\bin" -Recurse -Filter "signtool.exe" | 
+                         Where-Object { $_.Directory.Name -match "x64" } | 
+                         Sort-Object FullName -Descending | 
+                         Select-Object -First 1
+
+          if (-not $signtoolPath) {
+            Write-Error "signtool.exe not found in Windows SDK"
+            exit 1
+          }
+
+          Write-Host "Using signtool at: $($signtoolPath.FullName)"
+
+          # Sign the executable
+          $exePath = ".\RVToolsMerge.exe"
+          
+          if (-not (Test-Path $exePath)) {
+            Write-Error "Executable not found at: $exePath"
+            exit 1
+          }
+
+          # Sign with certificate from store (assumes certificate is already installed)
+          # This uses the best available certificate from the user's certificate store
+          Write-Host "Signing executable: $exePath"
+          & "$($signtoolPath.FullName)" sign /a /fd SHA256 /tr http://timestamp.digicert.com /td SHA256 "$exePath"
+          
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "Failed to sign executable with exit code: $LASTEXITCODE"
+            exit 1
+          }
+
+          # Verify the signature
+          Write-Host "Verifying signature..."
+          & "$($signtoolPath.FullName)" verify /pa "$exePath"
+          
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "Signature verification failed with exit code: $LASTEXITCODE"
+            exit 1
+          }
+
+          Write-Host "✅ Executable signed and verified successfully"
+        shell: pwsh
 
       - name: Create MSI installer (Windows only)
         if: matrix.os == 'windows' && inputs.configuration == 'Release'
@@ -202,6 +259,53 @@ jobs:
               Get-ChildItem -Path $outputDir -Recurse | Write-Host
               exit 1
           }
+        shell: pwsh
+
+      - name: Code sign MSI installer (Windows only)
+        if: matrix.os == 'windows' && inputs.configuration == 'Release' && inputs.enableCodeSigning
+        working-directory: msi-output
+        run: |
+          # Get the path to signtool
+          $signtoolPath = Get-ChildItem -Path "${env:ProgramFiles(x86)}\Windows Kits\10\bin" -Recurse -Filter "signtool.exe" | 
+                         Where-Object { $_.Directory.Name -match "x64" } | 
+                         Sort-Object FullName -Descending | 
+                         Select-Object -First 1
+
+          if (-not $signtoolPath) {
+            Write-Error "signtool.exe not found in Windows SDK"
+            exit 1
+          }
+
+          Write-Host "Using signtool at: $($signtoolPath.FullName)"
+
+          # Find the MSI file
+          $msiFile = Get-ChildItem -Filter "*.msi" | Select-Object -First 1
+          
+          if (-not $msiFile) {
+            Write-Error "MSI file not found in output directory"
+            exit 1
+          }
+
+          Write-Host "Signing MSI installer: $($msiFile.Name)"
+          
+          # Sign with certificate from store (assumes certificate is already installed)
+          & "$($signtoolPath.FullName)" sign /a /fd SHA256 /tr http://timestamp.digicert.com /td SHA256 "$($msiFile.FullName)"
+          
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "Failed to sign MSI with exit code: $LASTEXITCODE"
+            exit 1
+          }
+
+          # Verify the signature
+          Write-Host "Verifying MSI signature..."
+          & "$($signtoolPath.FullName)" verify /pa "$($msiFile.FullName)"
+          
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "MSI signature verification failed with exit code: $LASTEXITCODE"
+            exit 1
+          }
+
+          Write-Host "✅ MSI installer signed and verified successfully"
         shell: pwsh
 
       - name: Upload build artifact

@@ -418,6 +418,7 @@ jobs:
     with:
       configuration: "Release"
       ref: ${{ needs.create-tag.outputs.tag_name }}
+      enableCodeSigning: true
 
   generate-winget-manifests:
     name: Generate Winget Manifests
