@@ -200,7 +200,7 @@ The MSI installer **fully supports upgrading to newer versions** with the follow
     - No manual version updates required in installer configuration
 
 3. **GUID Management**:
-    - **ProductCode**: Changes with each version to trigger upgrades (`F3E4D5C6-B7A8-9C0D-1E2F-3A4B5C6D7E8F`)
+    - **ProductCode**: Automatically generated for each version using `ProductCode="*"` to trigger upgrades
     - **UpgradeCode**: Remains stable across all versions (`A7B8C9D0-E1F2-4A5B-8C9D-0E1F2A5B8C9D`)
     - **Component GUIDs**: Use automatic generation (`Guid="*"`) for proper upgrade handling
 
@@ -285,7 +285,8 @@ To submit to the Microsoft winget-pkgs repository:
 
 The MSI installer is configured for winget compatibility:
 
--   **Consistent Product Code**: Uses stable GUID `{F3E4D5C6-B7A8-9C0D-1E2F-3A4B5C6D7E8F}`
+-   **Dynamic Product Code**: Uses auto-generated GUID (`ProductCode="*"`) that changes with each version for proper upgrade handling
+-   **Stable Upgrade Code**: Uses stable GUID `A7B8C9D0-E1F2-4A5B-8C9D-0E1F2A5B8C9D` for version detection
 -   **Publisher information**: Matches winget manifest publisher details
 -   **Version information**: Automatically extracted from executable for consistency
 -   **Silent installation**: Supports silent installation modes required by winget
