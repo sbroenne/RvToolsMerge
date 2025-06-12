@@ -285,6 +285,61 @@ After manual installation, the VM will have the following tools available:
 -   **Windows SDK**: Tools including signtool.exe for authenticode signing
 -   **MSBuild**: Building and packaging applications
 
+## Code Signing Certificate Setup
+
+To enable code signing for Windows artifacts, you need to install a code signing certificate on the self-hosted runner:
+
+### Certificate Types Supported
+
+1. **File-based certificates** (`.pfx` or `.p12` files)
+2. **Windows Certificate Store** certificates
+3. **Hardware Security Module** (HSM) certificates
+4. **Cloud-based certificates** (Azure Key Vault, etc.)
+
+### Installing a Certificate
+
+**Option 1: Install PFX Certificate**
+
+```powershell
+# Import certificate to Personal store
+$certPassword = ConvertTo-SecureString "YourPassword" -AsPlainText -Force
+Import-PfxCertificate -FilePath "C:\path\to\certificate.pfx" -CertStoreLocation "Cert:\CurrentUser\My" -Password $certPassword
+```
+
+**Option 2: Install from Certificate Store**
+
+1. Open `certmgr.msc` (Certificate Manager)
+2. Navigate to **Personal** → **Certificates**
+3. Import your code signing certificate
+4. Ensure the certificate has the private key and is valid
+
+### Verification
+
+Verify the certificate is properly installed:
+
+```powershell
+# List available certificates
+Get-ChildItem -Path "Cert:\CurrentUser\My" -CodeSigningCert
+
+# Test signing with a dummy file
+$signtoolPath = Get-ChildItem -Path "${env:ProgramFiles(x86)}\Windows Kits\10\bin" -Recurse -Filter "signtool.exe" | Where-Object { $_.Directory.Name -match "x64" } | Sort-Object FullName -Descending | Select-Object -First 1
+& "$($signtoolPath.FullName)" sign /a /fd SHA256 /tr http://timestamp.digicert.com /td SHA256 "TestFile.exe"
+```
+
+### Certificate Requirements
+
+- **Code signing purpose**: Certificate must be valid for code signing
+- **Private key access**: Must be accessible in the interactive user session
+- **Timestamping**: DigiCert timestamp server is used for long-term validity
+- **Algorithm**: SHA256 digest algorithm is used for modern compatibility
+
+### Security Considerations
+
+- Store certificates securely on the runner VM
+- Use strong passwords for PFX files
+- Consider using Azure Key Vault for enterprise scenarios
+- Regularly update and renew certificates before expiration
+
 ## Security Considerations
 
 ### Network Security
