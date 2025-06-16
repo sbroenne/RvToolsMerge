@@ -58,10 +58,11 @@ public class CommandLineTests
         };
 
         // Act
-        bool helpRequested = _commandLineParser.ParseArguments(args, options, out string? inputPath, out string? outputPath);
+        bool helpRequested = _commandLineParser.ParseArguments(args, options, out string? inputPath, out string? outputPath, out bool versionRequested);
 
         // Assert
         Assert.False(helpRequested);
+        Assert.False(versionRequested);
         Assert.Equal("/tmp/rvtools_test/test.xlsx", inputPath);
         Assert.Equal("/tmp/output.xlsx", outputPath);
         Assert.True(options.IgnoreMissingOptionalSheets);
@@ -95,7 +96,7 @@ public class CommandLineTests
         };
 
         // Act
-        bool helpRequested = _commandLineParser.ParseArguments(args, options, out string? inputPath, out string? outputPath);
+        bool helpRequested = _commandLineParser.ParseArguments(args, options, out string? inputPath, out string? outputPath, out bool versionRequested);
 
         // Assert
         Assert.False(helpRequested);
@@ -124,10 +125,33 @@ public class CommandLineTests
         string[] args = { helpOption };
 
         // Act
-        bool helpRequested = _commandLineParser.ParseArguments(args, options, out string? inputPath, out string? outputPath);
+        bool helpRequested = _commandLineParser.ParseArguments(args, options, out string? inputPath, out string? outputPath, out bool versionRequested);
 
         // Assert
         Assert.True(helpRequested);
+        Assert.False(versionRequested);
+        Assert.Null(inputPath);
+        Assert.Null(outputPath);
+    }
+
+    /// <summary>
+    /// Tests that version option returns true for versionRequested.
+    /// </summary>
+    [Theory]
+    [InlineData("-v")]
+    [InlineData("--version")]
+    public void ParseArguments_VersionOption_ReturnsVersionRequested(string versionOption)
+    {
+        // Arrange
+        var options = new MergeOptions();
+        string[] args = { versionOption };
+
+        // Act
+        bool helpRequested = _commandLineParser.ParseArguments(args, options, out string? inputPath, out string? outputPath, out bool versionRequested);
+
+        // Assert
+        Assert.False(helpRequested);
+        Assert.True(versionRequested);
         Assert.Null(inputPath);
         Assert.Null(outputPath);
     }
@@ -144,7 +168,7 @@ public class CommandLineTests
         string expectedOutput = _fileSystem.Path.Combine(_fileSystem.Directory.GetCurrentDirectory(), "RVTools_Merged.xlsx");
 
         // Act
-        bool helpRequested = _commandLineParser.ParseArguments(args, options, out string? inputPath, out string? outputPath);
+        bool helpRequested = _commandLineParser.ParseArguments(args, options, out string? inputPath, out string? outputPath, out bool versionRequested);
 
         // Assert
         Assert.False(helpRequested);
@@ -163,7 +187,7 @@ public class CommandLineTests
         string[] args = { "-a", "-d" }; // Only options, no paths
 
         // Act
-        bool helpRequested = _commandLineParser.ParseArguments(args, options, out string? inputPath, out string? outputPath);
+        bool helpRequested = _commandLineParser.ParseArguments(args, options, out string? inputPath, out string? outputPath, out bool versionRequested);
 
         // Assert
         Assert.False(helpRequested);
@@ -188,7 +212,7 @@ public class CommandLineTests
         };
 
         // Act
-        bool helpRequested = _commandLineParser.ParseArguments(args, options, out string? inputPath, out string? outputPath);
+        bool helpRequested = _commandLineParser.ParseArguments(args, options, out string? inputPath, out string? outputPath, out bool versionRequested);
 
         // Assert
         Assert.False(helpRequested);
@@ -215,7 +239,7 @@ public class CommandLineTests
         };
 
         // Act
-        bool helpRequested = _commandLineParser.ParseArguments(args, options, out string? inputPath, out string? outputPath);
+        bool helpRequested = _commandLineParser.ParseArguments(args, options, out string? inputPath, out string? outputPath, out bool versionRequested);
 
         // Assert
         Assert.False(helpRequested);
@@ -243,7 +267,7 @@ public class CommandLineTests
         };
 
         // Act
-        bool helpRequested = _commandLineParser.ParseArguments(args, options, out string? inputPath, out string? outputPath);
+        bool helpRequested = _commandLineParser.ParseArguments(args, options, out string? inputPath, out string? outputPath, out bool versionRequested);
 
         // Assert
         Assert.False(helpRequested);

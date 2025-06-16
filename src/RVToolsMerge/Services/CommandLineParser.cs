@@ -70,11 +70,13 @@ public class CommandLineParser : ICommandLineParser
     /// <param name="options">Merge options to populate.</param>
     /// <param name="inputPath">The resolved input path.</param>
     /// <param name="outputPath">The resolved output path.</param>
+    /// <param name="versionRequested">True if version information was requested.</param>
     /// <returns>True if help was requested, false otherwise.</returns>
-    public bool ParseArguments(string[] args, MergeOptions options, out string? inputPath, out string? outputPath)
+    public bool ParseArguments(string[] args, MergeOptions options, out string? inputPath, out string? outputPath, out bool versionRequested)
     {
         inputPath = null;
         outputPath = null;
+        versionRequested = false;
 
         var processedArgs = new List<string>();
 
@@ -84,6 +86,9 @@ public class CommandLineParser : ICommandLineParser
             {
                 case "-h" or "--help" or "/?":
                     return true;
+                case "-v" or "--version":
+                    versionRequested = true;
+                    return false;
                 case "-m" or "--ignore-missing-sheets":
                     options.IgnoreMissingOptionalSheets = true;
                     break;
