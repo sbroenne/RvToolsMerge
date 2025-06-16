@@ -36,7 +36,7 @@ public class PathValidationTests : IntegrationTestBase
         var args = new[] { maliciousPath, "output.xlsx" };
 
         // Act
-        bool helpRequested = parser.ParseArguments(args, options, out string? inputPath, out string? outputPath);
+        bool helpRequested = parser.ParseArguments(args, options, out string? inputPath, out string? outputPath, out bool versionRequested);
 
         // Assert
         Assert.False(helpRequested);
@@ -58,7 +58,7 @@ public class PathValidationTests : IntegrationTestBase
         var args = new[] { validPath };
 
         // Act
-        bool helpRequested = parser.ParseArguments(args, options, out string? inputPath, out string? outputPath);
+        bool helpRequested = parser.ParseArguments(args, options, out string? inputPath, out string? outputPath, out bool versionRequested);
 
         // Assert
         Assert.False(helpRequested);
@@ -78,7 +78,7 @@ public class PathValidationTests : IntegrationTestBase
         var args = new[] { "input.xlsx", maliciousPath };
 
         // Act
-        bool helpRequested = parser.ParseArguments(args, options, out string? inputPath, out string? outputPath);
+        bool helpRequested = parser.ParseArguments(args, options, out string? inputPath, out string? outputPath, out bool versionRequested);
 
         // Assert
         Assert.False(helpRequested);

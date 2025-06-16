@@ -53,17 +53,26 @@ public class ApplicationRunner
     {
         // Get version and product information
         var appInfo = GetApplicationInfo();
-        _consoleUiService.DisplayHeader(appInfo.ProductName, appInfo.VersionString);
 
         // Parse command line options
         var options = new MergeOptions();
-        bool helpRequested = _commandLineParser.ParseArguments(args, options, out string? inputPath, out string? outputPath);
+        bool helpRequested = _commandLineParser.ParseArguments(args, options, out string? inputPath, out string? outputPath, out bool versionRequested);
 
         if (helpRequested)
         {
+            _consoleUiService.DisplayHeader(appInfo.ProductName, appInfo.VersionString);
             _consoleUiService.ShowHelp(Assembly.GetExecutingAssembly().GetName().Name ?? "RVToolsMerge");
             return;
         }
+
+        if (versionRequested)
+        {
+            AnsiConsole.WriteLine(appInfo.VersionString);
+            return;
+        }
+
+        // Display header for normal operations
+        _consoleUiService.DisplayHeader(appInfo.ProductName, appInfo.VersionString);
 
         if (inputPath == null)
         {

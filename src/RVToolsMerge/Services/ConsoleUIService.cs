@@ -200,6 +200,7 @@ public class ConsoleUIService
     {
         AnsiConsole.MarkupLine("[bold]OPTIONS:[/]");
         AnsiConsole.MarkupLine("  [yellow]-h, --help, /?[/]            Show this help message and exit.");
+        AnsiConsole.MarkupLine("  [yellow]-v, --version[/]             Show version information and exit.");
         AnsiConsole.MarkupLine("  [yellow]-m, --ignore-missing-sheets[/]");
         AnsiConsole.MarkupLine("                            Ignore missing optional sheets (vHost, vPartition & vMemory).");
         AnsiConsole.MarkupLine("                            [grey]Default: disabled[/]");
