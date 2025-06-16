@@ -145,6 +145,7 @@ RVToolsMerge [options] inputPath [outputFile]
 | Option                         | Description                                            | Default |
 | ------------------------------ | ------------------------------------------------------ | ------- |
 | `-h, --help, /?`               | Show the help message and exit                         | N/A     |
+| `-v, --version`                | Show version information and exit                       | N/A     |
 | `-m, --ignore-missing-sheets`  | Process files even when optional sheets are missing    | `false` |
 | `-i, --skip-invalid-files`     | Skip files that don't meet validation requirements     | `false` |
 | `-a, --anonymize`              | Anonymize VM, DNS, Cluster, Host, and Datacenter names | `false` |
