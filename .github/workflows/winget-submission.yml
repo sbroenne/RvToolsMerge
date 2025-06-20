@@ -72,7 +72,9 @@ jobs:
           RELEASE_TAG="${{ steps.get-release.outputs.release_tag }}"
           VERSION="${{ steps.get-release.outputs.version }}"
 
-          echo "Downloading winget manifests from release $RELEASE_TAG"          # Create directory for manifests
+          echo "Downloading winget manifests from release $RELEASE_TAG"
+          
+          # Create directory for manifests
           mkdir -p winget-manifests
 
           # Download manifest files from release assets
