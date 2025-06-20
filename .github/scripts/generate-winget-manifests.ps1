@@ -51,7 +51,9 @@ param(
     [string]$X64MsiPath,
 
     [Parameter(Mandatory = $true)]
-    [string]$Arm64MsiPath, [Parameter(Mandatory = $true)]
+    [string]$Arm64MsiPath,
+
+    [Parameter(Mandatory = $true)]
     [string]$OutputDir,
 
     [Parameter(Mandatory = $false)]

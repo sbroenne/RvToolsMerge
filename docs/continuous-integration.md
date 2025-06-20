@@ -273,6 +273,8 @@ Common issues and solutions:
     -   Check that all required manifest files are present in the GitHub release
     -   Validate manifest files have correct YAML syntax
     -   Ensure the release tag format is correct (e.g., "v1.3.4")
+    -   Verify MSI ProductCode handling: WiX generates auto ProductCodes (`ProductCode="*"`), so winget manifests should not specify ProductCode fields
+    -   Check that MSI installer files are properly built and signed before manifest generation
     -   Test with dry run first to identify issues before actual submission
 -   **Branch creation fails**:
     -   Check for existing version update branches that may conflict

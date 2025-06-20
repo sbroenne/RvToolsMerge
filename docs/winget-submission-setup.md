@@ -64,3 +64,5 @@ Always test with `dryRun: true` before making actual submissions to verify:
 -   Verify the personal access token has correct permissions
 -   Check that manifest files are present in the specified release
 -   Review workflow logs for specific error messages
+-   **ProductCode Issues**: If winget validation fails with ProductCode errors, ensure the installer manifest template does not specify hardcoded ProductCode values. WiX installers with `ProductCode="*"` should not have ProductCode fields in winget manifests
+-   **MSI Validation Failures**: Verify that MSI files are properly built and signed before manifest generation, and that SHA256 hashes match the actual files

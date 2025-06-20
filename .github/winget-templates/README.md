@@ -133,6 +133,6 @@ The templates use the following placeholder variables:
 -   `{{ARM64_SHA256}}` - SHA256 hash of ARM64 MSI installer
 -   `{{RELEASE_NOTES}}` - Brief description of changes in the release
 
-## ProductCode
+## ProductCode Handling
 
-The MSI installer uses an auto-generated ProductCode (`ProductCode="*"`) that changes with each version to ensure proper upgrade handling while maintaining winget compatibility through the stable UpgradeCode (`A7B8C9D0-E1F2-4A5B-8C9D-0E1F2A5B8C9D`).
+The MSI installer uses an auto-generated ProductCode (`ProductCode="*"`) that changes with each version to ensure proper upgrade handling. The winget manifests do not specify ProductCode fields, allowing winget to automatically detect the ProductCode from the MSI file during installation. This approach ensures compatibility with WiX's auto-generated ProductCodes while maintaining proper upgrade behavior through the stable UpgradeCode (`A7B8C9D0-E1F2-4A5B-8C9D-0E1F2A5B8C9D`).
