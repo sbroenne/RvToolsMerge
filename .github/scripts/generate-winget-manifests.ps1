@@ -6,7 +6,7 @@
 
 .DESCRIPTION
     This script generates winget manifest files from templates using provided version and MSI file information.
-    The script can optionally validate the manifests with winget if it's available and validation is enabled.
+    All generated manifests are automatically validated with 'winget validate' after generation. The script will fail if validation does not pass.
 
 .PARAMETER Version
     The version number for the package (e.g., "1.0.0")
@@ -23,20 +23,16 @@
 .PARAMETER ReleaseNotes
     Release notes for this version (optional)
 
-.PARAMETER ValidateWithWinget
-    Switch to enable validation of the manifests with winget. When specified, validation is performed.
-
 .EXAMPLE
     .\generate-winget-manifests.ps1 -Version "1.0.0" -X64MsiPath ".\x64.msi" -Arm64MsiPath ".\arm64.msi" -OutputDir ".\manifests"
 
 .EXAMPLE
-    .\generate-winget-manifests.ps1 -Version "1.0.0" -X64MsiPath ".\x64.msi" -Arm64MsiPath ".\arm64.msi" -OutputDir ".\manifests" -ValidateWithWinget
+    .\generate-winget-manifests.ps1 -Version "1.0.0" -X64MsiPath ".\x64.msi" -Arm64MsiPath ".\arm64.msi" -OutputDir ".\manifests" -ReleaseNotes "Bug fixes and improvements"
 
 .NOTES
-    - Winget validation is disabled by default and can be enabled with -ValidateWithWinget
-    - When validation is enabled, requires winget to be installed and available in PATH
-    - All generated manifests are automatically validated with 'winget validate' when enabled
-    - Script will exit with error code 1 if validation is enabled and fails
+    - Manifest validation with winget is always performed after generation.
+    - Requires winget to be installed and available in PATH.
+    - Script will exit with error code 1 if validation does not pass.
 #>
 
 # Generate Winget Manifests Script
@@ -57,10 +53,7 @@ param(
     [string]$OutputDir,
 
     [Parameter(Mandatory = $false)]
-    [string]$ReleaseNotes = "See the release notes for details about this version.",
-
-    [Parameter(Mandatory = $false)]
-    [switch]$ValidateWithWinget
+    [string]$ReleaseNotes = "See the release notes for details about this version."
 )
 
 # Ensure output directory exists
@@ -166,7 +159,7 @@ function Invoke-TemplateProcessing {
     }
     catch {
         Write-Error "Failed to process template $TemplatePath`: $($_.Exception.Message)"
-        return $false    
+        return $false
     }
 }
 
@@ -220,44 +213,40 @@ if ($success) {
     Write-Host "`nGenerated files:"
     Get-ChildItem $OutputDir -Filter "*.yaml" | ForEach-Object {
         Write-Host "  - $($_.Name)"
-    }    # Validate the generated manifests - conditional based on parameter
-    if ($ValidateWithWinget) {
-        Write-Host "`nValidating winget manifests..."
+    }
+    # Always validate the generated manifests
+    Write-Host "`nValidating winget manifests..."
 
-        # Check if winget is available
-        try {
-            $wingetVersion = & winget --version 2>$null
-            if ($LASTEXITCODE -ne 0) {
-                throw "Winget command failed"
-            }
+    # Check if winget is available
+    try {
+        $wingetVersion = & winget --version 2>$null
+        if ($LASTEXITCODE -ne 0) {
+            throw "Winget command failed"
         }
-        catch {
-            Write-Warning "Winget is not available or not installed. Validation will be skipped."
-            Write-Warning "To enable validation, install winget from: https://github.com/microsoft/winget-cli"
-            Write-Warning "Or install via Microsoft Store: ms-appinstaller:?source=https://aka.ms/getwinget"
-            Write-Host "Manifest generation completed without validation"
-            exit 0
-        }
+    }
+    catch {
+        Write-Warning "Winget is not available or not installed. Validation will be skipped."
+        Write-Warning "To enable validation, install winget from: https://github.com/microsoft/winget-cli"
+        Write-Warning "Or install via Microsoft Store: ms-appinstaller:?source=https://aka.ms/getwinget"
+        Write-Host "Manifest generation completed without validation"
+        exit 0
+    }
 
-        Write-Host "Using winget version: $wingetVersion"
+    Write-Host "Using winget version: $wingetVersion"
 
-        # Run winget validate
-        $validateResult = & winget validate $OutputDir 2>&1
-        if ($LASTEXITCODE -eq 0) {
-            Write-Host "Winget manifest validation passed successfully"
-            if ($validateResult) {
-                Write-Host $validateResult
-            }
-        }
-        else {
-            Write-Error "Winget manifest validation failed."
-            Write-Error "Validation output:"
-            Write-Error $validateResult
-            exit 1
+    # Run winget validate
+    $validateResult = & winget validate $OutputDir 2>&1
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "Winget manifest validation passed successfully"
+        if ($validateResult) {
+            Write-Host $validateResult
         }
     }
     else {
-        Write-Host "Manifest generation completed (validation skipped as requested)"
+        Write-Error "Winget manifest validation failed."
+        Write-Error "Validation output:"
+        Write-Error $validateResult
+        exit 1
     }
 }
 else {
