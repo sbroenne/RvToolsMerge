@@ -97,7 +97,7 @@ if (-not $Arm64MsiPath.EndsWith('.msi', [System.StringComparison]::OrdinalIgnore
     exit 1
 }
 
-Write-Host "✅ Input validation passed"
+Write-Host "Input validation passed"
 
 # Function to calculate SHA256 hash
 function Get-FileSha256Hash {
@@ -135,7 +135,7 @@ if (-not (Test-Path $templateDir)) {
     exit 1
 }
 
-Write-Host "✅ Template directory found"
+Write-Host "Template directory found"
 
 # Function to process template file
 function Invoke-TemplateProcessing {
@@ -215,7 +215,7 @@ foreach ($template in $templates) {
 Write-Host "`nTemplate processing summary: $processedCount/$($templates.Count) templates processed successfully"
 
 if ($success) {
-    Write-Host "✅ All winget manifests generated successfully in: $OutputDir"
+    Write-Host "All winget manifests generated successfully in: $OutputDir"
     # List generated files
     Write-Host "`nGenerated files:"
     Get-ChildItem $OutputDir -Filter "*.yaml" | ForEach-Object {
@@ -232,10 +232,10 @@ if ($success) {
             }
         }
         catch {
-            Write-Warning "❌ Winget is not available or not installed. Validation will be skipped."
+            Write-Warning "Winget is not available or not installed. Validation will be skipped."
             Write-Warning "To enable validation, install winget from: https://github.com/microsoft/winget-cli"
             Write-Warning "Or install via Microsoft Store: ms-appinstaller:?source=https://aka.ms/getwinget"
-            Write-Host "✅ Manifest generation completed without validation"
+            Write-Host "Manifest generation completed without validation"
             exit 0
         }
 
@@ -244,23 +244,23 @@ if ($success) {
         # Run winget validate
         $validateResult = & winget validate $OutputDir 2>&1
         if ($LASTEXITCODE -eq 0) {
-            Write-Host "✅ Winget manifest validation passed successfully"
+            Write-Host "Winget manifest validation passed successfully"
             if ($validateResult) {
                 Write-Host $validateResult
             }
         }
         else {
-            Write-Error "❌ Winget manifest validation failed."
+            Write-Error "Winget manifest validation failed."
             Write-Error "Validation output:"
             Write-Error $validateResult
             exit 1
         }
     }
     else {
-        Write-Host "✅ Manifest generation completed (validation skipped as requested)"
+        Write-Host "Manifest generation completed (validation skipped as requested)"
     }
 }
 else {
-    Write-Error "❌ Failed to generate some winget manifests"
+    Write-Error "Failed to generate some winget manifests"
     exit 1
 }
