@@ -11,7 +11,7 @@ PackageName: RVToolsMerge
 PackageUrl: https://github.com/sbroenne/RVToolsMerge
 License: MIT
 LicenseUrl: https://github.com/sbroenne/RVToolsMerge/blob/main/LICENSE
-Copyright: Copyright © 2025 Stefan Broenner
+Copyright: Copyright (c) 2025 Stefan Broenner
 CopyrightUrl: https://github.com/sbroenne/RVToolsMerge/blob/main/LICENSE
 ShortDescription: A command-line tool to merge multiple RVTools Excel files into a single consolidated file
 Description: |-
