@@ -60,34 +60,36 @@ param(
 New-Item -ItemType Directory -Force -Path $OutputDir | Out-Null
 
 # Input validation
+# Helper function for error and exit
+function Throw-Exit {
+    param([string]$Message)
+    Write-Error $Message
+    exit 1
+}
+
 Write-Host "Validating inputs..."
 
 # Validate version format
 if (-not ($Version -match '^\d+\.\d+\.\d+$')) {
-    Write-Error "Invalid version format: $Version. Expected format: X.Y.Z (e.g., 1.2.3)"
-    exit 1
+    Throw-Exit "Invalid version format: $Version. Expected format: X.Y.Z (e.g., 1.2.3)"
 }
 
 # Validate MSI file paths
 if (-not (Test-Path $X64MsiPath)) {
-    Write-Error "x64 MSI file not found: $X64MsiPath"
-    exit 1
+    Throw-Exit "x64 MSI file not found: $X64MsiPath"
 }
 
 if (-not (Test-Path $Arm64MsiPath)) {
-    Write-Error "ARM64 MSI file not found: $Arm64MsiPath"
-    exit 1
+    Throw-Exit "ARM64 MSI file not found: $Arm64MsiPath"
 }
 
 # Validate MSI file extensions
 if (-not $X64MsiPath.EndsWith('.msi', [System.StringComparison]::OrdinalIgnoreCase)) {
-    Write-Error "x64 file does not have .msi extension: $X64MsiPath"
-    exit 1
+    Throw-Exit "x64 file does not have .msi extension: $X64MsiPath"
 }
 
 if (-not $Arm64MsiPath.EndsWith('.msi', [System.StringComparison]::OrdinalIgnoreCase)) {
-    Write-Error "ARM64 file does not have .msi extension: $Arm64MsiPath"
-    exit 1
+    Throw-Exit "ARM64 file does not have .msi extension: $Arm64MsiPath"
 }
 
 Write-Host "Input validation passed"
@@ -97,75 +99,55 @@ function Get-FileSha256Hash {
     param([string]$FilePath)
 
     if (-not (Test-Path $FilePath)) {
-        Write-Error "File not found: $FilePath"
-        return $null
+        Throw-Exit "File not found: $FilePath"
     }
 
-    $hash = Get-FileHash -Path $FilePath -Algorithm SHA256
-    return $hash.Hash
+    return (Get-FileHash -Path $FilePath -Algorithm SHA256).Hash
+}
+
+# Function to extract and normalize ProductCode from MSI
+function Get-MsiProductCode {
+    param ([Parameter(Mandatory = $true)][string]$MsiPath)
+
+    if (-not (Test-Path $MsiPath)) {
+        Throw-Exit "MSI file not found at path: $MsiPath"
+    }
+
+    try {
+        $installer = New-Object -ComObject WindowsInstaller.Installer
+        $database = $installer.GetType().InvokeMember("OpenDatabase", "InvokeMethod", $null, $installer, @($MsiPath, 0))
+        $view = $database.OpenView("SELECT Value FROM Property WHERE Property = 'ProductCode'")
+        $view.Execute()
+        $record = $view.Fetch()
+        $productCode = $record.StringData(1)
+        # Parse as GUID and convert to uppercase string
+        $productCode = ([guid]$productCode).ToString().ToUpperInvariant()
+        return $productCode
+    }
+    catch {
+        Throw-Exit "Failed to retrieve ProductCode: $_"
+    }
 }
 
 # Calculate SHA256 hashes
 Write-Host "Calculating SHA256 hashes..."
 $x64Hash = Get-FileSha256Hash -FilePath $X64MsiPath
 $arm64Hash = Get-FileSha256Hash -FilePath $Arm64MsiPath
-
-if (-not $x64Hash -or -not $arm64Hash) {
-    Write-Error "Failed to calculate SHA256 hashes"
-    exit 1
-}
-
-Write-Host "x64 MSI SHA256: $x64Hash"
-Write-Host "ARM64 MSI SHA256: $arm64Hash"
-
-# Function to extract ProductCode from MSI
-function Get-MsiProductCode {
-    param([string]$MsiPath)
-    try {
-        $windowsInstaller = New-Object -ComObject WindowsInstaller.Installer
-        $database = $windowsInstaller.GetType().InvokeMember('OpenDatabase', 'InvokeMethod', $null, $windowsInstaller, @($MsiPath, 0))
-        $view = $database.GetType().InvokeMember('OpenView', 'InvokeMethod', $null, $database, @('SELECT `Value` FROM `Property` WHERE `Property` = "ProductCode"'))
-        $view.GetType().InvokeMember('Execute', 'InvokeMethod', $null, $view, $null)
-        $record = $view.GetType().InvokeMember('Fetch', 'InvokeMethod', $null, $view, $null)
-        if ($record -ne $null) {
-            $productCode = $record.GetType().InvokeMember('StringData', 'GetProperty', $null, $record, 1)
-            return $productCode
-        }
-        else {
-            Write-Error "ProductCode not found in MSI: $MsiPath"
-            return $null
-        }
-    }
-    catch {
-        Write-Error "Failed to extract ProductCode from MSI: $MsiPath - $($_.Exception.Message)"
-        return $null
-    }
-}
+Write-Host ("x64 MSI SHA256: {0}" -f $x64Hash)
+Write-Host ("ARM64 MSI SHA256: {0}" -f $arm64Hash)
 
 # Extract ProductCodes
 Write-Host "Extracting ProductCode from x64 MSI..."
 $x64ProductCode = Get-MsiProductCode -MsiPath $X64MsiPath
 Write-Host "Extracting ProductCode from ARM64 MSI..."
 $arm64ProductCode = Get-MsiProductCode -MsiPath $Arm64MsiPath
-
-if (-not $x64ProductCode -or -not $arm64ProductCode) {
-    Write-Error "Failed to extract ProductCode from one or both MSI files."
-    exit 1
-}
-
-Write-Host "x64 MSI ProductCode: $x64ProductCode"
-Write-Host "ARM64 MSI ProductCode: $arm64ProductCode"
+Write-Host ("x64 MSI ProductCode: {0}" -f $x64ProductCode)
+Write-Host ("ARM64 MSI ProductCode: {0}" -f $arm64ProductCode)
 
 # Template directory
 $templateDir = Join-Path (Split-Path $PSScriptRoot -Parent) "winget-templates"
-
-Write-Host "Template directory: $templateDir"
-
-if (-not (Test-Path $templateDir)) {
-    Write-Error "Template directory not found: $templateDir"
-    exit 1
-}
-
+Write-Host ("Template directory: {0}" -f $templateDir)
+if (-not (Test-Path $templateDir)) { Throw-Exit "Template directory not found: $templateDir" }
 Write-Host "Template directory found"
 
 # Function to process template file
@@ -203,39 +185,28 @@ function Invoke-TemplateProcessing {
 
 # Prepare replacement values
 $replacements = @{
-    "VERSION"       = $Version
-    "X64_SHA256"    = $x64Hash
-    "ARM64_SHA256"  = $arm64Hash
-    "RELEASE_NOTES" = $ReleaseNotes
-    "X64_PRODUCT_CODE" = $x64ProductCode
+    "VERSION"            = $Version
+    "X64_SHA256"         = $x64Hash
+    "ARM64_SHA256"       = $arm64Hash
+    "RELEASE_NOTES"      = $ReleaseNotes
+    "X64_PRODUCT_CODE"   = $x64ProductCode
     "ARM64_PRODUCT_CODE" = $arm64ProductCode
 }
-
-Write-Host "Template replacements:"
-Write-Host "  VERSION: $Version"
-Write-Host "  X64_SHA256: $x64Hash"
-Write-Host "  ARM64_SHA256: $arm64Hash"
-Write-Host "  RELEASE_NOTES: $($ReleaseNotes.Length) characters"
-
 # Process each template
 $templates = @(
     "RvToolsMerge.RvToolsMerge.yaml.template",
     "RvToolsMerge.RvToolsMerge.installer.yaml.template",
     "RvToolsMerge.RvToolsMerge.locale.en-US.yaml.template"
 )
-
-Write-Host "`nProcessing $($templates.Count) template files..."
+Write-Host ("`nProcessing {0} template files..." -f $templates.Count)
 
 $success = $true
 $processedCount = 0
-
 foreach ($template in $templates) {
     $templatePath = Join-Path $templateDir $template
     $outputFile = $template -replace "\.template$", ""
     $outputPath = Join-Path $OutputDir $outputFile
-
-    Write-Host "`nProcessing template: $template"
-
+    Write-Host ("`nProcessing template: {0}" -f $template)
     if (Invoke-TemplateProcessing -TemplatePath $templatePath -OutputPath $outputPath -Replacements $replacements) {
         $processedCount++
     }
@@ -244,25 +215,16 @@ foreach ($template in $templates) {
         Write-Error "Failed to process template: $template"
     }
 }
-
-Write-Host "`nTemplate processing summary: $processedCount/$($templates.Count) templates processed successfully"
+Write-Host ("`nTemplate processing summary: {0}/{1} templates processed successfully" -f $processedCount, $templates.Count)
 
 if ($success) {
-    Write-Host "All winget manifests generated successfully in: $OutputDir"
-    # List generated files
+    Write-Host ("All winget manifests generated successfully in: {0}" -f $OutputDir)
     Write-Host "`nGenerated files:"
-    Get-ChildItem $OutputDir -Filter "*.yaml" | ForEach-Object {
-        Write-Host "  - $($_.Name)"
-    }
-    # Always validate the generated manifests
+    Get-ChildItem $OutputDir -Filter "*.yaml" | ForEach-Object { Write-Host "  - $($_.Name)" }
     Write-Host "`nValidating winget manifests..."
-
-    # Check if winget is available
     try {
         $wingetVersion = & winget --version 2>$null
-        if ($LASTEXITCODE -ne 0) {
-            throw "Winget command failed"
-        }
+        if ($LASTEXITCODE -ne 0) { throw "Winget command failed" }
     }
     catch {
         Write-Warning "Winget is not available or not installed. Validation will be skipped."
@@ -271,25 +233,19 @@ if ($success) {
         Write-Host "Manifest generation completed without validation"
         exit 0
     }
-
-    Write-Host "Using winget version: $wingetVersion"
-
-    # Run winget validate
+    Write-Host ("Using winget version: {0}" -f $wingetVersion)
     $validateResult = & winget validate $OutputDir 2>&1
     if ($LASTEXITCODE -eq 0) {
         Write-Host "Winget manifest validation passed successfully"
-        if ($validateResult) {
-            Write-Host $validateResult
-        }
+        if ($validateResult) { Write-Host $validateResult }
     }
     else {
         Write-Error "Winget manifest validation failed."
         Write-Error "Validation output:"
-        Write-Error $validateResult
+        Write-Error ($validateResult -join [Environment]::NewLine)
         exit 1
     }
 }
 else {
-    Write-Error "Failed to generate some winget manifests"
-    exit 1
+    Throw-Exit "Failed to generate some winget manifests"
 }
