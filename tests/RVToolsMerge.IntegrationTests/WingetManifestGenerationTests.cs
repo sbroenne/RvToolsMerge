@@ -51,8 +51,8 @@ public class WingetManifestGenerationTests : IDisposable
 
         // Assert
         result.ExitCode.Should().Be(0, $"Script should succeed. Output: {result.Output}");
-        // Check for success message - handle emoji encoding issues across different environments
-        result.Output.Should().MatchRegex(@"[✅?] All winget manifests generated successfully");
+        // Check for success message - handle cross-platform output differences
+        result.Output.Should().MatchRegex(@"All winget manifests generated successfully");
 
         // Verify all expected manifest files are created
         var expectedFiles = new[]
@@ -138,8 +138,8 @@ public class WingetManifestGenerationTests : IDisposable
         // Assert
         result.ExitCode.Should().Be(0, "Script should succeed even when winget is not available");
         result.Output.Should().Contain("Winget is not available or not installed. Validation will be skipped");
-        // Check for success message - handle emoji encoding issues across different environments
-        result.Output.Should().MatchRegex(@"[✅?] Manifest generation completed without validation");
+        // Check for success message - handle cross-platform output differences
+        result.Output.Should().MatchRegex(@"Manifest generation completed without validation");
     }
 
     [Fact]
