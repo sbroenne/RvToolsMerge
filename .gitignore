@@ -124,3 +124,6 @@ coverage/
 *.wixpdb
 *.msi
 *.dll
+
+# Winget validation reports
+winget-validation-report.json
