@@ -118,6 +118,44 @@ if (-not $x64Hash -or -not $arm64Hash) {
 Write-Host "x64 MSI SHA256: $x64Hash"
 Write-Host "ARM64 MSI SHA256: $arm64Hash"
 
+# Function to extract ProductCode from MSI
+function Get-MsiProductCode {
+    param([string]$MsiPath)
+    try {
+        $windowsInstaller = New-Object -ComObject WindowsInstaller.Installer
+        $database = $windowsInstaller.GetType().InvokeMember('OpenDatabase', 'InvokeMethod', $null, $windowsInstaller, @($MsiPath, 0))
+        $view = $database.GetType().InvokeMember('OpenView', 'InvokeMethod', $null, $database, @('SELECT `Value` FROM `Property` WHERE `Property` = "ProductCode"'))
+        $view.GetType().InvokeMember('Execute', 'InvokeMethod', $null, $view, $null)
+        $record = $view.GetType().InvokeMember('Fetch', 'InvokeMethod', $null, $view, $null)
+        if ($record -ne $null) {
+            $productCode = $record.GetType().InvokeMember('StringData', 'GetProperty', $null, $record, 1)
+            return $productCode
+        }
+        else {
+            Write-Error "ProductCode not found in MSI: $MsiPath"
+            return $null
+        }
+    }
+    catch {
+        Write-Error "Failed to extract ProductCode from MSI: $MsiPath - $($_.Exception.Message)"
+        return $null
+    }
+}
+
+# Extract ProductCodes
+Write-Host "Extracting ProductCode from x64 MSI..."
+$x64ProductCode = Get-MsiProductCode -MsiPath $X64MsiPath
+Write-Host "Extracting ProductCode from ARM64 MSI..."
+$arm64ProductCode = Get-MsiProductCode -MsiPath $Arm64MsiPath
+
+if (-not $x64ProductCode -or -not $arm64ProductCode) {
+    Write-Error "Failed to extract ProductCode from one or both MSI files."
+    exit 1
+}
+
+Write-Host "x64 MSI ProductCode: $x64ProductCode"
+Write-Host "ARM64 MSI ProductCode: $arm64ProductCode"
+
 # Template directory
 $templateDir = Join-Path (Split-Path $PSScriptRoot -Parent) "winget-templates"
 
@@ -169,6 +207,8 @@ $replacements = @{
     "X64_SHA256"    = $x64Hash
     "ARM64_SHA256"  = $arm64Hash
     "RELEASE_NOTES" = $ReleaseNotes
+    "X64_PRODUCT_CODE" = $x64ProductCode
+    "ARM64_PRODUCT_CODE" = $arm64ProductCode
 }
 
 Write-Host "Template replacements:"
