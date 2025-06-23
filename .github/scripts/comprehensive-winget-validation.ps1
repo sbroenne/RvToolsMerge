@@ -38,7 +38,7 @@ $ErrorActionPreference = "Stop"
 # Resolve project root to absolute path
 $ProjectRoot = Resolve-Path $ProjectRoot
 
-Write-Host "🚀 Comprehensive Winget Submission Process Validation" -ForegroundColor Green
+Write-Host "Comprehensive Winget Submission Process Validation" -ForegroundColor Green
 Write-Host "Project root: $ProjectRoot" -ForegroundColor Cyan
 Write-Host ""
 
@@ -65,9 +65,9 @@ function Add-ValidationResult {
     $script:validationResults += $result
     
     $icon = switch ($Status) {
-        "PASS" { "✅"; break }
-        "WARN" { "⚠️"; $script:warningCount++; break }
-        "FAIL" { "❌"; $script:errorCount++; break }
+        "PASS" { "PASS"; break }
+        "WARN" { "WARN"; $script:warningCount++; break }
+        "FAIL" { "FAIL"; $script:errorCount++; break }
     }
     
     Write-Host "  $icon $Test" -ForegroundColor $(if ($Status -eq "PASS") { "Green" } elseif ($Status -eq "WARN") { "Yellow" } else { "Red" })
@@ -77,7 +77,7 @@ function Add-ValidationResult {
 }
 
 # 1. Basic Infrastructure Validation
-Write-Host "1️⃣ Infrastructure Validation" -ForegroundColor Cyan
+Write-Host "1. Infrastructure Validation" -ForegroundColor Cyan
 
 $templateDir = Join-Path $ProjectRoot ".github/winget-templates"
 $scriptsDir = Join-Path $ProjectRoot ".github/scripts"
@@ -120,7 +120,7 @@ if (Test-Path $validationScript) {
 }
 
 # 2. Template Content Validation
-Write-Host "`n2️⃣ Template Content Validation" -ForegroundColor Cyan
+Write-Host "`n2. Template Content Validation" -ForegroundColor Cyan
 
 if (Test-Path $templateDir) {
     $templates = Get-ChildItem $templateDir -Filter "*.template"
@@ -162,7 +162,7 @@ if (Test-Path $templateDir) {
 }
 
 # 3. Manifest Generation Testing
-Write-Host "`n3️⃣ Manifest Generation Testing" -ForegroundColor Cyan
+Write-Host "`n3. Manifest Generation Testing" -ForegroundColor Cyan
 
 if ($CreateSampleRelease -and (Test-Path $generationScript)) {
     $testDir = Join-Path ([System.IO.Path]::GetTempPath()) "winget-validation-$(Get-Date -Format 'yyyyMMdd-HHmmss')"
@@ -228,7 +228,7 @@ if ($CreateSampleRelease -and (Test-Path $generationScript)) {
 }
 
 # 4. Workflow Configuration Validation
-Write-Host "`n4️⃣ Workflow Configuration Validation" -ForegroundColor Cyan
+Write-Host "`n4. Workflow Configuration Validation" -ForegroundColor Cyan
 
 $wingetWorkflow = Join-Path $workflowsDir "winget-submission.yml"
 if (Test-Path $wingetWorkflow) {
@@ -270,7 +270,7 @@ if (Test-Path $versionWorkflow) {
 }
 
 # 5. Documentation Validation
-Write-Host "`n5️⃣ Documentation Validation" -ForegroundColor Cyan
+Write-Host "`n5. Documentation Validation" -ForegroundColor Cyan
 
 $setupDoc = Join-Path $ProjectRoot "docs/winget-submission-setup.md"
 if (Test-Path $setupDoc) {
@@ -303,7 +303,7 @@ if (Test-Path $templateReadme) {
 }
 
 # 6. Security and Best Practices
-Write-Host "`n6️⃣ Security and Best Practices" -ForegroundColor Cyan
+Write-Host "`n6. Security and Best Practices" -ForegroundColor Cyan
 
 # Check for hardcoded secrets in templates
 if (Test-Path $templateDir) {
@@ -343,9 +343,9 @@ $failures = ($validationResults | Where-Object { $_.Status -eq "FAIL" }).Count
 Write-Host ""
 Write-Host "📊 Results:" -ForegroundColor White
 Write-Host "  Total Tests: $totalTests" -ForegroundColor White
-Write-Host "  ✅ Passed: $passedTests" -ForegroundColor Green
-Write-Host "  ⚠️ Warnings: $warnings" -ForegroundColor Yellow
-Write-Host "  ❌ Failed: $failures" -ForegroundColor Red
+Write-Host "  Passed: $passedTests" -ForegroundColor Green
+Write-Host "  Warnings: $warnings" -ForegroundColor Yellow
+Write-Host "  Failed: $failures" -ForegroundColor Red
 
 # Export detailed results
 $reportPath = Join-Path $ProjectRoot "winget-validation-report.json"
@@ -358,11 +358,11 @@ if ($failures -eq 0) {
     Write-Host "🎉 Winget submission process validation completed successfully!" -ForegroundColor Green
     
     if ($warnings -gt 0) {
-        Write-Host "⚠️ $warnings warning(s) found - please review for optimal configuration." -ForegroundColor Yellow
+        Write-Host "$warnings warning(s) found - please review for optimal configuration." -ForegroundColor Yellow
     }
     
     Write-Host ""
-    Write-Host "✅ Ready for winget submission process!" -ForegroundColor Green
+    Write-Host "Ready for winget submission process!" -ForegroundColor Green
     Write-Host ""
     Write-Host "Next steps:" -ForegroundColor Cyan
     Write-Host "• Create a release to test the full workflow" -ForegroundColor White
@@ -373,7 +373,7 @@ if ($failures -eq 0) {
     exit 0
 } else {
     Write-Host ""
-    Write-Host "❌ Validation failed with $failures error(s)." -ForegroundColor Red
+    Write-Host "Validation failed with $failures error(s)." -ForegroundColor Red
     Write-Host ""
     Write-Host "Failed tests:" -ForegroundColor Red
     $validationResults | Where-Object { $_.Status -eq "FAIL" } | ForEach-Object {

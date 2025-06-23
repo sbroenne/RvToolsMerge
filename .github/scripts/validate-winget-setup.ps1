@@ -31,7 +31,7 @@ $ErrorActionPreference = "Stop"
 # Resolve project root to absolute path
 $ProjectRoot = Resolve-Path $ProjectRoot
 
-Write-Host "🔍 Validating Winget Submission Setup" -ForegroundColor Green
+Write-Host "Validating Winget Submission Setup" -ForegroundColor Green
 Write-Host "Project root: $ProjectRoot" -ForegroundColor Cyan
 Write-Host ""
 
@@ -50,15 +50,15 @@ function Test-Component {
     try {
         $result = & $Test
         if ($result -eq $false) {
-            Write-Host "  ❌ $ErrorMessage" -ForegroundColor Red
+            Write-Host "  FAILED: $ErrorMessage" -ForegroundColor Red
             $script:hasErrors = $true
         } else {
-            Write-Host "  ✅ Passed" -ForegroundColor Green
+            Write-Host "  PASSED" -ForegroundColor Green
             $script:successes += $Name
         }
     }
     catch {
-        Write-Host "  ❌ $ErrorMessage`: $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host "  FAILED: $ErrorMessage`: $($_.Exception.Message)" -ForegroundColor Red
         $script:hasErrors = $true
     }
 }
@@ -73,12 +73,12 @@ function Test-Warning {
     try {
         $result = & $Test
         if ($result -eq $false) {
-            Write-Host "  ⚠️ $Message" -ForegroundColor Yellow
+            Write-Host "  WARNING: $Message" -ForegroundColor Yellow
             $script:warnings += $Message
         }
     }
     catch {
-        Write-Host "  ⚠️ $Message`: $($_.Exception.Message)" -ForegroundColor Yellow
+        Write-Host "  WARNING: $Message`: $($_.Exception.Message)" -ForegroundColor Yellow
         $script:warnings += "$Message`: $($_.Exception.Message)"
     }
 }
@@ -324,48 +324,48 @@ Test-Component "Installer manifest has required fields" {
 
 # Summary
 Write-Host ""
-Write-Host "🏁 Validation Summary" -ForegroundColor Green
+Write-Host "Validation Summary" -ForegroundColor Green
 Write-Host "===================" -ForegroundColor Green
 
 if ($successes.Count -gt 0) {
     Write-Host ""
-    Write-Host "✅ Passed Tests ($($successes.Count)):" -ForegroundColor Green
+    Write-Host "Passed Tests ($($successes.Count)):" -ForegroundColor Green
     foreach ($success in $successes) {
-        Write-Host "  • $success" -ForegroundColor Green
+        Write-Host "  - $success" -ForegroundColor Green
     }
 }
 
 if ($warnings.Count -gt 0) {
     Write-Host ""
-    Write-Host "⚠️ Warnings ($($warnings.Count)):" -ForegroundColor Yellow
+    Write-Host "Warnings ($($warnings.Count)):" -ForegroundColor Yellow
     foreach ($warning in $warnings) {
-        Write-Host "  • $warning" -ForegroundColor Yellow
+        Write-Host "  - $warning" -ForegroundColor Yellow
     }
 }
 
 if ($hasErrors) {
     Write-Host ""
-    Write-Host "❌ Some tests failed. Please review the errors above." -ForegroundColor Red
+    Write-Host "Some tests failed. Please review the errors above." -ForegroundColor Red
     Write-Host ""
     Write-Host "Common solutions:" -ForegroundColor Cyan
-    Write-Host "• Ensure all required template files exist in .github/winget-templates/" -ForegroundColor White
-    Write-Host "• Verify the manifest generation script is executable" -ForegroundColor White
-    Write-Host "• Check that workflows are properly configured" -ForegroundColor White
-    Write-Host "• Review documentation for accuracy" -ForegroundColor White
+    Write-Host "- Ensure all required template files exist in .github/winget-templates/" -ForegroundColor White
+    Write-Host "- Verify the manifest generation script is executable" -ForegroundColor White
+    Write-Host "- Check that workflows are properly configured" -ForegroundColor White
+    Write-Host "- Review documentation for accuracy" -ForegroundColor White
     exit 1
 } else {
     Write-Host ""
-    Write-Host "🎉 All critical tests passed! Winget submission setup is ready." -ForegroundColor Green
+    Write-Host "All critical tests passed! Winget submission setup is ready." -ForegroundColor Green
     
     if ($warnings.Count -gt 0) {
         Write-Host ""
-        Write-Host "📝 Please review the warnings above for optimal setup." -ForegroundColor Yellow
+        Write-Host "Please review the warnings above for optimal setup." -ForegroundColor Yellow
     }
     
     Write-Host ""
     Write-Host "Next steps:" -ForegroundColor Cyan
-    Write-Host "• Test the full workflow with a release" -ForegroundColor White
-    Write-Host "• Verify winget-pkgs fork is properly configured" -ForegroundColor White
-    Write-Host "• Ensure WINGET_SUBMISSION_TOKEN secret is set" -ForegroundColor White
+    Write-Host "- Test the full workflow with a release" -ForegroundColor White
+    Write-Host "- Verify winget-pkgs fork is properly configured" -ForegroundColor White
+    Write-Host "- Ensure WINGET_SUBMISSION_TOKEN secret is set" -ForegroundColor White
     exit 0
 }

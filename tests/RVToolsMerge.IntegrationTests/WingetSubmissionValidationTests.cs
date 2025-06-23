@@ -7,6 +7,7 @@ using System.Diagnostics;
 using YamlDotNet.Serialization;
 using System.Text.RegularExpressions;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 
 namespace RVToolsMerge.IntegrationTests;
 
@@ -39,7 +40,7 @@ public class WingetSubmissionValidationTests : IDisposable
         
         // Verify specific success indicators
         result.Output.Should().Contain("All critical tests passed! Winget submission setup is ready.");
-        result.Output.Should().Contain("✅ Passed Tests (");
+        result.Output.Should().Contain("Passed Tests (");
         
         // Verify all expected test components are validated
         var expectedValidations = new[]
