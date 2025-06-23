@@ -16,7 +16,7 @@ The winget manifest generation is fully automated as part of the release process
 
 ### Scripts
 
--   `../scripts/generate-winget-manifests.ps1` - PowerShell script that processes templates and generates final manifests
+-   `../scripts/generate-winget-manifests.ps1` - PowerShell script that processes templates and generates final manifests. **Manifest validation with `winget` is now always performed automatically after generation. The `-ValidateWithWinget` switch is no longer supported.**
 
 ## Automation Process
 
@@ -123,6 +123,8 @@ If you need to generate manifests manually, you can run the generation script di
 ```powershell
 .\.github\scripts\generate-winget-manifests.ps1 -Version "1.3.4" -X64MsiPath "path\to\x64.msi" -Arm64MsiPath "path\to\arm64.msi" -OutputDir "output"
 ```
+
+> **Note:** Manifest validation with `winget` is always performed after generation. The script will fail if validation does not pass.
 
 ## Template Variables
 

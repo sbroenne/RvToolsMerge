@@ -424,7 +424,7 @@ jobs:
     name: Generate Winget Manifests
     needs: [bump-version, create-tag, build-release]
     if: ${{ success() && github.event.inputs.createRelease == 'true' && needs.create-tag.outputs.tag_created == 'true' }}
-    runs-on: windows-latest
+    runs-on: [self-hosted, windows]
     permissions:
       contents: read
       actions: read
