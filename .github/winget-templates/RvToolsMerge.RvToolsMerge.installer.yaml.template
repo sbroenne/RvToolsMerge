@@ -22,6 +22,7 @@ Installers:
   InstallerType: wix
   InstallerUrl: https://github.com/sbroenne/RVToolsMerge/releases/download/v{{VERSION}}/RVToolsMerge-{{VERSION}}-win-x64.msi
   InstallerSha256: {{X64_SHA256}}
+  ProductCode: {{X64_PRODUCT_CODE}}
   AppsAndFeaturesEntries:
   - DisplayName: RVToolsMerge
     Publisher: Stefan Broenner
@@ -32,6 +33,7 @@ Installers:
   InstallerType: wix
   InstallerUrl: https://github.com/sbroenne/RVToolsMerge/releases/download/v{{VERSION}}/RVToolsMerge-{{VERSION}}-win-arm64.msi
   InstallerSha256: {{ARM64_SHA256}}
+  ProductCode: {{ARM64_PRODUCT_CODE}}
   AppsAndFeaturesEntries:
   - DisplayName: RVToolsMerge
     Publisher: Stefan Broenner
