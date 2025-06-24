@@ -117,12 +117,11 @@ function Get-MsiProductCode {
         $installer = New-Object -ComObject WindowsInstaller.Installer
         $database = $installer.GetType().InvokeMember("OpenDatabase", "InvokeMethod", $null, $installer, @($MsiPath, 0))
         $view = $database.OpenView("SELECT Value FROM Property WHERE Property = 'ProductCode'")
-        $view.Execute()
+        $view.Execute() | Out-Null
         $record = $view.Fetch()
         $productCode = $record.StringData(1)
-        # Parse as GUID and convert to uppercase string
-        $productCode = ([guid]$productCode).ToString().ToUpperInvariant()
-        return $productCode
+        $cleanedProductCode = ([guid]$productCode).ToString().ToUpperInvariant()
+        return $cleanedProductCode
     }
     catch {
         Throw-Exit "Failed to retrieve ProductCode: $_"
