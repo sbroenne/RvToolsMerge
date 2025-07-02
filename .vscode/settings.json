@@ -13,5 +13,11 @@
   },
   "csharp.suppressDotnetRestoreNotification": false,
   "explorer.excludeGitIgnore": false,
-  "sarif-viewer.connectToGithubCodeScanning": "on"
+  "sarif-viewer.connectToGithubCodeScanning": "on",
+  "cSpell.words": [
+    "appinstaller",
+    "Broenner",
+    "LASTEXITCODE",
+    "winget"
+  ]
 }

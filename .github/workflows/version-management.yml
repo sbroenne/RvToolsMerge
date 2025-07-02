@@ -732,13 +732,14 @@ jobs:
             | Linux | x64 | RVToolsMerge-${{ steps.get-version.outputs.version }}-linux-x64.zip | - |
             | macOS | ARM64 (Apple Silicon) | RVToolsMerge-${{ steps.get-version.outputs.version }}-osx-arm64.zip | - |            ### 🚀 Quick Start
 
-            #### 🏆 Windows Users - Winget (Recommended)
+            #### 🏆 Windows Users - Winget *(availability pending)*
             Install directly from the Windows Package Manager:
             ```powershell
             winget install RvToolsMerge.RvToolsMerge
             ```
+            > **Note**: RVToolsMerge is currently pending submission to the winget repository. If the winget command doesn't work, please use the MSI installer method below.
 
-            #### Windows Users - Manual Installation
+            #### Windows Users - MSI Installer (Recommended)
             1. Download the MSI installer for your architecture (x64 or ARM64)
             2. Run the installer and follow the setup wizard
             3. Run the executable file `RVToolsMerge.exe` to start the application
