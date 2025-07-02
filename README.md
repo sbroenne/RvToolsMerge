@@ -81,13 +81,15 @@ For a complete reference of all column mappings, see [Column Mappings Documentat
 
 Download the latest release for your platform from the [Releases page](https://github.com/sbroenne/RVToolsMerge/releases):
 
-### Windows (Recommended: Package Manager)
+### Windows
 
-**Using Windows Package Manager (winget)**:
+**Using Windows Package Manager (winget)** _(availability pending)_:
 
 ```powershell
 winget install RvToolsMerge.RvToolsMerge
 ```
+
+> **Note**: RVToolsMerge is currently pending submission to the winget repository. If the winget command doesn't work, please use the manual installation methods below.
 
 **Manual Download**:
 
@@ -103,13 +105,15 @@ winget install RvToolsMerge.RvToolsMerge
 
 ### Installation Instructions
 
-#### Windows - Package Manager (Recommended)
+#### Windows - Package Manager _(when available)_
 
 1. Open PowerShell or Command Prompt
 2. Run: `winget install RvToolsMerge.RvToolsMerge`
 3. After installation, RVToolsMerge will be available from any command prompt or PowerShell window
 
-#### Windows - MSI Installer (Alternative)
+> **If winget installation fails**: RVToolsMerge may not be available in the winget repository yet. Please use the MSI installer method below instead.
+
+#### Windows - MSI Installer (Recommended)
 
 1. Download the appropriate MSI file for your architecture (x64 or ARM64)
 2. Double-click the MSI file to start the installation
@@ -145,7 +149,7 @@ RVToolsMerge [options] inputPath [outputFile]
 | Option                         | Description                                            | Default |
 | ------------------------------ | ------------------------------------------------------ | ------- |
 | `-h, --help, /?`               | Show the help message and exit                         | N/A     |
-| `-v, --version`                | Show version information and exit                       | N/A     |
+| `-v, --version`                | Show version information and exit                      | N/A     |
 | `-m, --ignore-missing-sheets`  | Process files even when optional sheets are missing    | `false` |
 | `-i, --skip-invalid-files`     | Skip files that don't meet validation requirements     | `false` |
 | `-a, --anonymize`              | Anonymize VM, DNS, Cluster, Host, and Datacenter names | `false` |
