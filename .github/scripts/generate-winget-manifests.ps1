@@ -120,7 +120,7 @@ function Get-MsiProductCode {
         $view.Execute() | Out-Null
         $record = $view.Fetch()
         $productCode = $record.StringData(1)
-        return productCode
+        return $productCode
     }
     catch {
         Throw-Exit "Failed to retrieve ProductCode: $_"
