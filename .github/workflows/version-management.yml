@@ -30,7 +30,7 @@ jobs:
       new_version: ${{ steps.calc-version.outputs.package_version }}
       pr_merged: ${{ steps.auto-merge.outputs.merge_success }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
@@ -333,7 +333,7 @@ jobs:
       tag_name: ${{ steps.create-tag.outputs.tag_name }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
@@ -430,7 +430,7 @@ jobs:
       actions: read
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ needs.create-tag.outputs.tag_name }}
 
@@ -445,7 +445,7 @@ jobs:
         shell: pwsh
 
       - name: Download MSI Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           path: msi-artifacts
           pattern: "*-msi"
@@ -515,7 +515,7 @@ jobs:
       actions: read
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ needs.create-tag.outputs.tag_name }}
 
@@ -529,12 +529,12 @@ jobs:
           echo "::notice::Creating release for version $VERSION from tag $TAG_NAME"
 
       - name: Download All Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           path: artifacts
 
       - name: Download Winget Manifests
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           path: winget-manifests
           pattern: "winget-manifests-*"
