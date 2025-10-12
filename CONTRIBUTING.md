@@ -65,6 +65,11 @@ Before committing any changes, ensure you have completed all of these steps:
 -   [ ] Code builds successfully: `dotnet build`
 -   [ ] All tests pass: `dotnet test`
 -   [ ] Code follows the project's coding standards
+-   [ ] **Version consistency maintained** - If changing version numbers:
+    -   [ ] Package Version in `.csproj` uses 3-part semantic version (e.g., `1.4.2`)
+    -   [ ] File Version and Assembly Version use 4-part version (e.g., `1.4.2.0`)
+    -   [ ] Both versions are in sync (FileVersion = PackageVersion + `.0`)
+    -   [ ] Run `WingetVersionConsistencyTests` to verify alignment
 -   [ ] **Documentation has been updated (MANDATORY)** - Check if any of the following need updates:
     -   [ ] `README.md` for feature changes, usage instructions, or project structure
     -   [ ] `CONTRIBUTING.md` for development process changes
@@ -207,6 +212,38 @@ Additional testing requirements:
 -   Follow winget manifest schema v1.6.0 specifications
 -   Include comprehensive package metadata (description, license, tags, documentation links)
 -   Design MSI for silent installation compatibility with winget
+
+#### Version Consistency for Winget
+
+**Critical**: Winget PackageVersion must match MSI ProductVersion to avoid installation issues.
+
+Maintain version consistency by following these rules:
+
+1. **Project File Versions** (`.csproj`):
+   ```xml
+   <Version>X.Y.Z</Version>              <!-- 3-part semantic version -->
+   <FileVersion>X.Y.Z.0</FileVersion>    <!-- 4-part version -->
+   <AssemblyVersion>X.Y.Z.0</AssemblyVersion>
+   ```
+   - Package version uses 3-part semantic versioning
+   - File and Assembly versions use 4-part (package version + `.0`)
+
+2. **MSI Version Binding**:
+   - WiX binds to FileVersion: `Version="!(bind.FileVersion.RVToolsMerge.exe)"`
+   - MSI ProductVersion becomes the FileVersion value
+   - Windows Installer uses only first 3 parts (ignores 4th part)
+
+3. **Automated Validation**:
+   - Manifest generation script validates version consistency
+   - Run `WingetVersionConsistencyTests` to verify alignment
+   - Script extracts ProductVersion from MSI and normalizes to 3-part version
+   - Warnings are issued if versions don't match
+
+4. **When Updating Versions**:
+   - Update `<Version>` in `.csproj` with 3-part version
+   - Update `<FileVersion>` and `<AssemblyVersion>` with same version + `.0`
+   - Use version management workflow for automated updates
+   - Verify with integration tests before releasing
 
 ## Pull Request Process
 

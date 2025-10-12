@@ -142,7 +142,7 @@ The Version Management & Release workflow (`version-management.yml`) handles sys
     1. Extracts current version from the project file
     2. Validates version components are within .NET limits (0-65535)
     3. Increments version based on specified type
-    4. Updates both package version and assembly version
+    4. Updates both package version (3-part) and assembly version (4-part)
     5. Creates a PR with version changes
     6. Automatically approves and attempts to merge the PR
     7. Creates a version tag if the merge is successful
@@ -150,8 +150,41 @@ The Version Management & Release workflow (`version-management.yml`) handles sys
         - Builds release artifacts for all platforms
         - Creates platform-specific archives
         - Creates a GitHub Release with the archives attached
+        - Generates winget manifests with version validation
 
 ### Version Management & Release Process
+
+**Important**: This workflow maintains version consistency for winget submission by using 3-part semantic versioning for package version and 4-part versioning for assembly/file versions.
+
+#### Version Update Process
+
+1. **Version Extraction**: Current version is read from `src/RVToolsMerge/RVToolsMerge.csproj`
+2. **Version Calculation**:
+   - Parse current 3-part version (e.g., `1.4.2`)
+   - Increment appropriate part based on `versionType`
+   - Generate 3-part package version (e.g., `1.4.3`)
+   - Generate 4-part assembly version (e.g., `1.4.3.0`)
+3. **Version Validation**:
+   - Each component must be 0-65535 (within .NET limits)
+   - Format must match `X.Y.Z` for package version
+   - Assembly version is package version with `.0` appended
+4. **File Updates**:
+   - `<Version>` tag updated with 3-part version
+   - `<AssemblyVersion>` and `<FileVersion>` updated with 4-part version
+5. **Verification**: Changes are verified before creating PR
+
+#### Winget Manifest Generation
+
+When a release is created, winget manifests are automatically generated with:
+
+-   **Version Extraction**: Reads version from git tag (e.g., `v1.4.3` → `1.4.3`)
+-   **MSI ProductVersion Validation**:
+    -   Extracts ProductVersion from MSI files
+    -   Normalizes to 3-part version (MSI uses only major.minor.build)
+    -   Validates it matches the release tag version
+    -   Issues warnings if mismatches are detected
+-   **Manifest Templates**: Replaces `{{VERSION}}` placeholder with 3-part version
+-   **Consistency Checks**: Ensures x64 and ARM64 versions match
 
 The automated version management and release process follows these steps:
 

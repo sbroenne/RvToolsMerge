@@ -291,6 +291,39 @@ The MSI installer is configured for winget compatibility:
 -   **Version information**: Automatically extracted from executable for consistency
 -   **Silent installation**: Supports silent installation modes required by winget
 
+### Version Consistency for Winget
+
+**Critical Requirement**: The winget manifest PackageVersion must match the MSI installer's ProductVersion.
+
+The project maintains version consistency through:
+
+1. **Project File Configuration**:
+   ```xml
+   <Version>1.4.2</Version>              <!-- 3-part semantic version -->
+   <FileVersion>1.4.2.0</FileVersion>    <!-- 4-part version -->
+   <AssemblyVersion>1.4.2.0</AssemblyVersion>
+   ```
+
+2. **MSI Version Binding**:
+   - WiX configuration uses `Version="!(bind.FileVersion.RVToolsMerge.exe)"`
+   - This binds to the executable's FileVersion property
+   - MSI ProductVersion becomes `1.4.2.0`
+
+3. **Windows Installer Behavior**:
+   - MSI installers use only the first 3 parts of the version (major.minor.build)
+   - The 4th part (revision) is ignored by Windows Installer
+   - Effective MSI ProductVersion: `1.4.2`
+
+4. **Automated Validation**:
+   - Manifest generation extracts ProductVersion from MSI files
+   - Normalizes to 3-part version for winget compatibility
+   - Validates consistency with release tag version
+   - Issues warnings if mismatches are detected
+
+This ensures the winget manifest version (`1.4.2`) matches the MSI ProductVersion (`1.4.2`), preventing installation and upgrade issues.
+-   **Version information**: Automatically extracted from executable for consistency
+-   **Silent installation**: Supports silent installation modes required by winget
+
 ### User Installation
 
 Once published, users can install RVToolsMerge using:
