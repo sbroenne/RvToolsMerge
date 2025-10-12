@@ -127,6 +127,35 @@ function Get-MsiProductCode {
     }
 }
 
+# Function to extract ProductVersion from MSI
+function Get-MsiProductVersion {
+    param ([Parameter(Mandatory = $true)][string]$MsiPath)
+
+    if (-not (Test-Path $MsiPath)) {
+        Throw-Exit "MSI file not found at path: $MsiPath"
+    }
+
+    try {
+        $installer = New-Object -ComObject WindowsInstaller.Installer
+        $database = $installer.GetType().InvokeMember("OpenDatabase", "InvokeMethod", $null, $installer, @($MsiPath, 0))
+        $view = $database.OpenView("SELECT Value FROM Property WHERE Property = 'ProductVersion'")
+        $view.Execute() | Out-Null
+        $record = $view.Fetch()
+        $productVersion = $record.StringData(1)
+        
+        # MSI versions use only the first 3 parts (major.minor.build), the 4th part (revision) is ignored
+        # Normalize to 3-part version for winget compatibility
+        if ($productVersion -match '^(\d+\.\d+\.\d+)\.?\d*$') {
+            return $Matches[1]
+        }
+        
+        return $productVersion
+    }
+    catch {
+        Throw-Exit "Failed to retrieve ProductVersion: $_"
+    }
+}
+
 # Calculate SHA256 hashes
 Write-Host "Calculating SHA256 hashes..."
 $x64Hash = Get-FileSha256Hash -FilePath $X64MsiPath
@@ -141,6 +170,29 @@ Write-Host "Extracting ProductCode from ARM64 MSI..."
 $arm64ProductCode = Get-MsiProductCode -MsiPath $Arm64MsiPath
 Write-Host ("x64 MSI ProductCode: {0}" -f $x64ProductCode)
 Write-Host ("ARM64 MSI ProductCode: {0}" -f $arm64ProductCode)
+
+# Extract ProductVersions and validate against provided version
+Write-Host "Extracting ProductVersion from x64 MSI..."
+$x64ProductVersion = Get-MsiProductVersion -MsiPath $X64MsiPath
+Write-Host "Extracting ProductVersion from ARM64 MSI..."
+$arm64ProductVersion = Get-MsiProductVersion -MsiPath $Arm64MsiPath
+Write-Host ("x64 MSI ProductVersion: {0}" -f $x64ProductVersion)
+Write-Host ("ARM64 MSI ProductVersion: {0}" -f $arm64ProductVersion)
+
+# Validate that MSI ProductVersions match the provided version
+if ($x64ProductVersion -ne $Version) {
+    Write-Warning "x64 MSI ProductVersion ($x64ProductVersion) does not match provided version ($Version)"
+    Write-Warning "This may cause issues with winget package installation and upgrades"
+}
+
+if ($arm64ProductVersion -ne $Version) {
+    Write-Warning "ARM64 MSI ProductVersion ($arm64ProductVersion) does not match provided version ($Version)"
+    Write-Warning "This may cause issues with winget package installation and upgrades"
+}
+
+if ($x64ProductVersion -ne $arm64ProductVersion) {
+    Throw-Exit "x64 and ARM64 MSI ProductVersions do not match: x64=$x64ProductVersion, ARM64=$arm64ProductVersion"
+}
 
 # Template directory
 $templateDir = Join-Path (Split-Path $PSScriptRoot -Parent) "winget-templates"

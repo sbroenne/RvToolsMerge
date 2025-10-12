@@ -138,3 +138,27 @@ The templates use the following placeholder variables:
 ## ProductCode Handling
 
 The MSI installer uses an auto-generated ProductCode (`ProductCode="*"`) that changes with each version to ensure proper upgrade handling. The winget manifests do not specify ProductCode fields, allowing winget to automatically detect the ProductCode from the MSI file during installation. This approach ensures compatibility with WiX's auto-generated ProductCodes while maintaining proper upgrade behavior through the stable UpgradeCode (`A7B8C9D0-E1F2-4A5B-8C9D-0E1F2A5B8C9D`).
+
+## Version Consistency
+
+**IMPORTANT**: For winget submission, the PackageVersion in the manifest **must match** the MSI installer's ProductVersion. 
+
+The project uses the following version configuration:
+- **Package Version** (in `.csproj`): 3-part semantic version (e.g., `1.4.2`)
+- **File Version** (in `.csproj`): 4-part version (e.g., `1.4.2.0`)
+- **MSI ProductVersion**: Binds to FileVersion via `!(bind.FileVersion.RVToolsMerge.exe)`
+
+According to Windows Installer and winget requirements:
+- MSI installers effectively use only the **first 3 parts** of the version number (major.minor.build)
+- The 4th part (revision) is ignored by Windows Installer
+- The winget manifest generation script automatically:
+  - Extracts the ProductVersion from MSI files
+  - Normalizes it to a 3-part version
+  - Validates it matches the provided version from the git tag
+  - Issues warnings if mismatches are detected
+
+This ensures version consistency across:
+- Git release tags (e.g., `v1.4.2`)
+- MSI installer ProductVersion (normalized to `1.4.2`)
+- Winget manifest PackageVersion (`1.4.2`)
+- DisplayVersion in Apps and Features (`1.4.2`)
