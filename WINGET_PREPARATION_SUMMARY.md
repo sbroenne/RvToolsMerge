@@ -49,18 +49,30 @@ The issue requested a review of the project against winget repository guidelines
 **Code Added**:
 ```powershell
 function Get-MsiProductVersion {
-    # Extracts ProductVersion from MSI
-    # Normalizes to 3-part version (MSI only uses major.minor.build)
-    # Returns normalized version for comparison
+    param ([Parameter(Mandatory = $true)][string]$MsiPath)
+    
+    # Opens MSI database and queries ProductVersion property
+    $installer = New-Object -ComObject WindowsInstaller.Installer
+    $database = $installer.GetType().InvokeMember("OpenDatabase", "InvokeMethod", $null, $installer, @($MsiPath, 0))
+    $view = $database.OpenView("SELECT Value FROM Property WHERE Property = 'ProductVersion'")
+    $view.Execute() | Out-Null
+    $record = $view.Fetch()
+    $productVersion = $record.StringData(1)
+    
+    # Normalizes to 3-part version (MSI only uses major.minor.build, ignores revision)
+    if ($productVersion -match '^(\d+\.\d+\.\d+)\.?\d*$') {
+        return $Matches[1]
+    }
+    return $productVersion
 }
+```
 
-# Validation logic:
+**Validation logic**:
 - Extract ProductVersion from x64 and ARM64 MSI files
 - Normalize to 3-part version
 - Compare with provided version from git tag
 - Warn if mismatches detected
 - Fail if x64 and ARM64 versions don't match
-```
 
 ### 2. Version Consistency Tests
 
@@ -154,23 +166,21 @@ Winget Manifest:
 
 ### Validation Process
 
-1. **During Manifest Generation**:
-   ```
-   1. Download x64 and ARM64 MSI files
-   2. Extract ProductVersion from each MSI
-   3. Normalize to 3-part version (remove 4th part if present)
-   4. Compare with release tag version
-   5. Warn if mismatches detected
-   6. Fail if x64 ≠ ARM64
-   ```
+**During Manifest Generation**:
 
-2. **During Development**:
-   ```
-   1. Run WingetVersionConsistencyTests
-   2. Verify version formats
-   3. Verify version alignment
-   4. Verify workflow configuration
-   ```
+1. Download x64 and ARM64 MSI files
+2. Extract ProductVersion from each MSI
+3. Normalize to 3-part version (remove 4th part if present)
+4. Compare with release tag version
+5. Warn if mismatches detected
+6. Fail if x64 ≠ ARM64
+
+**During Development**:
+
+1. Run WingetVersionConsistencyTests
+2. Verify version formats
+3. Verify version alignment
+4. Verify workflow configuration
 
 ## Benefits
 
