@@ -376,6 +376,15 @@ public class ConsoleUIService
     }
 
     /// <summary>
+    /// Displays raw text without markup interpretation (safe for stack traces and other content with special characters).
+    /// </summary>
+    /// <param name="text">The raw text to display.</param>
+    public void DisplayText(string text)
+    {
+        AnsiConsole.WriteLine(text ?? string.Empty);
+    }
+
+    /// <summary>
     /// Writes a renderable to the console.
     /// </summary>
     /// <param name="renderable">The renderable to write.</param>

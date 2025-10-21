@@ -139,7 +139,7 @@ public class ApplicationRunner
 
         // Check for directory traversal patterns
         var normalizedPath = path.Replace('\\', '/');
-        if (normalizedPath.Contains("../") || normalizedPath.Contains("..\\") || 
+        if (normalizedPath.Contains("../") || normalizedPath.Contains("..\\") ||
             normalizedPath.StartsWith("../") || normalizedPath.StartsWith("..\\") ||
             normalizedPath.EndsWith("/..") || normalizedPath.EndsWith("\\..") ||
             normalizedPath == "..")
@@ -151,7 +151,7 @@ public class ApplicationRunner
         try
         {
             var fullPath = _fileSystem.Path.GetFullPath(path);
-            
+
             // For input files, we allow any valid path as long as it's not traversal
             // For output files, this validation should be called separately
             return !string.IsNullOrEmpty(fullPath);
@@ -233,7 +233,7 @@ public class ApplicationRunner
         {
             _consoleUiService.WriteLine();
             _consoleUiService.DisplayInfo("[yellow]Debug information (stack trace):[/]");
-            _consoleUiService.DisplayInfo(ex.StackTrace);
+            _consoleUiService.DisplayText(ex.StackTrace);
         }
         else
         {

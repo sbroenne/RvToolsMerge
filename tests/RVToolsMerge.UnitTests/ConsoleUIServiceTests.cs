@@ -105,4 +105,62 @@ public class ConsoleUIServiceTests
         var exception = Record.Exception(() => _service.DisplayOptions(options));
         Assert.Null(exception);
     }
+
+    [Fact]
+    public void DisplayText_WithNormalText_DoesNotThrow()
+    {
+        // Arrange
+        const string normalText = "This is a normal text message";
+
+        // Act & Assert
+        var exception = Record.Exception(() => _service.DisplayText(normalText));
+        Assert.Null(exception);
+    }
+
+    [Fact]
+    public void DisplayText_WithStackTraceContainingSpecialCharacters_DoesNotThrow()
+    {
+        // Arrange
+        const string stackTraceWithSpecialChars = @"   at RVToolsMerge.Program.Main(String[] args) in D:\source\RvToolsMerge\src\RVToolsMerge\Program.cs:line 33
+   at RVToolsMerge.Program.<Main>(String[] args)";
+
+        // Act & Assert
+        // This should not throw a Spectre.Console markup parsing exception
+        var exception = Record.Exception(() => _service.DisplayText(stackTraceWithSpecialChars));
+        Assert.Null(exception);
+    }
+
+    [Fact]
+    public void DisplayText_WithMarkupLikeCharacters_DoesNotThrow()
+    {
+        // Arrange
+        const string textWithMarkupChars = "Error in method <TestMethod> with value [test] and style {color}";
+
+        // Act & Assert
+        // This should not throw a markup parsing exception because DisplayText should treat it as raw text
+        var exception = Record.Exception(() => _service.DisplayText(textWithMarkupChars));
+        Assert.Null(exception);
+    }
+
+    [Fact]
+    public void DisplayText_WithEmptyString_DoesNotThrow()
+    {
+        // Arrange
+        const string emptyText = "";
+
+        // Act & Assert
+        var exception = Record.Exception(() => _service.DisplayText(emptyText));
+        Assert.Null(exception);
+    }
+
+    [Fact]
+    public void DisplayText_WithNullString_DoesNotThrow()
+    {
+        // Arrange
+        string? nullText = null;
+
+        // Act & Assert
+        var exception = Record.Exception(() => _service.DisplayText(nullText!));
+        Assert.Null(exception);
+    }
 }
