@@ -445,7 +445,7 @@ jobs:
         shell: pwsh
 
       - name: Download MSI Artifacts
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           path: msi-artifacts
           pattern: "*-msi"
@@ -499,7 +499,7 @@ jobs:
         shell: pwsh
 
       - name: Upload Winget Manifests
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: winget-manifests-${{ steps.get-version.outputs.version }}
           path: winget-manifests/
@@ -529,12 +529,12 @@ jobs:
           echo "::notice::Creating release for version $VERSION from tag $TAG_NAME"
 
       - name: Download All Artifacts
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           path: artifacts
 
       - name: Download Winget Manifests
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           path: winget-manifests
           pattern: "winget-manifests-*"
