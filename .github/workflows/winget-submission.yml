@@ -294,7 +294,7 @@ jobs:
           echo "https://github.com/microsoft/winget-pkgs/compare/master...sbroenne:winget-pkgs:$BRANCH_NAME"
 
       - name: Upload Artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: winget-submission-${{ steps.get-release.outputs.version }}
           path: |

@@ -121,7 +121,7 @@ jobs:
           DOTNET_RUNTIME: ${{ matrix.runtime }}
 
       - name: Upload test results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         if: always() && matrix.run-tests
         with:
           name: test-results-${{ matrix.runtime }}
@@ -309,7 +309,7 @@ jobs:
         shell: pwsh
 
       - name: Upload build artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: RVToolsMerge-${{ matrix.runtime }}
           path: publish/
@@ -317,7 +317,7 @@ jobs:
 
       - name: Upload MSI artifact (Windows only)
         if: matrix.os == 'windows' && inputs.configuration == 'Release'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: RVToolsMerge-${{ matrix.runtime }}-msi
           path: msi-output/*.msi
