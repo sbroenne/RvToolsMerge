@@ -8,7 +8,6 @@
 
 using ClosedXML.Excel;
 using RVToolsMerge.Services;
-using Xunit;
 
 namespace RVToolsMerge.IntegrationTests;
 

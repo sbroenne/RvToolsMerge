@@ -7,7 +7,6 @@
 //-----------------------------------------------------------------------
 
 using Microsoft.Extensions.DependencyInjection;
-using System.IO.Abstractions;
 
 namespace RVToolsMerge.UnitTests;
 

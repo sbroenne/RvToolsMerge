@@ -6,10 +6,8 @@
 // </copyright>
 //-----------------------------------------------------------------------
 
-using System.IO.Abstractions.TestingHelpers;
 using ClosedXML.Excel;
 using RVToolsMerge.Models;
-using Xunit;
 
 namespace RVToolsMerge.IntegrationTests;
 
@@ -328,7 +326,7 @@ public class ValidationServiceTests : IntegrationTestBase
 
         // Act
         validationResult.RowsSkippedAfterLimitReached = 10;
-        
+
         // Assert
         Assert.Equal(10, validationResult.RowsSkippedAfterLimitReached);
     }

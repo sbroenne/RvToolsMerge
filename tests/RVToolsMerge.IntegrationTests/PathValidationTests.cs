@@ -9,7 +9,6 @@
 using System.IO.Abstractions.TestingHelpers;
 using RVToolsMerge.Models;
 using RVToolsMerge.Services;
-using Xunit;
 
 namespace RVToolsMerge.IntegrationTests;
 

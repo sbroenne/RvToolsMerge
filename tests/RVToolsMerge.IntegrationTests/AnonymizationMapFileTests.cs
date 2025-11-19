@@ -8,7 +8,6 @@
 
 using ClosedXML.Excel;
 using RVToolsMerge.Models;
-using Xunit;
 
 namespace RVToolsMerge.IntegrationTests;
 
@@ -49,7 +48,7 @@ public class AnonymizationMapFileTests : IntegrationTestBase
 
         // Verify the anonymization map file has expected structure by reading it
         using var mapWorkbook = new XLWorkbook(expectedMapFilePath);
-        
+
         // Verify that anonymization map has sheets - the actual structure depends on implementation
         Assert.True(mapWorkbook.Worksheets.Count > 0, "Anonymization map should have at least one worksheet");
 

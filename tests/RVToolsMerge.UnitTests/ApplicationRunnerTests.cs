@@ -6,8 +6,6 @@
 // </copyright>
 //-----------------------------------------------------------------------
 
-using System.IO.Abstractions;
-
 namespace RVToolsMerge.UnitTests;
 
 /// <summary>
@@ -47,7 +45,7 @@ public class ApplicationRunnerTests
         Assert.NotEmpty(productName);
         Assert.NotNull(versionString);
         Assert.NotEmpty(versionString);
-        
+
         // Version should follow the pattern X.Y.Z
         Assert.Matches(@"^\d+\.\d+\.\d+$", versionString);
     }
@@ -76,7 +74,7 @@ public class ApplicationRunnerTests
         // Assert - Multiple calls should return the same values
         Assert.Equal(productName1, productName2);
         Assert.Equal(versionString1, versionString2);
-        
+
         // Verify reasonable product name
         Assert.True(productName1 == "RVToolsMerge" || productName1 == "RVToolsMerger" || !string.IsNullOrEmpty(productName1));
         Assert.Matches(@"^\d+\.\d+\.\d+$", versionString1);

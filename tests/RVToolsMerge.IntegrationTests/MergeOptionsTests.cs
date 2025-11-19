@@ -8,7 +8,6 @@
 
 using ClosedXML.Excel;
 using RVToolsMerge.Models;
-using Xunit;
 
 namespace RVToolsMerge.IntegrationTests;
 
@@ -79,11 +78,11 @@ public class MergeOptionsTests : IntegrationTestBase
         // Verify the output file has expected structure by reading it
         using var workbook = new XLWorkbook(outputPath);
         Assert.True(workbook.TryGetWorksheet("vInfo", out var vInfoSheet));
-        
+
         // Check that we have data rows + header
         var lastRow = vInfoSheet.LastRowUsed()?.RowNumber() ?? 1;
         Assert.Equal(4, lastRow); // 3 VMs + header row
-        
+
         // In the real implementation, the column count would depend on the actual mandatory columns
         // For this test, we verify that the file was created and has the expected structure
         var lastColumn = vInfoSheet.LastColumnUsed()?.ColumnNumber() ?? 0;
@@ -263,7 +262,7 @@ public class MergeOptionsTests : IntegrationTestBase
         Assert.True(FileSystem.File.Exists(outputPath));
 
         using var outputWorkbook = new XLWorkbook(outputPath);
-        
+
         // Verify vInfo is limited to 3 rows + header = 4 total
         Assert.True(outputWorkbook.TryGetWorksheet("vInfo", out var outputVInfoSheet));
         var vInfoLastRow = outputVInfoSheet.LastRowUsed()?.RowNumber() ?? 1;
