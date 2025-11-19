@@ -6,12 +6,7 @@
 // </copyright>
 //-----------------------------------------------------------------------
 
-using System.IO.Abstractions;
-using Moq;
-using RVToolsMerge.Models;
 using RVToolsMerge.Services;
-using RVToolsMerge.Services.Interfaces;
-using Xunit;
 
 namespace RVToolsMerge.IntegrationTests;
 

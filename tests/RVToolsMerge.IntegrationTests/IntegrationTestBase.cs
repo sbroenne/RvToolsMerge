@@ -60,7 +60,7 @@ public abstract class IntegrationTestBase : IDisposable
 
         // Create a unique temporary directory for this test instance
         TestRootDirectory = Path.Combine(Path.GetTempPath(), "RVToolsMerge_IntegrationTests", Guid.NewGuid().ToString());
-        
+
         // Set up test directories
         TestInputDirectory = FileSystem.Path.Combine(TestRootDirectory, "input");
         TestOutputDirectory = FileSystem.Path.Combine(TestRootDirectory, "output");
@@ -211,7 +211,7 @@ public abstract class IntegrationTestBase : IDisposable
         try
         {
             ServiceProvider.Dispose();
-            
+
             // Clean up temporary test directory as required by Copilot instructions
             if (FileSystem.Directory.Exists(TestRootDirectory))
             {
@@ -222,7 +222,7 @@ public abstract class IntegrationTestBase : IDisposable
         {
             // Ignore cleanup errors to prevent test failures
         }
-        
+
         GC.SuppressFinalize(this);
     }
 }

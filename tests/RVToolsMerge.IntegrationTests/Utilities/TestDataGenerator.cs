@@ -8,8 +8,6 @@
 
 using System.IO.Abstractions;
 using ClosedXML.Excel;
-using RVToolsMerge.Configuration;
-using System;
 
 namespace RVToolsMerge.IntegrationTests.Utilities;
 

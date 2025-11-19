@@ -126,7 +126,7 @@ public class InstallerConfigurationTests
     private static string GetProjectRoot(string startDirectory)
     {
         DirectoryInfo? current = new(startDirectory);
-        
+
         while (current != null)
         {
             if (current.GetFiles("*.sln").Length > 0)
@@ -135,7 +135,7 @@ public class InstallerConfigurationTests
             }
             current = current.Parent;
         }
-        
+
         throw new InvalidOperationException("Could not find project root directory containing .sln file");
     }
 }

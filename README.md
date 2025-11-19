@@ -19,7 +19,7 @@ A modern, cross-platform console application for merging one or multiple [RVTool
 
 RVToolsMerge is a powerful command-line utility designed to consolidate multiple RVTools exports into one Excel file, making it easier to analyze VMware environment data from different sources.
 
-Built with .NET 9, this cross-platform tool efficiently processes individual RVTools Excel files or entire directories, intelligently merging data from key sheets while ensuring consistency across the consolidated output.
+Built with .NET 10, this cross-platform tool efficiently processes individual RVTools Excel files or entire directories, intelligently merging data from key sheets while ensuring consistency across the consolidated output.
 
 As an independent, open-source project, RVToolsMerge is _not affiliated with_ the official RVTools application but works with its export data to provide additional functionality.
 
@@ -53,7 +53,7 @@ These protection features make RVToolsMerge ideal for:
 
 ## Features
 
--   **High-Performance Processing**: Built with .NET 9 and optimized for speed and memory efficiency
+-   **High-Performance Processing**: Built with .NET 10 and optimized for speed and memory efficiency
 -   **Rich Console Experience**: Beautiful console output with progress bars, status indicators, and colorful tables
 -   **Intelligent Sheet Handling**: Combines multiple RVTools exports while validating required sheets and columns
 -   **Flexible Processing Options**:
@@ -343,7 +343,7 @@ If you encounter issues while using RVToolsMerge:
 
 ## Technical Architecture
 
-RVToolsMerge is built with .NET 9 and follows modern C# development practices:
+RVToolsMerge is built with .NET 10 and follows modern C# development practices:
 
 ### Key Components
 
@@ -355,7 +355,7 @@ RVToolsMerge is built with .NET 9 and follows modern C# development practices:
 
 ### Prerequisites
 
--   .NET 9.0 SDK or later
+-   .NET 10.0 SDK or later
 
 ### Basic Build
 
@@ -383,7 +383,7 @@ dotnet publish -c Release -r linux-x64
 dotnet publish -c Release -r osx-arm64
 ```
 
-Output will be in `bin/Release/net9.0/{RID}/publish` directory, where `{RID}` is the runtime identifier.
+Output will be in `bin/Release/net10.0/{RID}/publish` directory, where `{RID}` is the runtime identifier.
 
 ### Development Workflow
 

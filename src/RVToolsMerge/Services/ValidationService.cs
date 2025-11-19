@@ -7,7 +7,6 @@
 //-----------------------------------------------------------------------
 using ClosedXML.Excel;
 using RVToolsMerge.Configuration;
-using RVToolsMerge.Exceptions;
 using RVToolsMerge.Models;
 using RVToolsMerge.Services.Interfaces;
 
@@ -244,7 +243,7 @@ public class ValidationService : IValidationService
         }
 
         // Check for missing VM UUID
-        if (vmUuidIndex >= 0 && 
+        if (vmUuidIndex >= 0 &&
             (EqualityComparer<XLCellValue>.Default.Equals(rowData[vmUuidIndex], default) ||
              string.IsNullOrWhiteSpace(rowData[vmUuidIndex].ToString())))
         {
@@ -252,7 +251,7 @@ public class ValidationService : IValidationService
         }
 
         // Check for missing OS Configuration
-        if (osConfigIndex >= 0 && 
+        if (osConfigIndex >= 0 &&
             (EqualityComparer<XLCellValue>.Default.Equals(rowData[osConfigIndex], default) ||
              string.IsNullOrWhiteSpace(rowData[osConfigIndex].ToString())))
         {

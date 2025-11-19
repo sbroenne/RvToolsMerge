@@ -226,8 +226,8 @@ public class TestMergeService : IMergeService
                             // Use the AnonymizationService to ensure mappings are stored for tests
                             Dictionary<string, int> vmColumnIndices = new() { { "VM", vmColIndex } };
                             rowData[vmColIndex] = _anonymizationService.AnonymizeValue(
-                                (XLCellValue)originalValue, 
-                                vmColIndex, 
+                                (XLCellValue)originalValue,
+                                vmColIndex,
                                 vmColumnIndices,
                                 "testfile.xlsx");
                         }
@@ -264,7 +264,7 @@ public class TestMergeService : IMergeService
 
         // Create output file - no progress tracking in test mode
         await CreateOutputFileAsync(outputPath, availableSheets.ToList(), mergedData, commonColumns);
-        
+
         // Create anonymization mapping file if anonymization is enabled
         if (options.AnonymizeData)
         {
@@ -288,7 +288,7 @@ public class TestMergeService : IMergeService
         Dictionary<string, Dictionary<string, string>> legacyMappings)
     {
         var result = new Dictionary<string, Dictionary<string, Dictionary<string, string>>>();
-        
+
         foreach (var category in legacyMappings.Keys)
         {
             result[category] = new Dictionary<string, Dictionary<string, string>>
@@ -296,7 +296,7 @@ public class TestMergeService : IMergeService
                 { "testfile.xlsx", new Dictionary<string, string>(legacyMappings[category]) }
             };
         }
-        
+
         return result;
     }
 
@@ -694,7 +694,7 @@ public class TestMergeService : IMergeService
             }
         });
     }
-    
+
     private async Task CreateAnonymizationMapFileAsync(
         string outputPath,
         Dictionary<string, Dictionary<string, Dictionary<string, string>>> mappings)
@@ -703,7 +703,7 @@ public class TestMergeService : IMergeService
         string mapFilePath = _fileSystem.Path.Combine(
             _fileSystem.Path.GetDirectoryName(outputPath) ?? string.Empty,
             $"{_fileSystem.Path.GetFileNameWithoutExtension(outputPath)}_AnonymizationMap{_fileSystem.Path.GetExtension(outputPath)}");
-        
+
         await Task.Run(() =>
         {
             try
@@ -711,13 +711,13 @@ public class TestMergeService : IMergeService
                 // For tests, we'll create a simple mock file in the MockFileSystem
                 // Since we can't actually save a real Excel workbook in the mock file system
                 _fileSystem.File.WriteAllBytes(mapFilePath, new byte[1024]);
-                
+
                 // For testing purposes, we'll also create a test info file for the map file
                 var infoPath = mapFilePath + ".testinfo";
-                
+
                 // Create a simple text summary of the mappings
                 var infoLines = new List<string>();
-                
+
                 // Add one line per category with the total count
                 foreach (var category in mappings.Keys)
                 {
@@ -728,7 +728,7 @@ public class TestMergeService : IMergeService
                     }
                     infoLines.Add($"{category}:{totalCount}");
                 }
-                
+
                 // Write the info file
                 _fileSystem.File.WriteAllText(infoPath, string.Join(Environment.NewLine, infoLines));
             }

@@ -7,7 +7,6 @@
 //-----------------------------------------------------------------------
 
 using System.IO.Abstractions;
-using System.Text.RegularExpressions;
 using System.Xml.Linq;
 
 namespace RVToolsMerge.IntegrationTests;
@@ -114,7 +113,7 @@ public class WingetVersionConsistencyTests
 
         // Assert - Should use {{VERSION}} placeholder for PackageVersion
         Assert.Contains("PackageVersion: {{VERSION}}", manifestContent);
-        
+
         // Should not have hardcoded version numbers
         Assert.DoesNotMatch(@"PackageVersion:\s+\d+\.\d+\.\d+", manifestContent);
     }
@@ -134,7 +133,7 @@ public class WingetVersionConsistencyTests
 
         // Assert - DisplayVersion should use {{VERSION}} placeholder to match MSI ProductVersion
         Assert.Contains("DisplayVersion: {{VERSION}}", manifestContent);
-        
+
         // Should not have hardcoded version in DisplayVersion
         Assert.DoesNotMatch(@"DisplayVersion:\s+\d+\.\d+\.\d+", manifestContent);
     }
@@ -201,7 +200,7 @@ public class WingetVersionConsistencyTests
         // Assert - Workflow should calculate 3-part package version and 4-part assembly version
         Assert.Contains("PACKAGE_VERSION=\"$MAJOR.$MINOR.$PATCH\"", workflowContent);
         Assert.Contains("ASSEMBLY_VERSION=\"$MAJOR.$MINOR.$PATCH.0\"", workflowContent);
-        
+
         // Should validate version format is X.Y.Z (the actual regex in the workflow)
         Assert.Contains(@"^[0-9]+\.[0-9]+\.[0-9]+$", workflowContent);
     }
@@ -214,7 +213,7 @@ public class WingetVersionConsistencyTests
     private static string GetProjectRoot(string startDirectory)
     {
         DirectoryInfo? current = new(startDirectory);
-        
+
         while (current != null)
         {
             if (current.GetFiles("*.sln").Length > 0)
@@ -223,7 +222,7 @@ public class WingetVersionConsistencyTests
             }
             current = current.Parent;
         }
-        
+
         throw new InvalidOperationException("Could not find project root directory containing .sln file");
     }
 }

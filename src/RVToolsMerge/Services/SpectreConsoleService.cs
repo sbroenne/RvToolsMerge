@@ -7,7 +7,6 @@
 //-----------------------------------------------------------------------
 using RVToolsMerge.Services.Interfaces;
 using Spectre.Console;
-using Spectre.Console.Rendering;
 
 namespace RVToolsMerge.Services;
 

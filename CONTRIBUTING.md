@@ -8,7 +8,7 @@ Following these guidelines helps to communicate that you respect the time of the
 
 ### Prerequisites
 
--   [.NET 9 SDK](https://dotnet.microsoft.com/download) or later
+-   [.NET 10 SDK](https://dotnet.microsoft.com/download) or later
 -   An IDE that supports C# (Visual Studio Code with C# extension, JetBrains Rider, or any preferred editor)
 -   Basic knowledge of C# and .NET
 -   Familiarity with Git and GitHub workflow

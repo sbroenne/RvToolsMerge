@@ -8,7 +8,6 @@
 
 using ClosedXML.Excel;
 using RVToolsMerge.Models;
-using Xunit;
 
 namespace RVToolsMerge.IntegrationTests;
 
@@ -43,7 +42,7 @@ public class BasicMergeTests : IntegrationTestBase
 
         // Verify merged data by reading the actual Excel file
         using var workbook = new XLWorkbook(outputPath);
-        
+
         // Verify vInfo sheet exists and has correct data
         Assert.True(workbook.TryGetWorksheet("vInfo", out var vInfoSheet));
         var vInfoLastRow = vInfoSheet.LastRowUsed()?.RowNumber() ?? 1;
@@ -85,7 +84,7 @@ public class BasicMergeTests : IntegrationTestBase
 
         // Verify merged data by reading the actual Excel file
         using var workbook = new XLWorkbook(outputPath);
-        
+
         // Verify vInfo sheet exists and has correct data
         Assert.True(workbook.TryGetWorksheet("vInfo", out var vInfoSheet));
         var vInfoLastRow = vInfoSheet.LastRowUsed()?.RowNumber() ?? 1;
@@ -122,7 +121,7 @@ public class BasicMergeTests : IntegrationTestBase
 
         // Verify merged data by reading the actual Excel file
         using var workbook = new XLWorkbook(outputPath);
-        
+
         // Verify vInfo sheet exists and has correct data
         Assert.True(workbook.TryGetWorksheet("vInfo", out var vInfoSheet));
         var vInfoLastRow = vInfoSheet.LastRowUsed()?.RowNumber() ?? 1;

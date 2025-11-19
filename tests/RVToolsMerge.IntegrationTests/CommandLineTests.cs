@@ -11,7 +11,6 @@ using Microsoft.Extensions.DependencyInjection;
 using RVToolsMerge.Models;
 using RVToolsMerge.Services;
 using RVToolsMerge.Services.Interfaces;
-using Xunit;
 
 namespace RVToolsMerge.IntegrationTests;
 

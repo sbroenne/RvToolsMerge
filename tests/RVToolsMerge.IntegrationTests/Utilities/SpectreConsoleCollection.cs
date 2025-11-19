@@ -6,8 +6,6 @@
 // </copyright>
 //-----------------------------------------------------------------------
 
-using Xunit;
-
 namespace RVToolsMerge.IntegrationTests.Utilities;
 
 /// <summary>

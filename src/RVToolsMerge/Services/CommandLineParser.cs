@@ -42,7 +42,7 @@ public class CommandLineParser : ICommandLineParser
 
         // Check for directory traversal patterns
         var normalizedPath = path.Replace('\\', '/');
-        if (normalizedPath.Contains("../") || normalizedPath.Contains("..\\") || 
+        if (normalizedPath.Contains("../") || normalizedPath.Contains("..\\") ||
             normalizedPath.StartsWith("../") || normalizedPath.StartsWith("..\\") ||
             normalizedPath.EndsWith("/..") || normalizedPath.EndsWith("\\..") ||
             normalizedPath == "..")

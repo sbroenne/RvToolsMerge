@@ -10,8 +10,6 @@ using ClosedXML.Excel;
 using RVToolsMerge.Configuration;
 using RVToolsMerge.Exceptions;
 using RVToolsMerge.Models;
-using System;
-using Xunit;
 
 namespace RVToolsMerge.IntegrationTests;
 

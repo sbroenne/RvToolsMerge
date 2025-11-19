@@ -6,12 +6,7 @@
 // </copyright>
 //-----------------------------------------------------------------------
 
-using System.IO.Abstractions.TestingHelpers;
 using ClosedXML.Excel;
-using RVToolsMerge.Configuration;
-using RVToolsMerge.Models;
-using RVToolsMerge.Services;
-using Xunit;
 
 namespace RVToolsMerge.IntegrationTests;
 

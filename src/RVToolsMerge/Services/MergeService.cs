@@ -504,10 +504,10 @@ public class MergeService : IMergeService
 
         // Global counter for vInfo rows processed across all files
         int globalVInfoRowsProcessed = 0;
-        
+
         // Set to store VM UUIDs from limited vInfo rows for sheet synchronization
         HashSet<string> includedVmUuids = new HashSet<string>();
-        
+
         // Set to store Host names from limited vInfo rows for vHost sheet synchronization
         HashSet<string> includedHostNames = new HashSet<string>();
 
@@ -547,7 +547,7 @@ public class MergeService : IMergeService
 
                         // Get VM UUID column index for sheet synchronization
                         int sheetVmUuidIndex = commonColumns[sheetName].IndexOf("VM UUID");
-                        
+
                         // Get Host column index for vHost sheet synchronization
                         int sheetHostIndex = commonColumns[sheetName].IndexOf("Host");
 
@@ -713,7 +713,7 @@ public class MergeService : IMergeService
                                                 includedVmUuids.Add(vmUuid);
                                             }
                                         }
-                                        
+
                                         if (sheetHostIndex >= 0)
                                         {
                                             var hostName = rowData[sheetHostIndex].ToString();
@@ -746,7 +746,7 @@ public class MergeService : IMergeService
                                     {
                                         mergedData[sheetName].Add(rowData);
                                     }
-                                    
+
                                     // Increment global vInfo row counter if this is a vInfo sheet and row was included
                                     if (sheetName == "vInfo" && shouldIncludeRow)
                                     {

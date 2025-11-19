@@ -5,12 +5,11 @@
 //     Licensed under the MIT License
 // </copyright>
 //-----------------------------------------------------------------------
-global using Xunit;
-global using Moq;
-global using System.IO.Abstractions.TestingHelpers;
 global using System.IO.Abstractions;
-global using RVToolsMerge;
+global using System.IO.Abstractions.TestingHelpers;
+global using Moq;
+global using RVToolsMerge.Exceptions;
+global using RVToolsMerge.Models;
 global using RVToolsMerge.Services;
 global using RVToolsMerge.Services.Interfaces;
-global using RVToolsMerge.Models;
-global using RVToolsMerge.Exceptions;
+global using Xunit;
