@@ -1,10 +1,24 @@
 {
-  "editor.formatOnSave": true,
+  "dotnet.defaultSolution": "RVToolsMerge.sln",
+  "cSpell.words": [
+    "appinstaller",
+    "Broenner",
+    "LASTEXITCODE",
+    "winget"
+  ],
   "editor.codeActionsOnSave": {
     "source.organizeImports": "always"
   },
-  "dotnet.defaultSolution": "RVToolsMerge.sln",
+  "sarif-viewer.connectToGithubCodeScanning": "on",
+  "terminal.integrated.profiles.windows": {
+    "PowerShell 7": {
+      "icon": "terminal-powershell",
+      "path": "C:\\Program Files\\PowerShell\\7\\pwsh.exe"
+    }
+  },
   "csharp.format.enable": true,
+  "terminal.integrated.defaultProfile.windows": "PowerShell 7",
+  "chat.tools.terminal.enableAutoApprove": true,
   "files.exclude": {
     "**/bin": true,
     "**/obj": true,
@@ -12,12 +26,55 @@
     "**/.vscode/*.log": true
   },
   "csharp.suppressDotnetRestoreNotification": false,
-  "explorer.excludeGitIgnore": false,
-  "sarif-viewer.connectToGithubCodeScanning": "on",
-  "cSpell.words": [
-    "appinstaller",
-    "Broenner",
-    "LASTEXITCODE",
-    "winget"
-  ]
+  "chat.tools.terminal.rules": [
+    {
+      "pattern": "^git(\\s+(status|log|diff|show|branch)(\\b.*)?)?$",
+      "approve": true
+    },
+    {
+      "pattern": "^git\\s+add(\\b.*)?$",
+      "approve": true
+    },
+    {
+      "pattern": "^git\\s+commit(\\b.*)?$",
+      "approve": true
+    },
+    {
+      "pattern": "^git\\s+fetch(\\b.*)?$",
+      "approve": true
+    },
+    {
+      "pattern": "^git\\s+checkout(\\b.*)?$",
+      "approve": true
+    },
+    {
+      "pattern": "^(Get-ChildItem|Get-Item|Test-Path|Measure-Object|Write-Host)(\\b.*)?$",
+      "approve": true
+    },
+    {
+      "pattern": "^dotnet\\s+(restore|build|test|run|sln)(\\b.*)?$",
+      "approve": true
+    }
+  ],
+  "chat.tools.terminal.denyRules": [
+    {
+      "pattern": "^git\\s+(push|reset|clean|rebase|pull)(\\b.*)?$",
+      "deny": true
+    },
+    {
+      "pattern": "^docker\\s+(run|exec|compose\\s+(up|down)|build|push|pull)(\\b.*)?$",
+      "deny": true
+    },
+    {
+      "pattern": "^az\\s+.*\\s+(create|update|delete|set)(\\b.*)?$",
+      "deny": true,
+      "caseInsensitive": true
+    },
+    {
+      "pattern": "^(rm|rmdir|del|rd)\\b",
+      "deny": true
+    }
+  ],
+  "editor.formatOnSave": true,
+  "explorer.excludeGitIgnore": false
 }

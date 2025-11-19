@@ -21,7 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
--   Updated to .NET 9 for better performance and cross-platform support
+-   Updated to .NET 10 for better performance and cross-platform support
 -   Enhanced console UI with Spectre.Console for better user experience
 -   Improved error handling and validation messages
 

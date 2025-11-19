@@ -54,7 +54,7 @@ paths-ignore:
 # Language-specific configuration
 extraction:
   csharp:
-    # Use .NET 9.0 for analysis since RVToolsMerge targets .NET 9
+    # Use .NET 10.0 for analysis since RVToolsMerge targets .NET 10
     buildless: true
     dotnet:
       version: 9.0.100

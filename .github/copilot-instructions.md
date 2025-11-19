@@ -183,9 +183,9 @@ For changes that only affect documentation files (`.md`, `.txt`, `.rst`) and do 
 
 ### Console Application Best Practices
 
--   Use .NET 9 features and capabilities throughout the application
--   Take advantage of .NET 9's performance improvements for Excel processing
--   Utilize .NET 9's improved JSON serialization for configuration files
+-   Use .NET 10 features and capabilities throughout the application
+-   Take advantage of .NET 10's performance improvements for Excel processing
+-   Utilize .NET 10's improved JSON serialization for configuration files
 -   **Use PowerShell 7** for all PowerShell scripts in the project:
     -   Include `#!/usr/bin/env pwsh` shebang for cross-platform compatibility
     -   Leverage PowerShell 7's enhanced security features and cross-platform support
