@@ -349,6 +349,7 @@ RVToolsMerge is built with .NET 10 and follows modern C# development practices:
 
 -   **ClosedXML**: High-performance Excel file handling
 -   **Spectre.Console**: Rich console UI with progress bars, tables, and colors
+-   **Spectre.Console.Cli**: Command-line parsing and help generation framework
 -   **Modern C# Features**: Using the latest C# features like records, pattern matching, and nullable reference types
 
 ## Building from Source

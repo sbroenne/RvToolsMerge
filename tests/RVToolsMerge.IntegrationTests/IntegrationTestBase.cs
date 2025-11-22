@@ -114,7 +114,6 @@ public abstract class IntegrationTestBase : IDisposable
         services.AddSingleton<IAnonymizationService, AnonymizationService>();
         services.AddSingleton<IValidationService, ValidationService>();
         services.AddSingleton<IMergeService, MergeService>(); // Use real MergeService for integration tests
-        services.AddSingleton<ICommandLineParser, CommandLineParser>();
     }
 
     /// <summary>

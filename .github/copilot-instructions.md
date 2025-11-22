@@ -138,11 +138,11 @@ For changes that only affect documentation files (`.md`, `.txt`, `.rst`) and do 
     -   Include error codes for technical support when appropriate
     -   Log detailed technical information separately from user-facing messages
 -   Include progress indicators for long-running operations
--   Design intuitive interactive console UI for file selection and merge configuration
+-   Design a clean command-line interface using Spectre.Console.Cli
 -   Create comprehensive logs for troubleshooting
--   Optimize for interactive user engagement and feedback
--   Provide immediate feedback for all user actions
--   Implement clear navigation between different interactive steps
+-   Provide clear, actionable help text and examples
+-   Display rich console output with tables, progress bars, and colored text
+-   Follow standard CLI conventions for arguments and options
 
 ## .NET and C# Best Practices
 
@@ -194,7 +194,6 @@ For changes that only affect documentation files (`.md`, `.txt`, `.rst`) and do 
 -   Always use Spectre.Console for all console output, following official best practices:
     -   Use `AnsiConsole.Write` instead of `AnsiConsole.Markup` for better performance
     -   Consider `Live` displays for dynamic content that changes frequently
-    -   Utilize `Prompt<T>` for type-safe user input with validation
     -   Implement proper exception handling via `SafeExecution` extensions
     -   Avoid repeated color markup in loops by pre-building strings
     -   Use the Status API for long-running operations with indeterminate progress
@@ -206,21 +205,20 @@ For changes that only affect documentation files (`.md`, `.txt`, `.rst`) and do 
     -   Create rich, colorful tables for displaying data
     -   Use progress bars for long-running operations
     -   Implement status spinners for operations with indeterminate duration
-    -   Display file trees for directory navigation
     -   Create panels and layouts for organized information display
     -   Use FigletText for application branding/header
--   Create a clean separation between the interactive UI code and business logic
--   Focus exclusively on interactive console experiences
--   Implement a clear, step-by-step workflow for users to follow
--   Use interactive prompts for all user inputs rather than command-line arguments
--   Create intuitive menus for operation selection
--   Implement contextual help within the interactive interface
--   Provide immediate validation feedback for user inputs
--   Allow users to navigate back to previous steps when appropriate
--   Save user preferences for repeated use
--   Include options for specifying input/output Excel file paths through interactive selection
+-   Use Spectre.Console.Cli for command-line parsing and help generation:
+    -   Define commands with `Command<TSettings>` or `AsyncCommand<TSettings>`
+    -   Use `[CommandArgument]` attributes for positional arguments
+    -   Use `[CommandOption]` attributes for options with proper descriptions
+    -   Leverage automatic help generation with examples
+    -   Integrate with Microsoft.Extensions.DependencyInjection via custom type registrar
+    -   Follow CLI conventions for option naming (short and long forms)
+-   Create a clean separation between the CLI layer, UI code, and business logic
+-   Parse all user inputs from command-line arguments, not interactive prompts
+-   Provide comprehensive help text with clear examples
+-   Display progress feedback during long-running operations
 -   Implement proper Excel-specific file validation before processing
--   Use wizard-like patterns for complex multi-step operations
 -   Ensure all operations provide clear progress feedback to the user
 -   Test console layouts and UI elements on different terminal sizes and resolutions
 

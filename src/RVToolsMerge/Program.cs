@@ -6,31 +6,60 @@
 // </copyright>
 //-----------------------------------------------------------------------
 using System.IO.Abstractions;
+using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
+using RVToolsMerge.Commands;
+using RVToolsMerge.Infrastructure;
 using RVToolsMerge.Services;
 using RVToolsMerge.Services.Interfaces;
+using Spectre.Console.Cli;
 
 namespace RVToolsMerge;
 
 /// <summary>
 /// The main program class containing the entry point for the application.
 /// </summary>
-public class Program // Changed to public for better testability
+public class Program
 {
     /// <summary>
     /// Application entry point.
     /// </summary>
     /// <param name="args">Command line arguments.</param>
-    /// <returns>A task representing the asynchronous operation.</returns>
-    public static async Task Main(string[] args)
+    /// <returns>Exit code (0 for success, non-zero for error).</returns>
+    public static async Task<int> Main(string[] args)
     {
         // Setup dependency injection
         var services = new ServiceCollection();
         ConfigureServices(services);
-        var serviceProvider = services.BuildServiceProvider();
 
-        var application = serviceProvider.GetRequiredService<ApplicationRunner>();
-        await application.RunAsync(args);
+        // Create the command app with dependency injection
+        var registrar = new TypeRegistrar(services);
+        var app = new CommandApp<MergeCommand>(registrar);
+
+        // Configure the command app
+        app.Configure(config =>
+        {
+            config.SetApplicationName("RVToolsMerge");
+
+            // Get version from assembly
+            var assembly = Assembly.GetExecutingAssembly();
+            var version = assembly.GetName().Version;
+            string versionString = version is not null ? $"{version.Major}.{version.Minor}.{version.Build}" : "1.0.0";
+
+            config.SetApplicationVersion(versionString);
+
+            config.ValidateExamples();
+
+            // Add examples to help
+            config.AddExample("RVToolsFile.xlsx");
+            config.AddExample("RVToolsFile.xlsx", "output.xlsx");
+            config.AddExample("C:\\RVToolsExports", "merged-output.xlsx");
+            config.AddExample("--anonymize", "--only-mandatory-columns", "input.xlsx", "output.xlsx");
+            config.AddExample("--ignore-missing-sheets", "--skip-invalid-files", "C:\\exports");
+        });
+
+        // Run the command app
+        return await app.RunAsync(args);
     }
 
     /// <summary>
@@ -46,7 +75,5 @@ public class Program // Changed to public for better testability
         services.AddSingleton<IAnonymizationService, AnonymizationService>();
         services.AddSingleton<IValidationService, ValidationService>();
         services.AddSingleton<IMergeService, MergeService>();
-        services.AddSingleton<ICommandLineParser, CommandLineParser>();
-        services.AddSingleton<ApplicationRunner>();
     }
 }
