@@ -6,22 +6,25 @@
 // </copyright>
 //-----------------------------------------------------------------------
 
+using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
 using Microsoft.Extensions.DependencyInjection;
+using RVToolsMerge.Commands;
+using RVToolsMerge.Infrastructure;
 using RVToolsMerge.Models;
 using RVToolsMerge.Services;
 using RVToolsMerge.Services.Interfaces;
+using Spectre.Console.Cli;
 
 namespace RVToolsMerge.IntegrationTests;
 
 [Collection("SpectreConsole")]
 /// <summary>
-/// Tests for command line argument parsing and validation.
+/// Tests for command line argument parsing and validation using Spectre.Console.Cli.
 /// </summary>
 public class CommandLineTests
 {
     private readonly MockFileSystem _fileSystem;
-    private readonly ICommandLineParser _commandLineParser;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="CommandLineTests"/> class.
@@ -38,251 +41,128 @@ public class CommandLineTests
         });
 
         _fileSystem.AddDirectory("/tmp/rvtools_test/empty_dir");
-        _commandLineParser = new CommandLineParser(_fileSystem);
     }
 
     /// <summary>
-    /// Tests parsing of all command line options.
+    /// Creates a CommandApp for testing with the mock file system.
     /// </summary>
-    [Fact]
-    public void ParseArguments_AllOptions_SetsOptionsCorrectly()
+    private CommandApp<MergeCommand> CreateTestApp()
     {
-        // Arrange
-        var options = new MergeOptions();
-        string[] args =
-        {
-            "-m", "-i", "-a", "-M", "-s", "-e", "-d",
-            "/tmp/rvtools_test/test.xlsx",
-            "/tmp/output.xlsx"
-        };
+        var services = new ServiceCollection();
+        services.AddSingleton<IFileSystem>(_fileSystem);
+        services.AddSingleton<IConsoleService, Utilities.MockConsoleService>();
+        services.AddTransient<ConsoleUIService>();
+        services.AddSingleton<IExcelService, ExcelService>();
+        services.AddSingleton<IAnonymizationService, AnonymizationService>();
+        services.AddSingleton<IValidationService, ValidationService>();
+        services.AddSingleton<IMergeService, MergeService>();
 
-        // Act
-        bool helpRequested = _commandLineParser.ParseArguments(args, options, out string? inputPath, out string? outputPath, out bool versionRequested);
-
-        // Assert
-        Assert.False(helpRequested);
-        Assert.False(versionRequested);
-        Assert.Equal("/tmp/rvtools_test/test.xlsx", inputPath);
-        Assert.Equal("/tmp/output.xlsx", outputPath);
-        Assert.True(options.IgnoreMissingOptionalSheets);
-        Assert.True(options.SkipInvalidFiles);
-        Assert.True(options.AnonymizeData);
-        Assert.True(options.OnlyMandatoryColumns);
-        Assert.True(options.IncludeSourceFileName);
-        Assert.True(options.SkipRowsWithEmptyMandatoryValues);
-        Assert.True(options.DebugMode);
+        var registrar = new TypeRegistrar(services);
+        return new CommandApp<MergeCommand>(registrar);
     }
 
     /// <summary>
-    /// Tests parsing with long-form option names.
-    /// </summary>
-    [Fact]
-    public void ParseArguments_LongOptionNames_SetsOptionsCorrectly()
-    {
-        // Arrange
-        var options = new MergeOptions();
-        string[] args =
-        {
-            "--ignore-missing-sheets",
-            "--skip-invalid-files",
-            "--anonymize",
-            "--only-mandatory-columns",
-            "--include-source",
-            "--skip-empty-values",
-            "--debug",
-            "/tmp/rvtools_test/test.xlsx",
-            "/tmp/output.xlsx"
-        };
-
-        // Act
-        bool helpRequested = _commandLineParser.ParseArguments(args, options, out string? inputPath, out string? outputPath, out bool versionRequested);
-
-        // Assert
-        Assert.False(helpRequested);
-        Assert.Equal("/tmp/rvtools_test/test.xlsx", inputPath);
-        Assert.Equal("/tmp/output.xlsx", outputPath);
-        Assert.True(options.IgnoreMissingOptionalSheets);
-        Assert.True(options.SkipInvalidFiles);
-        Assert.True(options.AnonymizeData);
-        Assert.True(options.OnlyMandatoryColumns);
-        Assert.True(options.IncludeSourceFileName);
-        Assert.True(options.SkipRowsWithEmptyMandatoryValues);
-        Assert.True(options.DebugMode);
-    }
-
-    /// <summary>
-    /// Tests that help option returns true.
+    /// Tests parsing of help option.
     /// </summary>
     [Theory]
     [InlineData("-h")]
     [InlineData("--help")]
-    [InlineData("/?")]
-    public void ParseArguments_HelpOption_ReturnsTrue(string helpOption)
+    public async Task ParseArguments_HelpOption_ReturnsZero(string helpOption)
     {
         // Arrange
-        var options = new MergeOptions();
+        var app = CreateTestApp();
         string[] args = { helpOption };
 
         // Act
-        bool helpRequested = _commandLineParser.ParseArguments(args, options, out string? inputPath, out string? outputPath, out bool versionRequested);
+        int result = await app.RunAsync(args);
 
-        // Assert
-        Assert.True(helpRequested);
-        Assert.False(versionRequested);
-        Assert.Null(inputPath);
-        Assert.Null(outputPath);
+        // Assert - Help should return 0
+        Assert.Equal(0, result);
     }
 
     /// <summary>
-    /// Tests that version option returns true for versionRequested.
+    /// Tests parsing of version option.
+    /// Note: Spectre.Console.Cli returns -1 for version display (not an error, just convention).
     /// </summary>
     [Theory]
-    [InlineData("-v")]
     [InlineData("--version")]
-    public void ParseArguments_VersionOption_ReturnsVersionRequested(string versionOption)
+    public async Task ParseArguments_VersionOption_ReturnsVersionCode(string versionOption)
     {
         // Arrange
-        var options = new MergeOptions();
+        var app = CreateTestApp();
         string[] args = { versionOption };
 
         // Act
-        bool helpRequested = _commandLineParser.ParseArguments(args, options, out string? inputPath, out string? outputPath, out bool versionRequested);
+        int result = await app.RunAsync(args);
 
-        // Assert
-        Assert.False(helpRequested);
-        Assert.True(versionRequested);
-        Assert.Null(inputPath);
-        Assert.Null(outputPath);
+        // Assert - Version display returns -1 in Spectre.Console.Cli (by convention, not an error)
+        Assert.Equal(-1, result);
     }
 
     /// <summary>
-    /// Tests that default output path is set when not provided.
+    /// Tests that missing input path shows error.
     /// </summary>
     [Fact]
-    public void ParseArguments_NoOutputPath_SetsDefaultOutputPath()
+    public async Task ParseArguments_NoInputPath_ReturnsError()
     {
         // Arrange
-        var options = new MergeOptions();
-        string[] args = { "/tmp/rvtools_test/test.xlsx" };
-        string expectedOutput = _fileSystem.Path.Combine(_fileSystem.Directory.GetCurrentDirectory(), "RVTools_Merged.xlsx");
+        var app = CreateTestApp();
+        string[] args = Array.Empty<string>();
 
         // Act
-        bool helpRequested = _commandLineParser.ParseArguments(args, options, out string? inputPath, out string? outputPath, out bool versionRequested);
+        int result = await app.RunAsync(args);
 
-        // Assert
-        Assert.False(helpRequested);
-        Assert.Equal("/tmp/rvtools_test/test.xlsx", inputPath);
-        Assert.Equal(expectedOutput, outputPath);
+        // Assert - Missing required argument should return error
+        Assert.NotEqual(0, result);
     }
 
     /// <summary>
-    /// Tests that no input path results in null input path.
+    /// Tests MergeCommand directly with all options.
     /// </summary>
     [Fact]
-    public void ParseArguments_NoInputPath_SetsNullInputPath()
+    public void MergeCommandSettings_AllOptions_MapsCorrectly()
     {
         // Arrange
-        var options = new MergeOptions();
-        string[] args = { "-a", "-d" }; // Only options, no paths
-
-        // Act
-        bool helpRequested = _commandLineParser.ParseArguments(args, options, out string? inputPath, out string? outputPath, out bool versionRequested);
-
-        // Assert
-        Assert.False(helpRequested);
-        Assert.Null(inputPath);
-        Assert.NotNull(outputPath); // Default output path should still be set
-    }
-
-    /// <summary>
-    /// Tests that options with mixed order are parsed correctly.
-    /// </summary>
-    [Fact]
-    public void ParseArguments_MixedOrderOptions_ParsesCorrectly()
-    {
-        // Arrange
-        var options = new MergeOptions();
-        string[] args =
+        var settings = new MergeCommandSettings
         {
-            "/tmp/rvtools_test/test.xlsx",
-            "-a",
-            "/tmp/output.xlsx",
-            "-d"
+            InputPath = "/tmp/rvtools_test/test.xlsx",
+            OutputPath = "/tmp/output.xlsx",
+            IgnoreMissingOptionalSheets = true,
+            SkipInvalidFiles = true,
+            AnonymizeData = true,
+            OnlyMandatoryColumns = true,
+            IncludeSourceFileName = true,
+            SkipRowsWithEmptyMandatoryValues = true,
+            DebugMode = true,
+            EnableAzureMigrateValidation = true,
+            MaxVInfoRows = 100
         };
 
-        // Act
-        bool helpRequested = _commandLineParser.ParseArguments(args, options, out string? inputPath, out string? outputPath, out bool versionRequested);
+        // Act - Convert to MergeOptions using reflection to access private method
+        var commandType = typeof(MergeCommand);
+        var method = commandType.GetMethod(
+            "ConvertSettingsToOptions",
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+        var options = (MergeOptions)method!.Invoke(null, new object[] { settings })!;
 
         // Assert
-        Assert.False(helpRequested);
-        Assert.Equal("/tmp/rvtools_test/test.xlsx", inputPath);
-        Assert.Equal("/tmp/output.xlsx", outputPath);
-        Assert.True(options.AnonymizeData);
-        Assert.True(options.DebugMode);
+        Assert.Equal(settings.IgnoreMissingOptionalSheets, options.IgnoreMissingOptionalSheets);
+        Assert.Equal(settings.SkipInvalidFiles, options.SkipInvalidFiles);
+        Assert.Equal(settings.AnonymizeData, options.AnonymizeData);
+        Assert.Equal(settings.OnlyMandatoryColumns, options.OnlyMandatoryColumns);
+        Assert.Equal(settings.IncludeSourceFileName, options.IncludeSourceFileName);
+        Assert.Equal(settings.SkipRowsWithEmptyMandatoryValues, options.SkipRowsWithEmptyMandatoryValues);
+        Assert.Equal(settings.DebugMode, options.DebugMode);
+        Assert.Equal(settings.EnableAzureMigrateValidation, options.EnableAzureMigrateValidation);
+        Assert.Equal(settings.MaxVInfoRows, options.MaxVInfoRows);
     }
 
     /// <summary>
-    /// Tests parsing of the MaxVInfoRows option.
-    /// </summary>
-    [Fact]
-    public void ParseArguments_MaxVInfoRows_SetsOptionCorrectly()
-    {
-        // Arrange
-        var options = new MergeOptions();
-        string[] args =
-        {
-            "--max-vinfo-rows",
-            "100",
-            "/tmp/rvtools_test/test.xlsx",
-            "/tmp/output.xlsx"
-        };
-
-        // Act
-        bool helpRequested = _commandLineParser.ParseArguments(args, options, out string? inputPath, out string? outputPath, out bool versionRequested);
-
-        // Assert
-        Assert.False(helpRequested);
-        Assert.Equal("/tmp/rvtools_test/test.xlsx", inputPath);
-        Assert.Equal("/tmp/output.xlsx", outputPath);
-        Assert.Equal(100, options.MaxVInfoRows);
-    }
-
-    /// <summary>
-    /// Tests that invalid MaxVInfoRows values are ignored (for backward compatibility).
-    /// </summary>
-    [Theory]
-    [InlineData("--max-vinfo-rows", "abc")] // Invalid number
-    [InlineData("--max-vinfo-rows", "-10")] // Negative number
-    [InlineData("--max-vinfo-rows", "0")] // Zero
-    public void ParseArguments_InvalidMaxVInfoRows_IgnoresOption(string option, string value)
-    {
-        // Arrange
-        var options = new MergeOptions();
-        string[] args =
-        {
-            option,
-            value,
-            "/tmp/rvtools_test/test.xlsx"
-        };
-
-        // Act
-        bool helpRequested = _commandLineParser.ParseArguments(args, options, out string? inputPath, out string? outputPath, out bool versionRequested);
-
-        // Assert
-        Assert.False(helpRequested);
-        Assert.Equal("/tmp/rvtools_test/test.xlsx", inputPath);
-        Assert.Null(options.MaxVInfoRows); // Should remain null (default)
-    }
-
-    /// <summary>
-    /// Tests validation of input path in ApplicationRunner.
+    /// Tests validation of input path in MergeCommand.
     /// </summary>
     [Fact]
     public void ValidateInputPath_ValidFile_ReturnsFileList()
     {
-        // This test requires a mock of ApplicationRunner's ValidateInputPath method
-        // Since it's private, we'll test it indirectly through a helper method
-
         // Arrange
         var mockConsoleService = new Utilities.MockConsoleService();
         var services = new ServiceCollection();
@@ -290,14 +170,13 @@ public class CommandLineTests
         services.AddTransient<ConsoleUIService>();
         var serviceProvider = services.BuildServiceProvider();
 
-        var testRunner = new TestApplicationRunner(
+        var testCommand = new TestMergeCommand(
             serviceProvider.GetRequiredService<ConsoleUIService>(),
             null!, // MergeService not needed for this test
-            _commandLineParser,
             _fileSystem);
 
         // Act
-        bool isValid = testRunner.TestValidateInputPath(
+        bool isValid = testCommand.TestValidateInputPath(
             "/tmp/rvtools_test/test.xlsx",
             out bool isInputFile,
             out bool isInputDirectory,
@@ -311,9 +190,40 @@ public class CommandLineTests
         Assert.Equal("/tmp/rvtools_test/test.xlsx", excelFiles[0]);
     }
 
+    /// <summary>
+    /// Tests validation of directory with files.
+    /// </summary>
+    [Fact]
+    public void ValidateInputPath_DirectoryWithFiles_ReturnsFileList()
+    {
+        // Arrange
+        var mockConsoleService = new Utilities.MockConsoleService();
+        var services = new ServiceCollection();
+        services.AddSingleton<IConsoleService>(mockConsoleService);
+        services.AddTransient<ConsoleUIService>();
+        var serviceProvider = services.BuildServiceProvider();
+
+        var testCommand = new TestMergeCommand(
+            serviceProvider.GetRequiredService<ConsoleUIService>(),
+            null!, // MergeService not needed for this test
+            _fileSystem);
+
+        // Act
+        bool isValid = testCommand.TestValidateInputPath(
+            "/tmp/rvtools_test/subdir",
+            out bool isInputFile,
+            out bool isInputDirectory,
+            out string[] excelFiles);
+
+        // Assert
+        Assert.True(isValid);
+        Assert.False(isInputFile);
+        Assert.True(isInputDirectory);
+        Assert.Equal(2, excelFiles.Length);
+    }
 
     /// <summary>
-    /// Tests validation of empty directory in ApplicationRunner.
+    /// Tests validation of empty directory in MergeCommand.
     /// </summary>
     [Fact]
     public void ValidateInputPath_EmptyDirectory_ReturnsFalse()
@@ -325,14 +235,13 @@ public class CommandLineTests
         services.AddTransient<ConsoleUIService>();
         var serviceProvider = services.BuildServiceProvider();
 
-        var testRunner = new TestApplicationRunner(
+        var testCommand = new TestMergeCommand(
             serviceProvider.GetRequiredService<ConsoleUIService>(),
             null!, // MergeService not needed for this test
-            _commandLineParser,
             _fileSystem);
 
         // Act
-        bool isValid = testRunner.TestValidateInputPath(
+        bool isValid = testCommand.TestValidateInputPath(
             "/tmp/rvtools_test/empty_dir",
             out bool isInputFile,
             out bool isInputDirectory,
@@ -346,7 +255,7 @@ public class CommandLineTests
     }
 
     /// <summary>
-    /// Tests validation of non-existent path in ApplicationRunner.
+    /// Tests validation of non-existent path in MergeCommand.
     /// </summary>
     [Fact]
     public void ValidateInputPath_NonExistentPath_ReturnsFalse()
@@ -358,14 +267,13 @@ public class CommandLineTests
         services.AddTransient<ConsoleUIService>();
         var serviceProvider = services.BuildServiceProvider();
 
-        var testRunner = new TestApplicationRunner(
+        var testCommand = new TestMergeCommand(
             serviceProvider.GetRequiredService<ConsoleUIService>(),
             null!, // MergeService not needed for this test
-            _commandLineParser,
             _fileSystem);
 
         // Act
-        bool isValid = testRunner.TestValidateInputPath(
+        bool isValid = testCommand.TestValidateInputPath(
             "/tmp/path/does/not/exist",
             out bool isInputFile,
             out bool isInputDirectory,
@@ -379,7 +287,7 @@ public class CommandLineTests
     }
 
     /// <summary>
-    /// Tests validation of non-Excel file in ApplicationRunner.
+    /// Tests validation of non-Excel file in MergeCommand.
     /// </summary>
     [Fact]
     public void ValidateInputPath_NonExcelFile_ReturnsFalse()
@@ -391,14 +299,13 @@ public class CommandLineTests
         services.AddTransient<ConsoleUIService>();
         var serviceProvider = services.BuildServiceProvider();
 
-        var testRunner = new TestApplicationRunner(
+        var testCommand = new TestMergeCommand(
             serviceProvider.GetRequiredService<ConsoleUIService>(),
             null!, // MergeService not needed for this test
-            _commandLineParser,
             _fileSystem);
 
         // Act
-        bool isValid = testRunner.TestValidateInputPath(
+        bool isValid = testCommand.TestValidateInputPath(
             "/tmp/rvtools_test/test.txt",
             out bool isInputFile,
             out bool isInputDirectory,
@@ -410,22 +317,53 @@ public class CommandLineTests
         Assert.False(isInputDirectory);
         Assert.Empty(excelFiles);
     }
+
+    /// <summary>
+    /// Tests path traversal validation.
+    /// </summary>
+    [Theory]
+    [InlineData("../../../etc/passwd")]
+    [InlineData("..\\..\\..\\windows\\system32")]
+    [InlineData("test/../../etc/passwd")]
+    public void ValidateInputPath_PathTraversal_ReturnsFalse(string maliciousPath)
+    {
+        // Arrange
+        var mockConsoleService = new Utilities.MockConsoleService();
+        var services = new ServiceCollection();
+        services.AddSingleton<IConsoleService>(mockConsoleService);
+        services.AddTransient<ConsoleUIService>();
+        var serviceProvider = services.BuildServiceProvider();
+
+        var testCommand = new TestMergeCommand(
+            serviceProvider.GetRequiredService<ConsoleUIService>(),
+            null!, // MergeService not needed for this test
+            _fileSystem);
+
+        // Act
+        bool isValid = testCommand.TestValidateInputPath(
+            maliciousPath,
+            out bool isInputFile,
+            out bool isInputDirectory,
+            out string[] excelFiles);
+
+        // Assert
+        Assert.False(isValid);
+    }
 }
 
 /// <summary>
-/// Helper class to expose ApplicationRunner's private methods for testing.
+/// Helper class to expose MergeCommand's private methods for testing.
 /// </summary>
-public class TestApplicationRunner : RVToolsMerge.ApplicationRunner
+public class TestMergeCommand : MergeCommand
 {
     /// <summary>
-    /// Initializes a new instance of the <see cref="TestApplicationRunner"/> class.
+    /// Initializes a new instance of the <see cref="TestMergeCommand"/> class.
     /// </summary>
-    public TestApplicationRunner(
+    public TestMergeCommand(
         ConsoleUIService consoleUiService,
         IMergeService mergeService,
-        ICommandLineParser commandLineParser,
-        System.IO.Abstractions.IFileSystem fileSystem)
-        : base(consoleUiService, mergeService, commandLineParser, fileSystem)
+        IFileSystem fileSystem)
+        : base(consoleUiService, mergeService, fileSystem)
     {
     }
 
@@ -435,7 +373,7 @@ public class TestApplicationRunner : RVToolsMerge.ApplicationRunner
     public bool TestValidateInputPath(string inputPath, out bool isInputFile, out bool isInputDirectory, out string[] excelFiles)
     {
         // Use reflection to call the private method
-        var method = typeof(RVToolsMerge.ApplicationRunner).GetMethod(
+        var method = typeof(MergeCommand).GetMethod(
             "ValidateInputPath",
             System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
 
