@@ -30,7 +30,7 @@ jobs:
       new_version: ${{ steps.calc-version.outputs.package_version }}
       pr_merged: ${{ steps.auto-merge.outputs.merge_success }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -333,7 +333,7 @@ jobs:
       tag_name: ${{ steps.create-tag.outputs.tag_name }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -430,7 +430,7 @@ jobs:
       actions: read
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           ref: ${{ needs.create-tag.outputs.tag_name }}
 
@@ -515,7 +515,7 @@ jobs:
       actions: read
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           ref: ${{ needs.create-tag.outputs.tag_name }}
 
