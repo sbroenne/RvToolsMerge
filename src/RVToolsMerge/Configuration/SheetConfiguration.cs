@@ -25,6 +25,12 @@ public static class SheetConfiguration
     public static readonly string[] MinimumRequiredSheets = ["vInfo"];
 
     /// <summary>
+    /// Names of sheets that have predefined column mappings and validation rules.
+    /// These sheets will be validated strictly and have column header normalization applied.
+    /// </summary>
+    public static readonly string[] KnownSheets = ["vInfo", "vHost", "vPartition", "vMemory"];
+
+    /// <summary>
     /// Maps original RVTools column headers to their standardized names for each sheet.
     /// </summary>
     public static readonly FrozenDictionary<string, FrozenDictionary<string, string>> SheetColumnHeaderMappings =

@@ -125,8 +125,9 @@ public class ValidationService : IValidationService
         List<ValidationIssue> issues,
         ref bool fileIsValid)
     {
-        // Check each optional sheet (vHost, vPartition, vMemory)
-        foreach (var sheetName in SheetConfiguration.RequiredSheets.Where(s => s != "vInfo"))
+        // Check each optional known sheet (vHost, vPartition, vMemory)
+        // Only validate sheets that have predefined column mappings and validation rules
+        foreach (var sheetName in SheetConfiguration.KnownSheets.Where(s => s != "vInfo"))
         {
             if (_excelService.SheetExists(workbook, sheetName))
             {
@@ -152,6 +153,9 @@ public class ValidationService : IValidationService
                 ));
             }
         }
+
+        // Note: Unknown sheets (not in KnownSheets) are not validated here
+        // They will be discovered and processed during the merge operation
     }
 
     /// <summary>

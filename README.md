@@ -150,11 +150,12 @@ RVToolsMerge [options] inputPath [outputFile]
 | ------------------------------ | ------------------------------------------------------ | ------- |
 | `-h, --help, /?`               | Show the help message and exit                         | N/A     |
 | `-v, --version`                | Show version information and exit                      | N/A     |
-| `-m, --ignore-missing-sheets`  | Process files even when optional sheets are missing    | `false` |
-| `-i, --skip-invalid-files`     | Skip files that don't meet validation requirements     | `false` |
+| `-i, --ignore-missing-sheets`  | Process files even when optional sheets are missing    | `false` |
+| `-A, --all-sheets`             | Process all sheets in RVTools exports (mutually exclusive with `--anonymize`) | `false` |
+| `-s, --skip-invalid-files`     | Skip files that don't meet validation requirements     | `false` |
 | `-a, --anonymize`              | Anonymize VM, DNS, Cluster, Host, and Datacenter names | `false` |
 | `-M, --only-mandatory-columns` | Include only mandatory columns in the output           | `false` |
-| `-s, --include-source`         | Add a 'Source File' column to track data origin        | `false` |
+| `-f, --include-source-filename`| Add a 'Source File' column to track data origin        | `false` |
 | `-e, --skip-empty-values`      | Skip rows with empty values in mandatory columns       | `false` |
 | `-z, --azure-migrate`          | Enable Azure Migrate validation requirements           | `false` |
 | `-d, --debug`                  | Show detailed error information with stack traces      | `false` |
@@ -163,22 +164,25 @@ RVToolsMerge [options] inputPath [outputFile]
 
 ```cmd
 :: Skip files with missing optional sheets
-RVToolsMerge.exe -m C:\RVTools\Exports
-
-:: Skip invalid files entirely
 RVToolsMerge.exe -i C:\RVTools\Exports
 
-:: Skip invalid files and ignore missing optional sheets in valid files
-RVToolsMerge.exe -i -m C:\RVTools\Exports
+:: Process all sheets (vInfo, vHost, vPartition, vMemory, vCPU, vDisk, vNetwork, etc.)
+RVToolsMerge.exe -A -i C:\RVTools\Exports
 
-:: Anonymize sensitive data
+:: Skip invalid files entirely
+RVToolsMerge.exe -s C:\RVTools\Exports
+
+:: Skip invalid files and ignore missing optional sheets in valid files
+RVToolsMerge.exe -s -i C:\RVTools\Exports
+
+:: Anonymize sensitive data (core 4 sheets only)
 RVToolsMerge.exe -a C:\RVTools\Exports\RVTools.xlsx C:\Reports\Anonymized.xlsx
 
 :: Include only mandatory columns
 RVToolsMerge.exe -M C:\RVTools\Exports
 
 :: Include source file information
-RVToolsMerge.exe -s C:\RVTools\Exports
+RVToolsMerge.exe -f C:\RVTools\Exports
 
 :: Skip rows with empty mandatory values
 RVToolsMerge.exe -e C:\RVTools\Exports
@@ -186,8 +190,11 @@ RVToolsMerge.exe -e C:\RVTools\Exports
 :: Enable Azure Migrate validation
 RVToolsMerge.exe -z C:\RVTools\Exports C:\Reports\AzureMigrationReady.xlsx
 
-:: Combine multiple options
-RVToolsMerge.exe -a -M -s -e C:\RVTools\Exports C:\Reports\Complete_Analysis.xlsx
+:: Combine multiple options (without anonymization)
+RVToolsMerge.exe -A -i -M -f -e C:\RVTools\Exports C:\Reports\Complete_Analysis.xlsx
+
+:: Combine multiple options (with anonymization, core sheets only)
+RVToolsMerge.exe -a -M -f -e C:\RVTools\Exports C:\Reports\Anonymized_Analysis.xlsx
 ```
 
 ## Anonymization and Data Protection
@@ -204,6 +211,8 @@ When using the anonymization option, the following data is consistently anonymiz
 -   Cluster names → cluster123_1, cluster456_2, cluster789_3, etc. (unique per file)
 -   Host names → host123_1, host456_2, host789_3, etc. (unique per file)
 -   Datacenter names → datacenter123_1, datacenter456_2, datacenter789_3, etc. (unique per file)
+
+**Anonymization is only supported for the four core sheets** (vInfo, vHost, vPartition, vMemory). It cannot be used with the `--all-sheets` flag.
 
 Anonymization maintains internal data relationships within each file, ensuring that the same original value in a file always maps to the same anonymized value throughout all sheets in that file. Values that appear in different source files will be anonymized to different values, ensuring there's never any overlap between anonymized values from different files.
 

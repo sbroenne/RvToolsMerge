@@ -1,8 +1,41 @@
 # Supported Sheets and Required Columns
 
-RVToolsMerge processes the following key sheets from RVTools exports:
+RVToolsMerge supports two processing modes for handling RVTools exports:
 
-## Required and Optional Sheets
+## Processing Modes
+
+### Standard Mode (Default)
+
+By default, RVToolsMerge processes only the four core sheets:
+
+-   **vInfo** (required)
+-   **vHost** (optional)
+-   **vPartition** (optional)
+-   **vMemory** (optional)
+
+All four sheets must be present, or the operation will fail unless you use the `--ignore-missing-sheets` flag.
+
+### All Sheets Mode (`--all-sheets`)
+
+When using the `--all-sheets` flag (with `-A`), RVToolsMerge automatically discovers and processes **all sheets** present in your RVTools exports. This includes:
+
+-   The 4 core sheets (vInfo, vHost, vPartition, vMemory)
+-   Additional sheets like vCPU, vDisk, vNetwork, vFloppy, vCD, vUSB, vSnapshot, etc.
+-   Any other sheets present in your RVTools export
+
+**Important**: The `--all-sheets` flag is **mutually exclusive** with the `--anonymize` flag. Anonymization is only supported for the four core sheets.
+
+### Ignore Missing Sheets (`--ignore-missing-sheets`)
+
+The `--ignore-missing-sheets` flag (or `-i`) allows processing files that are missing optional sheets (vHost, vPartition, vMemory). Only vInfo is required when this flag is enabled.
+
+This flag can be combined with `--all-sheets` to:
+1. Allow missing optional sheets
+2. Discover and process any additional sheets that are present
+
+## Core Sheets
+
+The following sheets are the core sheets with strict validation:
 
 | Sheet Name     | Status       | Description                                  |
 | -------------- | ------------ | -------------------------------------------- |
@@ -11,11 +44,30 @@ RVToolsMerge processes the following key sheets from RVTools exports:
 | **vPartition** | Optional     | VM disk partition information                |
 | **vMemory**    | Optional     | VM memory configuration details              |
 
-The `vInfo` sheet must be present in all processed files. The other sheets are considered optional and can be handled according to your configuration.
+The `vInfo` sheet must be present in all processed files. The other core sheets are validated but optional when using `--ignore-missing-sheets`.
+
+## Additional Sheets (All Sheets Mode)
+
+When using `--all-sheets`, any additional sheets found in your RVTools exports are automatically included in the merge process:
+
+-   **vCPU** - CPU configuration details
+-   **vDisk** - Disk information
+-   **vNetwork** - Network adapter details
+-   **vFloppy** - Floppy drive information
+-   **vCD** - CD/DVD drive information
+-   And any other sheets present in your RVTools export
+
+These sheets are processed automatically based on their actual column headers, without strict validation. The tool will:
+
+-   Identify common columns across all input files
+-   Merge data from sheets with the same name
+-   Preserve all columns found in the source files
+
+**Note**: Anonymization (`--anonymize`) is not supported with `--all-sheets`. Anonymization only works with the four core sheets.
 
 ## Mandatory Columns by Sheet
 
-Each sheet has specific required columns that must be present for proper processing:
+Each core sheet has specific required columns that must be present for proper processing:
 
 ### vInfo Sheet (Required)
 
