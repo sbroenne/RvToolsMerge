@@ -173,7 +173,9 @@ public class MergeService : IMergeService
                     foreach (string filePath in validFilePaths)
                     {
                         var fileIssues = new List<ValidationIssue>();
-                        bool isValid = _validationService.ValidateFile(filePath, options.IgnoreMissingOptionalSheets, fileIssues);
+                        // When ProcessAllSheets is enabled, automatically tolerate missing optional sheets
+                        bool ignoreMissing = options.IgnoreMissingOptionalSheets || options.ProcessAllSheets;
+                        bool isValid = _validationService.ValidateFile(filePath, ignoreMissing, fileIssues);
 
                         fileValidationResults.Add((filePath, isValid, fileIssues));
                         validationIssues.AddRange(fileIssues);

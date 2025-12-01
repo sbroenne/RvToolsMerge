@@ -32,9 +32,10 @@ public class MergeCommandSettings : CommandSettings
 
     /// <summary>
     /// Gets or sets a value indicating whether to ignore missing optional sheets.
+    /// Note: This is automatically enabled when using --all-sheets.
     /// </summary>
     [CommandOption("-i|--ignore-missing-sheets")]
-    [Description("Ignore missing optional sheets and continue processing")]
+    [Description("Ignore missing optional sheets and continue processing (automatically enabled with --all-sheets)")]
     [DefaultValue(false)]
     public bool IgnoreMissingOptionalSheets { get; set; }
 

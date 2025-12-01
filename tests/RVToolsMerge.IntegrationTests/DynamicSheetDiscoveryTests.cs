@@ -19,6 +19,7 @@ public class DynamicSheetDiscoveryTests : IntegrationTestBase
 {
     /// <summary>
     /// Tests that unknown sheets are discovered and processed when ProcessAllSheets is enabled.
+    /// Note: ProcessAllSheets automatically enables tolerance for missing optional sheets.
     /// </summary>
     [Fact]
     public async Task MergeFiles_WithUnknownSheets_DiscoversAndProcessesAllSheets()
@@ -28,8 +29,7 @@ public class DynamicSheetDiscoveryTests : IntegrationTestBase
         string outputPath = GetOutputFilePath("merged_unknown_sheets.xlsx");
 
         var options = CreateDefaultMergeOptions();
-        options.ProcessAllSheets = true; // Enable dynamic discovery
-        options.IgnoreMissingOptionalSheets = true; // Allow missing optional sheets
+        options.ProcessAllSheets = true; // Enable dynamic discovery (automatically tolerates missing optional sheets)
 
         var validationIssues = new List<ValidationIssue>();
 
@@ -81,9 +81,8 @@ public class DynamicSheetDiscoveryTests : IntegrationTestBase
         string outputPath = GetOutputFilePath("merged_unknown_sheets_anonymized.xlsx");
 
         var options = CreateDefaultMergeOptions();
-        options.ProcessAllSheets = true; // Enable dynamic discovery
+        options.ProcessAllSheets = true; // Enable dynamic discovery (automatically tolerates missing optional sheets)
         options.AnonymizeData = true; // Enable anonymization (should conflict)
-        options.IgnoreMissingOptionalSheets = true; // Allow missing optional sheets
 
         var validationIssues = new List<ValidationIssue>();
 
@@ -159,8 +158,7 @@ public class DynamicSheetDiscoveryTests : IntegrationTestBase
         string outputPath = GetOutputFilePath("merged_multiple_unknown_sheets.xlsx");
 
         var options = CreateDefaultMergeOptions();
-        options.ProcessAllSheets = true; // Enable dynamic discovery
-        options.IgnoreMissingOptionalSheets = true; // Allow missing optional sheets
+        options.ProcessAllSheets = true; // Enable dynamic discovery (automatically tolerates missing optional sheets)
 
         var validationIssues = new List<ValidationIssue>();
 

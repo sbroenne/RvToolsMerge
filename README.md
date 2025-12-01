@@ -29,41 +29,41 @@ RVToolsMerge treats security and data protection as top priorities, especially w
 
 ### Key Data Protection Features
 
--   **Complete Anonymization**: Automatically replace sensitive identifiers with generic equivalents (per file):
+- **Complete Anonymization**: Automatically replace sensitive identifiers with generic equivalents (per file):
 
-    -   VM names → vm123_1, vm456_2, vm789_3... (unique per file)
-    -   DNS names → dns123_1, dns456_2, dns789_3... (unique per file)
-    -   IP addresses → ip123_1, ip456_2, ip789_3... (unique per file)
-    -   Cluster names → cluster123_1, cluster456_2... (unique per file)
-    -   Host names → host123_1, host456_2... (unique per file)
-    -   Datacenter names → datacenter123_1, datacenter456_2... (unique per file)
+  - VM names → vm123_1, vm456_2, vm789_3... (unique per file)
+  - DNS names → dns123_1, dns456_2, dns789_3... (unique per file)
+  - IP addresses → ip123_1, ip456_2, ip789_3... (unique per file)
+  - Cluster names → cluster123_1, cluster456_2... (unique per file)
+  - Host names → host123_1, host456_2... (unique per file)
+  - Datacenter names → datacenter123_1, datacenter456_2... (unique per file)
 
--   **Minimal Data Exposure**: The `--only-mandatory-columns` option limits data to essential fields only, preventing unnecessary exposure of sensitive information
+- **Minimal Data Exposure**: The `--only-mandatory-columns` option limits data to essential fields only, preventing unnecessary exposure of sensitive information
 
--   **Consistent Anonymization**: Maintains relationships between data points with per-file anonymization (same original values within a file are consistently replaced with the same anonymized values, while the same values in different files get different anonymized values)
+- **Consistent Anonymization**: Maintains relationships between data points with per-file anonymization (same original values within a file are consistently replaced with the same anonymized values, while the same values in different files get different anonymized values)
 
--   **Source Tracking Control**: Optional inclusion of source file information gives you control over data lineage visibility
+- **Source Tracking Control**: Optional inclusion of source file information gives you control over data lineage visibility
 
 These protection features make RVToolsMerge ideal for:
 
--   Creating sanitized reports for vendors and consultants
--   Sharing infrastructure data while maintaining confidentiality
--   Generating documentation that doesn't expose sensitive internal naming
--   Ensuring compliance with organization data-sharing policies
+- Creating sanitized reports for vendors and consultants
+- Sharing infrastructure data while maintaining confidentiality
+- Generating documentation that doesn't expose sensitive internal naming
+- Ensuring compliance with organization data-sharing policies
 
 ## Features
 
--   **High-Performance Processing**: Built with .NET 10 and optimized for speed and memory efficiency
--   **Rich Console Experience**: Beautiful console output with progress bars, status indicators, and colorful tables
--   **Intelligent Sheet Handling**: Combines multiple RVTools exports while validating required sheets and columns
--   **Flexible Processing Options**:
-    -   Processes single files or entire directories of RVTools exports
-    -   Includes only columns that appear in all source files
-    -   Optionally ignores missing optional sheets
-    -   Selectively includes only mandatory columns
-    -   Adds source file tracking for data lineage
--   **Cross-Platform**: Runs on Windows, Linux, and macOS with native binaries for each platform
--   **Enterprise-Grade Error Handling**: Comprehensive validation with clear, actionable error messages
+- **High-Performance Processing**: Built with .NET 10 and optimized for speed and memory efficiency
+- **Rich Console Experience**: Beautiful console output with progress bars, status indicators, and colorful tables
+- **Intelligent Sheet Handling**: Combines multiple RVTools exports while validating required sheets and columns
+- **Flexible Processing Options**:
+  - Processes single files or entire directories of RVTools exports
+  - Includes only columns that appear in all source files
+  - Optionally ignores missing optional sheets
+  - Selectively includes only mandatory columns
+  - Adds source file tracking for data lineage
+- **Cross-Platform**: Runs on Windows, Linux, and macOS with native binaries for each platform
+- **Enterprise-Grade Error Handling**: Comprehensive validation with clear, actionable error messages
 
 ## Supported Sheets and Required Columns
 
@@ -93,15 +93,15 @@ winget install RvToolsMerge.RvToolsMerge
 
 **Manual Download**:
 
--   **Windows x64**: `RVToolsMerge-[version]-win-x64.msi` - Full installer with shortcuts and uninstall support
--   **Windows ARM64**: `RVToolsMerge-[version]-win-arm64.msi` - Full installer with shortcuts and uninstall support
+- **Windows x64**: `RVToolsMerge-[version]-win-x64.msi` - Full installer with shortcuts and uninstall support
+- **Windows ARM64**: `RVToolsMerge-[version]-win-arm64.msi` - Full installer with shortcuts and uninstall support
 
 ### All Platforms (Portable ZIP)
 
--   **Windows x64**: `RVToolsMerge-[version]-win-x64.zip` - Portable version, no installation required
--   **Windows ARM64**: `RVToolsMerge-[version]-win-arm64.zip` - Portable version, no installation required
--   **Linux x64**: `RVToolsMerge-[version]-linux-x64.zip` - Portable version for Linux
--   **macOS ARM64**: `RVToolsMerge-[version]-osx-arm64.zip` - Portable version for macOS (Apple Silicon)
+- **Windows x64**: `RVToolsMerge-[version]-win-x64.zip` - Portable version, no installation required
+- **Windows ARM64**: `RVToolsMerge-[version]-win-arm64.zip` - Portable version, no installation required
+- **Linux x64**: `RVToolsMerge-[version]-linux-x64.zip` - Portable version for Linux
+- **macOS ARM64**: `RVToolsMerge-[version]-osx-arm64.zip` - Portable version for macOS (Apple Silicon)
 
 ### Installation Instructions
 
@@ -128,8 +128,8 @@ winget install RvToolsMerge.RvToolsMerge
 
 ### Prerequisites
 
--   No additional prerequisites required! The application is published as a self-contained executable with all dependencies included.
--   Minimum disk space: ~30MB
+- No additional prerequisites required! The application is published as a self-contained executable with all dependencies included.
+- Minimum disk space: ~30MB
 
 ## Usage
 
@@ -150,7 +150,7 @@ RVToolsMerge [options] inputPath [outputFile]
 | ------------------------------ | ------------------------------------------------------ | ------- |
 | `-h, --help, /?`               | Show the help message and exit                         | N/A     |
 | `-v, --version`                | Show version information and exit                      | N/A     |
-| `-i, --ignore-missing-sheets`  | Process files even when optional sheets are missing    | `false` |
+| `-i, --ignore-missing-sheets`  | Process files even when optional sheets are missing (automatically enabled with `--all-sheets`) | `false` |
 | `-A, --all-sheets`             | Process all sheets in RVTools exports (mutually exclusive with `--anonymize`) | `false` |
 | `-s, --skip-invalid-files`     | Skip files that don't meet validation requirements     | `false` |
 | `-a, --anonymize`              | Anonymize VM, DNS, Cluster, Host, and Datacenter names | `false` |
@@ -167,7 +167,8 @@ RVToolsMerge [options] inputPath [outputFile]
 RVToolsMerge.exe -i C:\RVTools\Exports
 
 :: Process all sheets (vInfo, vHost, vPartition, vMemory, vCPU, vDisk, vNetwork, etc.)
-RVToolsMerge.exe -A -i C:\RVTools\Exports
+:: Note: --all-sheets automatically tolerates missing optional sheets
+RVToolsMerge.exe -A C:\RVTools\Exports
 
 :: Skip invalid files entirely
 RVToolsMerge.exe -s C:\RVTools\Exports
@@ -191,7 +192,7 @@ RVToolsMerge.exe -e C:\RVTools\Exports
 RVToolsMerge.exe -z C:\RVTools\Exports C:\Reports\AzureMigrationReady.xlsx
 
 :: Combine multiple options (without anonymization)
-RVToolsMerge.exe -A -i -M -f -e C:\RVTools\Exports C:\Reports\Complete_Analysis.xlsx
+RVToolsMerge.exe -A -M -f -e C:\RVTools\Exports C:\Reports\Complete_Analysis.xlsx
 
 :: Combine multiple options (with anonymization, core sheets only)
 RVToolsMerge.exe -a -M -f -e C:\RVTools\Exports C:\Reports\Anonymized_Analysis.xlsx
@@ -205,12 +206,12 @@ RVToolsMerge offers robust data protection features for handling sensitive infra
 
 When using the anonymization option, the following data is consistently anonymized (per file):
 
--   VM names → vm123_1, vm456_2, vm789_3, etc. (unique per file)
--   DNS names → dns123_1, dns456_2, dns789_3, etc. (unique per file)
--   IP addresses → ip123_1, ip456_2, ip789_3, etc. (unique per file)
--   Cluster names → cluster123_1, cluster456_2, cluster789_3, etc. (unique per file)
--   Host names → host123_1, host456_2, host789_3, etc. (unique per file)
--   Datacenter names → datacenter123_1, datacenter456_2, datacenter789_3, etc. (unique per file)
+- VM names → vm123_1, vm456_2, vm789_3, etc. (unique per file)
+- DNS names → dns123_1, dns456_2, dns789_3, etc. (unique per file)
+- IP addresses → ip123_1, ip456_2, ip789_3, etc. (unique per file)
+- Cluster names → cluster123_1, cluster456_2, cluster789_3, etc. (unique per file)
+- Host names → host123_1, host456_2, host789_3, etc. (unique per file)
+- Datacenter names → datacenter123_1, datacenter456_2, datacenter789_3, etc. (unique per file)
 
 **Anonymization is only supported for the four core sheets** (vInfo, vHost, vPartition, vMemory). It cannot be used with the `--all-sheets` flag.
 
@@ -226,17 +227,17 @@ For more details on how anonymization is implemented, see the [Column Mappings D
 
 The mandatory columns only mode provides an additional layer of data protection by:
 
--   Including only essential columns required for analysis
--   Excluding potentially sensitive columns that might contain organization-specific information
--   Reducing the data footprint in the output file
--   Limiting exposure of non-essential infrastructure details
+- Including only essential columns required for analysis
+- Excluding potentially sensitive columns that might contain organization-specific information
+- Reducing the data footprint in the output file
+- Limiting exposure of non-essential infrastructure details
 
 This option is particularly useful when:
 
--   Sharing reports with external parties
--   Creating documentation for public consumption
--   Generating simplified reports focused on specific metrics
--   Ensuring compliance with data sharing policies
+- Sharing reports with external parties
+- Creating documentation for public consumption
+- Generating simplified reports focused on specific metrics
+- Ensuring compliance with data sharing policies
 
 ### Combined Data Protection
 
@@ -256,22 +257,22 @@ RVToolsMerge provides validation support for Azure Migrate requirements to ensur
 
 When using the Azure Migrate validation option, RVToolsMerge:
 
--   Validates that VM UUIDs are present and not null for all VMs
--   Validates that OS configuration data is present and not null
--   Ensures VM UUIDs are unique across all entries (no duplicates)
--   Enforces the Azure Migrate limit of 20,000 VMs
--   Tracks rows that were skipped due to the VM count limit
+- Validates that VM UUIDs are present and not null for all VMs
+- Validates that OS configuration data is present and not null
+- Ensures VM UUIDs are unique across all entries (no duplicates)
+- Enforces the Azure Migrate limit of 20,000 VMs
+- Tracks rows that were skipped due to the VM count limit
 
 ### Validation Results and Reporting
 
--   Rows that fail validation are exported to a separate Excel file with the naming pattern `<output_filename>_FailedAzureMigrateValidation.xlsx`
--   The console displays detailed validation statistics including:
-    -   Count of rows with missing VM UUIDs
-    -   Count of rows with missing OS configurations
-    -   Count of rows with duplicate VM UUIDs
-    -   Count of rows excluded due to VM limit
-    -   Count of rows not processed (skipped) after reaching the 20,000 VM limit
-    -   Total count of failed validations
+- Rows that fail validation are exported to a separate Excel file with the naming pattern `<output_filename>_FailedAzureMigrateValidation.xlsx`
+- The console displays detailed validation statistics including:
+  - Count of rows with missing VM UUIDs
+  - Count of rows with missing OS configurations
+  - Count of rows with duplicate VM UUIDs
+  - Count of rows excluded due to VM limit
+  - Count of rows not processed (skipped) after reaching the 20,000 VM limit
+  - Total count of failed validations
 
 ### Usage Example
 
@@ -281,10 +282,10 @@ RVToolsMerge -z /path/to/inputs /path/to/output.xlsx
 
 This option is especially useful when:
 
--   Preparing VMware inventory data for Azure migration assessments
--   Pre-validating RVTools exports before uploading to Azure Migrate
--   Identifying problematic VM records that would fail Azure Migrate import
--   Ensuring your migration assessment includes all critical VMs
+- Preparing VMware inventory data for Azure migration assessments
+- Pre-validating RVTools exports before uploading to Azure Migrate
+- Identifying problematic VM records that would fail Azure Migrate import
+- Ensuring your migration assessment includes all critical VMs
 
 For maximum preparation before uploading to Azure Migrate, consider combining with other options:
 
@@ -300,35 +301,35 @@ RVToolsMerge implements robust validation to ensure data integrity:
 
 ### Validation Rules
 
--   **By default (all options disabled)**: All required sheets with all mandatory columns must exist in all files. Files that don't meet these requirements will cause the operation to fail.
--   **With `-m` (ignore-missing-sheets)**:
-    -   The vInfo sheet remains required in all files
-    -   Optional sheets (vHost, vPartition, vMemory) can be missing without causing failures
-    -   Missing mandatory columns in optional sheets will still cause errors unless handled by other options
--   **With `-i` (skip-invalid-files)**:
-    -   Files without the required vInfo sheet will be skipped and processing will continue
-    -   Files with vInfo sheet but missing mandatory vInfo columns will be skipped
-    -   Files with optional sheets having missing mandatory columns will be skipped
--   **With `-e` (skip-empty-values)**:
-    -   Rows with empty values in mandatory columns will be excluded from the output
-    -   By default (when this option is disabled), rows with empty mandatory values are included in the output
-    -   Enable this option when you want to include only complete data records
--   **With both `-i` and `-m` together**:
-    -   Files without vInfo sheet will be skipped
-    -   Files with vInfo sheet but missing mandatory vInfo columns will be skipped
-    -   Files with complete vInfo sheet but missing optional sheets will be processed
-    -   Files with optional sheets missing mandatory columns will be processed, but those sheets may be excluded
+- **By default (all options disabled)**: All required sheets with all mandatory columns must exist in all files. Files that don't meet these requirements will cause the operation to fail.
+- **With `-m` (ignore-missing-sheets)**:
+  - The vInfo sheet remains required in all files
+  - Optional sheets (vHost, vPartition, vMemory) can be missing without causing failures
+  - Missing mandatory columns in optional sheets will still cause errors unless handled by other options
+- **With `-i` (skip-invalid-files)**:
+  - Files without the required vInfo sheet will be skipped and processing will continue
+  - Files with vInfo sheet but missing mandatory vInfo columns will be skipped
+  - Files with optional sheets having missing mandatory columns will be skipped
+- **With `-e` (skip-empty-values)**:
+  - Rows with empty values in mandatory columns will be excluded from the output
+  - By default (when this option is disabled), rows with empty mandatory values are included in the output
+  - Enable this option when you want to include only complete data records
+- **With both `-i` and `-m` together**:
+  - Files without vInfo sheet will be skipped
+  - Files with vInfo sheet but missing mandatory vInfo columns will be skipped
+  - Files with complete vInfo sheet but missing optional sheets will be processed
+  - Files with optional sheets missing mandatory columns will be processed, but those sheets may be excluded
 
 ### Default Behavior
 
 **Important**: All processing options are disabled by default. This means:
 
--   **Strict validation**: Processing will fail if any file is missing required sheets or columns
--   **No anonymization**: All original data values are preserved in the output
--   **All columns included**: Both mandatory and optional columns are included when available
--   **No source tracking**: The source file name is not added to the merged data
--   **Empty values preserved**: Rows with empty mandatory values are included in the output
--   **Full error reporting**: Only basic error messages are shown (use `-d` for detailed debugging)
+- **Strict validation**: Processing will fail if any file is missing required sheets or columns
+- **No anonymization**: All original data values are preserved in the output
+- **All columns included**: Both mandatory and optional columns are included when available
+- **No source tracking**: The source file name is not added to the merged data
+- **Empty values preserved**: Rows with empty mandatory values are included in the output
+- **Full error reporting**: Only basic error messages are shown (use `-d` for detailed debugging)
 
 To enable any special processing behavior, you must explicitly specify the corresponding command-line options.
 
@@ -356,16 +357,16 @@ RVToolsMerge is built with .NET 10 and follows modern C# development practices:
 
 ### Key Components
 
--   **ClosedXML**: High-performance Excel file handling
--   **Spectre.Console**: Rich console UI with progress bars, tables, and colors
--   **Spectre.Console.Cli**: Command-line parsing and help generation framework
--   **Modern C# Features**: Using the latest C# features like records, pattern matching, and nullable reference types
+- **ClosedXML**: High-performance Excel file handling
+- **Spectre.Console**: Rich console UI with progress bars, tables, and colors
+- **Spectre.Console.Cli**: Command-line parsing and help generation framework
+- **Modern C# Features**: Using the latest C# features like records, pattern matching, and nullable reference types
 
 ## Building from Source
 
 ### Prerequisites
 
--   .NET 10.0 SDK or later
+- .NET 10.0 SDK or later
 
 ### Basic Build
 
@@ -421,11 +422,11 @@ Contributions are welcome! Please follow these steps:
 
 This project follows strict development standards:
 
--   **Coding Style**: C# coding best practices with PascalCase for public members, camelCase for private fields
--   **Documentation**: XML documentation for all public methods and classes
--   **Error Handling**: Robust exception handling and validation
--   **Code Coverage**: Comprehensive test coverage (currently 76%) with detailed reports - see [Code Coverage Documentation](docs/code-coverage.md)
--   **Testing Approach**: Integration tests use real file system operations while unit tests use mocking for isolated component testing
+- **Coding Style**: C# coding best practices with PascalCase for public members, camelCase for private fields
+- **Documentation**: XML documentation for all public methods and classes
+- **Error Handling**: Robust exception handling and validation
+- **Code Coverage**: Comprehensive test coverage (currently 76%) with detailed reports - see [Code Coverage Documentation](docs/code-coverage.md)
+- **Testing Approach**: Integration tests use real file system operations while unit tests use mocking for isolated component testing
 
 ### Continuous Integration
 
@@ -446,19 +447,19 @@ Detailed CI/CD documentation is available in [continuous-integration.md](/docs/c
 
 For CI/CD workloads requiring code signing of release artifacts, the project includes Azure infrastructure automation for deploying secure Windows-based GitHub runners:
 
--   **Azure GitHub Runner**: Deploy self-hosted Windows runners for artifact signing workflows
--   **Code Signing Environment**: Secure Windows environment with access to code signing certificates and tools
--   **Signing Tools**: Pre-configured with .NET SDK, Windows SDK, and signtool.exe for authenticode signing
--   **Security Isolation**: Network-isolated environment with encrypted storage for certificate security
--   **Cost-Effective**: Multiple VM sizes from ~$23-135 USD/month with automatic shutdown policies
--   **Bicep Infrastructure**: Infrastructure as Code for consistent and repeatable deployments
+- **Azure GitHub Runner**: Deploy self-hosted Windows runners for artifact signing workflows
+- **Code Signing Environment**: Secure Windows environment with access to code signing certificates and tools
+- **Signing Tools**: Pre-configured with .NET SDK, Windows SDK, and signtool.exe for authenticode signing
+- **Security Isolation**: Network-isolated environment with encrypted storage for certificate security
+- **Cost-Effective**: Multiple VM sizes from ~$23-135 USD/month with automatic shutdown policies
+- **Bicep Infrastructure**: Infrastructure as Code for consistent and repeatable deployments
 
 The self-hosted runners enable:
 
--   **Authenticode Signing**: Sign .exe files and MSI installers with trusted certificates
--   **Enhanced Security**: Dedicated signing environment separate from public GitHub runners
--   **Certificate Management**: Secure storage and access to code signing certificates
--   **Trusted Releases**: Provide users with signed, verifiable release artifacts
+- **Authenticode Signing**: Sign .exe files and MSI installers with trusted certificates
+- **Enhanced Security**: Dedicated signing environment separate from public GitHub runners
+- **Certificate Management**: Secure storage and access to code signing certificates
+- **Trusted Releases**: Provide users with signed, verifiable release artifacts
 
 Comprehensive deployment guide available in [Azure GitHub Runner Deployment Guide](/docs/azure-github-runner-deployment.md).
 
@@ -466,9 +467,9 @@ Comprehensive deployment guide available in [Azure GitHub Runner Deployment Guid
 
 The project follows [Semantic Versioning](https://semver.org/):
 
--   **major** (1.0.0 → 2.0.0): Incompatible API changes
--   **minor** (1.0.0 → 1.1.0): New backward-compatible functionality
--   **patch** (1.0.0 → 1.0.1): Backward-compatible bug fixes
+- **major** (1.0.0 → 2.0.0): Incompatible API changes
+- **minor** (1.0.0 → 1.1.0): New backward-compatible functionality
+- **patch** (1.0.0 → 1.0.1): Backward-compatible bug fixes
 
 Version bumping and release creation are managed through a single GitHub Actions workflow that can be triggered manually. The workflow supports both version bumping only or version bumping with immediate release creation.
 
@@ -488,10 +489,10 @@ This project takes security seriously, with multiple layers of protection:
 
 ### Security Practices
 
--   **Automated Scanning**: Regular code scanning for vulnerabilities
--   **Dependency Management**: Automated updates for security patches
--   **Secure Coding**: Following established security best practices
--   **Vulnerability Reporting**: Clear process for reporting security issues
+- **Automated Scanning**: Regular code scanning for vulnerabilities
+- **Dependency Management**: Automated updates for security patches
+- **Secure Coding**: Following established security best practices
+- **Vulnerability Reporting**: Clear process for reporting security issues
 
 For details on reporting security vulnerabilities, please see our [Security Policy](SECURITY.md).
 
@@ -535,7 +536,7 @@ Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed g
 
 ## Acknowledgments
 
--   [RVTools](https://www.robware.net/rvtools/) by Robware - This independent project works with data exported from RVTools but is not affiliated with, endorsed by, or connected to Robware or the official RVTools product
--   [ClosedXML](https://github.com/ClosedXML/ClosedXML) for excellent Excel file handling capabilities
--   [Spectre.Console](https://spectreconsole.net/) for beautiful console output and UX
--   [GitHub Copilot](https://github.com/features/copilot) using various models for AI assistance in code generation and development
+- [RVTools](https://www.robware.net/rvtools/) by Robware - This independent project works with data exported from RVTools but is not affiliated with, endorsed by, or connected to Robware or the official RVTools product
+- [ClosedXML](https://github.com/ClosedXML/ClosedXML) for excellent Excel file handling capabilities
+- [Spectre.Console](https://spectreconsole.net/) for beautiful console output and UX
+- [GitHub Copilot](https://github.com/features/copilot) using various models for AI assistance in code generation and development

@@ -23,15 +23,15 @@ When using the `--all-sheets` flag (with `-A`), RVToolsMerge automatically disco
 -   Additional sheets like vCPU, vDisk, vNetwork, vFloppy, vCD, vUSB, vSnapshot, etc.
 -   Any other sheets present in your RVTools export
 
-**Important**: The `--all-sheets` flag is **mutually exclusive** with the `--anonymize` flag. Anonymization is only supported for the four core sheets.
+**Important Notes**:
+- The `--all-sheets` flag is **mutually exclusive** with the `--anonymize` flag (anonymization only works with the four core sheets)
+- When using `--all-sheets`, missing optional sheets are **automatically tolerated** - you don't need to also specify `--ignore-missing-sheets`
 
 ### Ignore Missing Sheets (`--ignore-missing-sheets`)
 
 The `--ignore-missing-sheets` flag (or `-i`) allows processing files that are missing optional sheets (vHost, vPartition, vMemory). Only vInfo is required when this flag is enabled.
 
-This flag can be combined with `--all-sheets` to:
-1. Allow missing optional sheets
-2. Discover and process any additional sheets that are present
+**Note**: When using `--all-sheets`, this flag is automatically enabled, so you don't need to specify both.
 
 ## Core Sheets
 
