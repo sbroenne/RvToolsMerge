@@ -21,6 +21,14 @@ public class MergeOptions
     public bool IgnoreMissingOptionalSheets { get; set; } = false;
 
     /// <summary>
+    /// Gets or sets a value indicating whether to process all sheets found in RVTools exports.
+    /// When true, all sheets beyond the core 4 (vInfo, vHost, vPartition, vMemory) will be discovered and processed.
+    /// This option is mutually exclusive with AnonymizeData.
+    /// Default is false.
+    /// </summary>
+    public bool ProcessAllSheets { get; set; } = false;
+
+    /// <summary>
     /// Gets or sets a value indicating whether to skip invalid files during processing.
     /// When true, files that cannot be processed will be skipped rather than causing the operation to fail.
     /// Default is false.

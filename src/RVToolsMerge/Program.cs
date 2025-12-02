@@ -33,6 +33,7 @@ public class Program
         ConfigureServices(services);
 
         // Create the command app with dependency injection
+        // Use CommandApp<TCommand> pattern for default command with AsyncCommand<TSettings>
         var registrar = new TypeRegistrar(services);
         var app = new CommandApp<MergeCommand>(registrar);
 

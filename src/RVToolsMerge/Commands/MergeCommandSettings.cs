@@ -32,11 +32,20 @@ public class MergeCommandSettings : CommandSettings
 
     /// <summary>
     /// Gets or sets a value indicating whether to ignore missing optional sheets.
+    /// Note: This is automatically enabled when using --all-sheets.
     /// </summary>
     [CommandOption("-i|--ignore-missing-sheets")]
-    [Description("Ignore missing optional sheets and continue processing")]
+    [Description("Ignore missing optional sheets and continue processing (automatically enabled with --all-sheets)")]
     [DefaultValue(false)]
     public bool IgnoreMissingOptionalSheets { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether to process all sheets in RVTools exports.
+    /// </summary>
+    [CommandOption("-A|--all-sheets")]
+    [Description("Process all sheets in RVTools exports (mutually exclusive with --anonymize)")]
+    [DefaultValue(false)]
+    public bool AllSheets { get; set; }
 
     /// <summary>
     /// Gets or sets a value indicating whether to skip invalid files during processing.

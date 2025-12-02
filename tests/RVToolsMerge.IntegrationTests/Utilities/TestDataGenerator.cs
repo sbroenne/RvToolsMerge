@@ -419,4 +419,58 @@ public class TestDataGenerator
             vMemorySheet.Cell(i + 1, 4).Value = i % 2 == 0 ? 2048 : 0; // Some VMs have reservations
         }
     }
+
+    /// <summary>
+    /// Creates an RVTools file with additional unknown sheets to test dynamic discovery.
+    /// </summary>
+    /// <param name="fileName">Name of the file to create.</param>
+    /// <param name="numVMs">Number of VM entries to generate.</param>
+    /// <returns>The full path to the created file.</returns>
+    public string CreateFileWithUnknownSheets(string fileName, int numVMs = 3)
+    {
+        string filePath = _fileSystem.Path.Combine(_testDataDirectory, fileName);
+
+        using var workbook = new XLWorkbook();
+
+        // Create standard sheets
+        CreateVInfoSheet(workbook, numVMs);
+        CreateVHostSheet(workbook, 2);
+
+        // Create unknown sheets that aren't in the hardcoded list
+        // vCPU sheet - mimics real RVTools export
+        var vCPUSheet = workbook.AddWorksheet("vCPU");
+        vCPUSheet.Cell(1, 1).Value = "VM";
+        vCPUSheet.Cell(1, 2).Value = "VM UUID";
+        vCPUSheet.Cell(1, 3).Value = "Host";
+        vCPUSheet.Cell(1, 4).Value = "# CPU";
+        vCPUSheet.Cell(1, 5).Value = "# Cores per socket";
+
+        for (int i = 1; i <= numVMs; i++)
+        {
+            vCPUSheet.Cell(i + 1, 1).Value = $"TestVM{i:D2}";
+            vCPUSheet.Cell(i + 1, 2).Value = $"42008ee5-71f9-48d7-8e02-7e371f5a8b{i:D2}";
+            vCPUSheet.Cell(i + 1, 3).Value = $"Host{(i % 2) + 1}";
+            vCPUSheet.Cell(i + 1, 4).Value = i + 1;
+            vCPUSheet.Cell(i + 1, 5).Value = 1;
+        }
+
+        // vDisk sheet - another real RVTools export sheet
+        var vDiskSheet = workbook.AddWorksheet("vDisk");
+        vDiskSheet.Cell(1, 1).Value = "VM";
+        vDiskSheet.Cell(1, 2).Value = "Datastore";
+        vDiskSheet.Cell(1, 3).Value = "Disk";
+        vDiskSheet.Cell(1, 4).Value = "Capacity GB";
+
+        for (int i = 1; i <= numVMs; i++)
+        {
+            vDiskSheet.Cell(i + 1, 1).Value = $"TestVM{i:D2}";
+            vDiskSheet.Cell(i + 1, 2).Value = "Datastore1";
+            vDiskSheet.Cell(i + 1, 3).Value = "Hard disk 1";
+            vDiskSheet.Cell(i + 1, 4).Value = 50 + (i * 10);
+        }
+
+        workbook.SaveAs(filePath);
+        return filePath;
+    }
 }
+

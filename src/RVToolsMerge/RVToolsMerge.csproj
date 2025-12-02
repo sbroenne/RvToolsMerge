@@ -17,6 +17,9 @@
     <PublishReadyToRun>true</PublishReadyToRun>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
 
+    <!-- Trimming settings - preserve reflection metadata for Spectre.Console.Cli -->
+    <TrimMode>partial</TrimMode>
+
     <!-- Platform-specific optimizations -->
     <InvariantGlobalization>false</InvariantGlobalization>
     <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
@@ -75,6 +78,11 @@
     <PackageReference Include="Spectre.Console" Version="0.54.0" />
     <PackageReference Include="Spectre.Console.Cli" Version="0.53.1" />
     <PackageReference Include="System.IO.Abstractions" Version="22.1.0" />
+  </ItemGroup>
+
+  <!-- Trimmer configuration to preserve types needed by Spectre.Console.Cli -->
+  <ItemGroup>
+    <TrimmerRootDescriptor Include="TrimmerRoots.xml" />
   </ItemGroup>
 
 </Project>

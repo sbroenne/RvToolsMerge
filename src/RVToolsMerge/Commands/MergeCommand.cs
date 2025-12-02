@@ -11,7 +11,6 @@ using System.Reflection;
 using RVToolsMerge.Models;
 using RVToolsMerge.Services;
 using RVToolsMerge.Services.Interfaces;
-using Spectre.Console;
 using Spectre.Console.Cli;
 
 namespace RVToolsMerge.Commands;
@@ -68,6 +67,17 @@ public class MergeCommand : AsyncCommand<MergeCommandSettings>
         // Convert settings to MergeOptions for internal use
         var options = ConvertSettingsToOptions(settings);
 
+        // Validate option compatibility
+        if (options.AnonymizeData && options.ProcessAllSheets)
+        {
+            _consoleUiService.WriteLine();
+            _consoleUiService.DisplayError("The --anonymize and --all-sheets options cannot be used together.");
+            _consoleUiService.DisplayInfo("Anonymization is only supported for the core sheets (vInfo, vHost, vPartition, vMemory).");
+            _consoleUiService.DisplayInfo("To anonymize data, remove the --all-sheets flag.");
+            _consoleUiService.DisplayInfo("To process all sheets, remove the --anonymize flag.");
+            return 1;
+        }
+
         // Display selected options
         _consoleUiService.DisplayOptions(options);
 
@@ -102,6 +112,7 @@ public class MergeCommand : AsyncCommand<MergeCommandSettings>
         return new MergeOptions
         {
             IgnoreMissingOptionalSheets = settings.IgnoreMissingOptionalSheets,
+            ProcessAllSheets = settings.AllSheets,
             SkipInvalidFiles = settings.SkipInvalidFiles,
             AnonymizeData = settings.AnonymizeData,
             OnlyMandatoryColumns = settings.OnlyMandatoryColumns,

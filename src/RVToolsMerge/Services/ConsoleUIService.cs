@@ -281,8 +281,16 @@ public class ConsoleUIService
             "[yellow]Optional[/]",
             "[bold]VM UUID[/], [bold]VM[/], [bold]Size MiB[/], [bold]Reservation[/]"
         );
+        table.AddRow(
+            "[dim]Additional sheets[/]",
+            "[dim]Auto-discovered[/]",
+            "[dim]All sheets in RVTools exports are processed when using --all-sheets[/]"
+        );
         table.Border(TableBorder.Rounded);
         AnsiConsole.Write(table);
+        AnsiConsole.WriteLine();
+        AnsiConsole.MarkupLine("[dim]Note: Additional sheets (vCPU, vDisk, vNetwork, etc.) are automatically discovered and merged when using [yellow]--all-sheets[/] ([yellow]-A[/]).[/]");
+        AnsiConsole.MarkupLine("[dim]Anonymization ([yellow]--anonymize[/]) is only supported for the core 4 sheets and cannot be used with [yellow]--all-sheets[/].[/]");
         AnsiConsole.WriteLine();
     }
 

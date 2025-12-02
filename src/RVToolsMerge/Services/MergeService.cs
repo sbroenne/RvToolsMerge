@@ -64,6 +64,12 @@ public class MergeService : IMergeService
     {
         ValidateInputParameters(filePaths);
 
+        // Validate that anonymization and all-sheets are not both enabled
+        if (options.AnonymizeData && options.ProcessAllSheets)
+        {
+            throw new InvalidOperationException("Anonymization and processing all sheets cannot be enabled simultaneously. Anonymization is only supported for the core sheets (vInfo, vHost, vPartition, vMemory).");
+        }
+
         // Copy the list to allow modification if we need to remove invalid files
         var validFilePaths = filePaths.ToList();
 
@@ -167,7 +173,9 @@ public class MergeService : IMergeService
                     foreach (string filePath in validFilePaths)
                     {
                         var fileIssues = new List<ValidationIssue>();
-                        bool isValid = _validationService.ValidateFile(filePath, options.IgnoreMissingOptionalSheets, fileIssues);
+                        // When ProcessAllSheets is enabled, automatically tolerate missing optional sheets
+                        bool ignoreMissing = options.IgnoreMissingOptionalSheets || options.ProcessAllSheets;
+                        bool isValid = _validationService.ValidateFile(filePath, ignoreMissing, fileIssues);
 
                         fileValidationResults.Add((filePath, isValid, fileIssues));
                         validationIssues.AddRange(fileIssues);
@@ -273,20 +281,30 @@ public class MergeService : IMergeService
             throw new MissingRequiredSheetException("Some files are missing the required 'vInfo' sheet.");
         }
 
-        // Find sheets that are available in at least one file
-        var availableSheets = new List<string>();
-        foreach (var sheetName in SheetConfiguration.RequiredSheets)
+        // Find ALL unique sheets that are available across all files
+        var allDiscoveredSheets = new HashSet<string>();
+        foreach (var fileSheets in sheetsInFiles.Values)
         {
-            if (sheetsInFiles.Values.Any(sheets => sheets.Contains(sheetName)))
+            foreach (var sheetName in fileSheets)
             {
-                availableSheets.Add(sheetName);
+                allDiscoveredSheets.Add(sheetName);
             }
         }
 
-        // Apply ignoring missing sheets if requested
-        var sheetsToReturn = options.IgnoreMissingOptionalSheets
-            ? availableSheets
-            : SheetConfiguration.RequiredSheets.ToList();
+        // Determine which sheets to return based on options
+        List<string> sheetsToReturn;
+        if (options.ProcessAllSheets)
+        {
+            // Return all discovered sheets (dynamic discovery mode)
+            sheetsToReturn = allDiscoveredSheets.ToList();
+        }
+        else
+        {
+            // Standard mode: only return the 4 core sheets if they exist
+            sheetsToReturn = SheetConfiguration.RequiredSheets
+                .Where(s => allDiscoveredSheets.Contains(s))
+                .ToList();
+        }
 
         _consoleUiService.MarkupLineInterpolated($"[cyan]Found sheets:[/] {string.Join(", ", sheetsToReturn)}");
         return sheetsToReturn;
@@ -348,8 +366,10 @@ public class MergeService : IMergeService
                         }
                     });
 
-                // If only mandatory columns are requested, filter the common columns
-                if (options.OnlyMandatoryColumns && SheetConfiguration.MandatoryColumns.TryGetValue(sheetName, out var mandatoryColumns))
+                // If only mandatory columns are requested, filter the common columns (only for known sheets)
+                if (options.OnlyMandatoryColumns &&
+                    SheetConfiguration.KnownSheets.Contains(sheetName) &&
+                    SheetConfiguration.MandatoryColumns.TryGetValue(sheetName, out var mandatoryColumns))
                 {
                     var columnsInAllFiles = allFileColumns.Count > 0
                         ? allFileColumns.Aggregate((current, next) => new HashSet<string>(current.Intersect(next)))
@@ -372,7 +392,7 @@ public class MergeService : IMergeService
                 }
                 else
                 {
-                    // Find columns that are present in all files
+                    // Find columns that are present in all files (for both known and unknown sheets)
                     var columnsInAllFiles = allFileColumns.Count > 0
                         ? allFileColumns.Aggregate((current, next) => new HashSet<string>(current.Intersect(next))).ToList()
                         : [];
@@ -576,8 +596,9 @@ public class MergeService : IMergeService
                                 sourceFileColumnIndex = commonColumns[sheetName].IndexOf("Source File");
                             }
 
-                            // Prepare for mandatory column validation
-                            var mandatoryCols = SheetConfiguration.MandatoryColumns.TryGetValue(sheetName, out var mcols)
+                            // Prepare for mandatory column validation (only for known sheets)
+                            var mandatoryCols = SheetConfiguration.KnownSheets.Contains(sheetName) &&
+                                                SheetConfiguration.MandatoryColumns.TryGetValue(sheetName, out var mcols)
                                 ? mcols.Where(c => c != "OS according to the configuration file").ToList()
                                 : [];
                             var mandatoryColIndices = mandatoryCols
