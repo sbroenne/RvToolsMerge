@@ -7,7 +7,6 @@
 //-----------------------------------------------------------------------
 using ClosedXML.Excel;
 using RVToolsMerge.Models;
-using Xunit;
 
 namespace RVToolsMerge.IntegrationTests;
 
