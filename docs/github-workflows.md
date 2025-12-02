@@ -6,13 +6,13 @@ This directory contains GitHub-specific configuration files and workflows for th
 
 The following GitHub Actions workflows are configured:
 
--   **build.yml**: Main build workflow that builds and tests the project across multiple platforms (Windows, Linux, macOS), including MSI creation for Windows using WiX Toolset 6.0.1. Supports optional code signing for Windows artifacts during release builds.
--   **codeql.yml**: Code quality analysis using GitHub's CodeQL, with special focus on Excel data handling and processing
--   **dependency-review.yml**: Reviews dependencies for security vulnerabilities, particularly focusing on Excel libraries
--   **dotnet.yml**: Continuous integration for .NET 9 code changes, including Excel processing tests
--   **labeler.yml**: Automatically adds labels to pull requests based on affected components (UI, Excel processing, VMware data)
--   **version-management.yml**: Manages semantic versioning for the project with automated version bumps, optional release creation, MSI building, code signing for release artifacts, and winget manifest generation
--   **code-coverage.yml**: Standalone code coverage analysis and reporting
+- **build.yml**: Main build workflow that builds and tests the project across multiple platforms (Windows, Linux, macOS)
+- **codeql.yml**: Code quality analysis using GitHub's CodeQL, with special focus on Excel data handling and processing
+- **dependency-review.yml**: Reviews dependencies for security vulnerabilities, particularly focusing on Excel libraries
+- **dotnet.yml**: Continuous integration for .NET 10 code changes, including Excel processing tests
+- **labeler.yml**: Automatically adds labels to pull requests based on affected components (UI, Excel processing, VMware data)
+- **version-management.yml**: Manages semantic versioning for the project with automated version bumps and optional release creation
+- **code-coverage.yml**: Standalone code coverage analysis and reporting
 
 ## Dependabot
 
