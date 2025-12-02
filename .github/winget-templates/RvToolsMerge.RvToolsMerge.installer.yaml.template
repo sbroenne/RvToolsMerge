@@ -1,0 +1,44 @@
+# Created with winget-create
+# https://github.com/microsoft/winget-create
+PackageIdentifier: RvToolsMerge.RvToolsMerge
+PackageVersion: {{VERSION}}
+Platform:
+- Windows.Desktop
+MinimumOSVersion: 10.0.17763.0
+Scope: machine
+InstallModes:
+- interactive
+- silent
+- silentWithProgress
+UpgradeBehavior: install
+Protocols:
+- http
+- https
+FileExtensions:
+- xlsx
+- xls
+Installers:
+- Architecture: x64
+  InstallerType: wix
+  InstallerUrl: https://github.com/sbroenne/RVToolsMerge/releases/download/v{{VERSION}}/RVToolsMerge-{{VERSION}}-win-x64.msi
+  InstallerSha256: {{X64_SHA256}}
+  ProductCode: '{{X64_PRODUCT_CODE}}'
+  AppsAndFeaturesEntries:
+  - DisplayName: RVToolsMerge
+    Publisher: Stefan Broenner
+    DisplayVersion: {{VERSION}}
+  InstallationMetadata:
+    DefaultInstallLocation: '%ProgramFiles%\RVToolsMerge'
+- Architecture: arm64
+  InstallerType: wix
+  InstallerUrl: https://github.com/sbroenne/RVToolsMerge/releases/download/v{{VERSION}}/RVToolsMerge-{{VERSION}}-win-arm64.msi
+  InstallerSha256: {{ARM64_SHA256}}
+  ProductCode: '{{ARM64_PRODUCT_CODE}}'
+  AppsAndFeaturesEntries:
+  - DisplayName: RVToolsMerge
+    Publisher: Stefan Broenner
+    DisplayVersion: {{VERSION}}
+  InstallationMetadata:
+    DefaultInstallLocation: '%ProgramFiles%\RVToolsMerge'
+ManifestType: installer
+ManifestVersion: 1.6.0

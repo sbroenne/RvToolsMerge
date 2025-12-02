@@ -244,6 +244,11 @@ jobs:
       - name: Create Pull Request
         id: create-pr
         run: |
+          # Create a PR for the version update
+          # Uses the GitHub CLI to create a pull request with the version changes
+          # The PR title follows conventional commits format with "chore: bump version"
+          # The PR description includes both the old and new version numbers for clarity
+
           echo "::notice::Creating pull request for version update"
 
           # Check if PR already exists for this branch
@@ -286,12 +291,16 @@ jobs:
       - name: Auto-Squash-Merge PR
         id: auto-merge
         run: |
+          # Attempt to automatically squash-merge the PR with retry logic
+          # Some repositories may have required checks that need to complete
+          # before merging is allowed, so we retry a few times with delays
           RETRIES=5
-          RETRY_DELAY=60
+          RETRY_DELAY=60  # 1 minute between retry attempts
 
           for i in $(seq 1 $RETRIES); do
             echo "Attempting to squash-merge PR (attempt $i of $RETRIES)..."
 
+            # Check if PR is mergeable first
             PR_STATE=$(gh pr view ${{ steps.create-pr.outputs.pr_number }} --json mergeable,state --jq '.mergeable + "," + .state')
             echo "PR state: $PR_STATE"
 
@@ -331,6 +340,7 @@ jobs:
       - name: Create and Push Version Tag
         id: create-tag
         run: |
+          # Wait for merge to propagate with retry logic
           echo "Waiting for merge to propagate..."
           EXPECTED_VERSION="${{ needs.bump-version.outputs.new_version }}"
           MAX_ATTEMPTS=10
@@ -339,11 +349,17 @@ jobs:
           for attempt in $(seq 1 $MAX_ATTEMPTS); do
             echo "Attempt $attempt of $MAX_ATTEMPTS: Checking for merged changes..."
 
+            # Fetch latest changes from origin
             git fetch origin
+
+            # Switch to main branch and update it with the latest changes
             git checkout main
             git reset --hard origin/main
+
+            # Ensure we're fully up to date with any recent changes
             git pull origin main
 
+            # Verify we have the version bump in the current commit
             CURRENT_VERSION_IN_FILE=$(grep -o '<Version>[^<]*' src/RVToolsMerge/RVToolsMerge.csproj | sed 's/<Version>//' || echo "NOT_FOUND")
 
             echo "Expected version: $EXPECTED_VERSION"
@@ -354,6 +370,10 @@ jobs:
               break
             elif [[ $attempt -eq $MAX_ATTEMPTS ]]; then
               echo "::error::Version mismatch after $MAX_ATTEMPTS attempts! Expected $EXPECTED_VERSION but found $CURRENT_VERSION_IN_FILE"
+              echo "::error::The PR merge may not have completed properly or the version update was not included."
+              echo "Current commit: $(git rev-parse HEAD)"
+              echo "Recent commits:"
+              git log --oneline -5
               exit 1
             else
               echo "Version not yet updated, waiting $WAIT_INTERVAL seconds before retry..."
@@ -361,16 +381,21 @@ jobs:
             fi
           done
 
+          # Create a tag with the new version in format v1.0.0
           TAG_NAME="v$EXPECTED_VERSION"
 
+          # Check if tag already exists and fail if it does
           if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
             echo "::error::Tag $TAG_NAME already exists. Cannot create duplicate version tag."
+            echo "::error::Please choose a different version or delete the existing tag first."
             exit 1
           fi
 
+          # Configure Git user for tag creation (required for annotated tags)
           git config --local user.email "actions@github.com"
           git config --local user.name "GitHub Actions"
 
+          # Create and push the new tag in one operation
           git tag -a "$TAG_NAME" -m "Release version $EXPECTED_VERSION"
           git push origin "$TAG_NAME"
 
@@ -393,10 +418,96 @@ jobs:
     with:
       configuration: "Release"
       ref: ${{ needs.create-tag.outputs.tag_name }}
+      enableCodeSigning: true
+
+  generate-winget-manifests:
+    name: Generate Winget Manifests
+    needs: [bump-version, create-tag, build-release]
+    if: ${{ success() && github.event.inputs.createRelease == 'true' && needs.create-tag.outputs.tag_created == 'true' }}
+    runs-on: [self-hosted, windows]
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.create-tag.outputs.tag_name }}
+
+      - name: Get Version from Tag
+        id: get-version
+        run: |
+          # Extract version from the tag name (remove 'v' prefix)
+          $TAG_NAME = "${{ needs.create-tag.outputs.tag_name }}"
+          $VERSION = $TAG_NAME.Substring(1)
+          echo "version=$VERSION" >> $env:GITHUB_OUTPUT
+          Write-Host "::notice::Generating winget manifests for version $VERSION"
+        shell: pwsh
+
+      - name: Download MSI Artifacts
+        uses: actions/download-artifact@v6
+        with:
+          path: msi-artifacts
+          pattern: "*-msi"
+
+      - name: List MSI Artifacts
+        run: |
+          Write-Host "Downloaded MSI artifacts:"
+          Get-ChildItem msi-artifacts -Recurse -Filter "*.msi" | ForEach-Object {
+            Write-Host "  $($_.FullName) ($(($_.Length / 1MB).ToString('F2')) MB)"
+          }
+        shell: pwsh
+
+      - name: Find MSI Files
+        id: find-msi
+        run: |
+          $version = "${{ steps.get-version.outputs.version }}"
+
+          # Find MSI files
+          $x64Msi = Get-ChildItem msi-artifacts -Recurse -Filter "*win-x64.msi" | Select-Object -First 1
+          $arm64Msi = Get-ChildItem msi-artifacts -Recurse -Filter "*win-arm64.msi" | Select-Object -First 1
+
+          if (-not $x64Msi) {
+            Write-Error "x64 MSI file not found"
+            exit 1
+          }
+
+          if (-not $arm64Msi) {
+            Write-Error "ARM64 MSI file not found"
+            exit 1
+          }
+
+          echo "x64_msi_path=$($x64Msi.FullName)" >> $env:GITHUB_OUTPUT
+          echo "arm64_msi_path=$($arm64Msi.FullName)" >> $env:GITHUB_OUTPUT
+
+          Write-Host "Found x64 MSI: $($x64Msi.FullName)"
+          Write-Host "Found ARM64 MSI: $($arm64Msi.FullName)"
+        shell: pwsh
+
+      - name: Generate Winget Manifests
+        run: |
+          $version = "${{ steps.get-version.outputs.version }}"
+          $x64MsiPath = "${{ steps.find-msi.outputs.x64_msi_path }}"
+          $arm64MsiPath = "${{ steps.find-msi.outputs.arm64_msi_path }}"
+          $outputDir = "winget-manifests"
+
+          # Create a basic release notes string - in a real scenario this could be extracted from CHANGELOG or release notes
+          $releaseNotes = "See the full release notes at: https://github.com/sbroenne/RVToolsMerge/releases/tag/v$version"
+
+          # Generate manifests without winget validation
+          & .github/scripts/generate-winget-manifests.ps1 -Version $version -X64MsiPath $x64MsiPath -Arm64MsiPath $arm64MsiPath -OutputDir $outputDir -ReleaseNotes $releaseNotes
+        shell: pwsh
+
+      - name: Upload Winget Manifests
+        uses: actions/upload-artifact@v5
+        with:
+          name: winget-manifests-${{ steps.get-version.outputs.version }}
+          path: winget-manifests/
+          retention-days: 30
 
   create-release:
     name: Create GitHub Release
-    needs: [bump-version, create-tag, build-release]
+    needs: [bump-version, create-tag, build-release, generate-winget-manifests]
     if: ${{ success() && github.event.inputs.createRelease == 'true' && needs.create-tag.outputs.tag_created == 'true' }}
     runs-on: ubuntu-latest
     permissions:
@@ -411,6 +522,7 @@ jobs:
       - name: Get Version from Tag
         id: get-version
         run: |
+          # Extract version from the tag name (remove 'v' prefix)
           TAG_NAME="${{ needs.create-tag.outputs.tag_name }}"
           VERSION="${TAG_NAME#v}"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
@@ -421,6 +533,12 @@ jobs:
         with:
           path: artifacts
 
+      - name: Download Winget Manifests
+        uses: actions/download-artifact@v6
+        with:
+          path: winget-manifests
+          pattern: "winget-manifests-*"
+
       - name: List Downloaded Artifacts
         run: |
           echo "Downloaded artifacts:"
@@ -428,18 +546,27 @@ jobs:
           echo "Directory structure:"
           find artifacts -type d | sort
 
+          echo "Artifact directories with file counts:"
+          for dir in $(find artifacts -mindepth 1 -maxdepth 1 -type d); do
+            count=$(find "$dir" -type f | wc -l)
+            echo "$dir: $count files"
+          done
+
       - name: Create Release Archives
         id: create-archives
         run: |
           mkdir -p release-files
           created_files=""
 
+          # Function to create archive if directory exists and has files
           create_archive() {
             local platform=$1
             local artifact_name=$2
             local version=$3
 
             echo "Looking for artifact with name: $artifact_name"
+
+            # Find the artifact directory using exact name
             artifact_dir=$(find artifacts -type d -name "$artifact_name" | head -1)
 
             if [[ -n "$artifact_dir" && -d "$artifact_dir" ]]; then
@@ -455,8 +582,10 @@ jobs:
                 zip -r "../../$archive_path" . -x "*.pdb"
                 cd - > /dev/null
 
+                # Verify the archive was created and add to list
                 if [[ -f "$archive_path" ]]; then
                   echo "✅ Successfully created $archive_name"
+                  # Use absolute path for GitHub Actions
                   abs_path="$(pwd)/$archive_path"
                   if [[ -z "$created_files" ]]; then
                     created_files="$abs_path"
@@ -468,27 +597,75 @@ jobs:
                 fi
               else
                 echo "::warning::No files found in $artifact_dir"
+                # List artifact directory structure for debugging
+                echo "Artifact directory contents:"
+                find "$artifact_dir" -type d | sort
               fi
             else
               echo "::warning::No artifact directory found with name: $artifact_name"
+              echo "Available artifact directories:"
+              find artifacts -type d -mindepth 1 -maxdepth 1 | sort
             fi
           }
 
+          # Function to copy MSI files directly (for Windows platforms)
+          copy_msi() {
+            local platform=$1
+            local artifact_name=$2
+            local version=$3
+
+            echo "Looking for MSI artifact with name: $artifact_name"
+
+            # Find the MSI artifact directory
+            msi_artifact_dir=$(find artifacts -type d -name "$artifact_name" | head -1)
+
+            if [[ -n "$msi_artifact_dir" && -d "$msi_artifact_dir" ]]; then
+              msi_files=$(find "$msi_artifact_dir" -name "*.msi")
+              if [[ -n "$msi_files" ]]; then
+                for msi_file in $msi_files; do
+                  msi_filename=$(basename "$msi_file")
+                  cp "$msi_file" "release-files/$msi_filename"
+                  echo "✅ Successfully copied MSI: $msi_filename"
+
+                  # Add to created files list
+                  abs_path="$(pwd)/release-files/$msi_filename"
+                  if [[ -z "$created_files" ]]; then
+                    created_files="$abs_path"
+                  else
+                    created_files="$created_files,$abs_path"
+                  fi
+                done
+              else
+                echo "::warning::No MSI files found in $msi_artifact_dir"
+              fi
+            else
+              echo "::info::No MSI artifact found for $platform (this is normal for non-Windows platforms or Debug builds)"
+            fi
+          }
+
+          # Use the version extracted from the tag (not from previous job outputs)
           VERSION_FROM_TAG="${{ steps.get-version.outputs.version }}"
           echo "Using version from tag: $VERSION_FROM_TAG"
 
-          # Create ZIP archives for all platforms
+          # For Windows platforms, try to use MSI files first, fallback to ZIP
+          echo "Checking for Windows MSI files..."
+          copy_msi "win-x64" "RVToolsMerge-win-x64-msi" "$VERSION_FROM_TAG"
+          copy_msi "win-arm64" "RVToolsMerge-win-arm64-msi" "$VERSION_FROM_TAG"
+
+          # Create ZIP archives for all platforms (as fallback for Windows and primary for others)
           echo "Creating ZIP archives for all platforms..."
           create_archive "win-x64" "RVToolsMerge-win-x64" "$VERSION_FROM_TAG"
           create_archive "win-arm64" "RVToolsMerge-win-arm64" "$VERSION_FROM_TAG"
           create_archive "linux-x64" "RVToolsMerge-linux-x64" "$VERSION_FROM_TAG"
-          create_archive "linux-arm64" "RVToolsMerge-linux-arm64" "$VERSION_FROM_TAG"
           create_archive "osx-arm64" "RVToolsMerge-osx-arm64" "$VERSION_FROM_TAG"
 
+          # Output created files for the release step (comma-separated for multiple files)
           echo "created_files=$created_files" >> $GITHUB_OUTPUT
 
           echo "Final release files:"
           ls -la release-files/ || echo "No release files created"
+
+          echo "Created files list: $created_files"
 
       - name: Validate Release Files
         run: |
@@ -497,12 +674,25 @@ jobs:
 
           if [[ -z "$created_files" ]]; then
             echo "::error::No release files were created. Check build artifacts."
+
+            # Diagnostic info for missing files - use version from tag
+            echo "Expected files:"
+            echo "- release-files/RVToolsMerge-$VERSION_FROM_TAG-win-x64.zip"
+            echo "- release-files/RVToolsMerge-$VERSION_FROM_TAG-win-arm64.zip"
+            echo "- release-files/RVToolsMerge-$VERSION_FROM_TAG-linux-x64.zip"
+            echo "- release-files/RVToolsMerge-$VERSION_FROM_TAG-osx-arm64.zip"
+
+            echo "Existing files in release-files directory:"
+            ls -la release-files/ 2>/dev/null || echo "Directory not found or empty"
+
             exit 1
           fi
 
           echo "Validating release files..."
+          # Split comma-separated file list and validate each file
           IFS=',' read -ra FILE_ARRAY <<< "$created_files"
           for file in "${FILE_ARRAY[@]}"; do
+            # Remove any leading/trailing whitespace
             file=$(echo "$file" | xargs)
             if [[ -f "$file" ]]; then
               size=$(stat -c%s "$file" 2>/dev/null || stat -f%z "$file" 2>/dev/null || echo "0")
@@ -522,6 +712,8 @@ jobs:
           prerelease: ${{ contains(steps.get-version.outputs.version, '-') }}
           files: |
             release-files/*.zip
+            release-files/*.msi
+            winget-manifests/**/*.yaml
           fail_on_unmatched_files: true
           generate_release_notes: true
           body: |
@@ -533,19 +725,29 @@ jobs:
 
             Choose the appropriate version for your operating system:
 
-            | Platform | Architecture | Download |
-            |----------|-------------|----------|
-            | Windows | x64 | RVToolsMerge-${{ steps.get-version.outputs.version }}-win-x64.zip |
-            | Windows | ARM64 | RVToolsMerge-${{ steps.get-version.outputs.version }}-win-arm64.zip |
-            | Linux | x64 | RVToolsMerge-${{ steps.get-version.outputs.version }}-linux-x64.zip |
-            | Linux | ARM64 | RVToolsMerge-${{ steps.get-version.outputs.version }}-linux-arm64.zip |
-            | macOS | ARM64 (Apple Silicon) | RVToolsMerge-${{ steps.get-version.outputs.version }}-osx-arm64.zip |
+            | Platform | Architecture | Download | Installer |
+            |----------|-------------|----------|-----------|
+            | Windows | x64 | RVToolsMerge-${{ steps.get-version.outputs.version }}-win-x64.zip | RVToolsMerge-${{ steps.get-version.outputs.version }}-win-x64.msi |
+            | Windows | ARM64 | RVToolsMerge-${{ steps.get-version.outputs.version }}-win-arm64.zip | RVToolsMerge-${{ steps.get-version.outputs.version }}-win-arm64.msi |
+            | Linux | x64 | RVToolsMerge-${{ steps.get-version.outputs.version }}-linux-x64.zip | - |
+            | macOS | ARM64 (Apple Silicon) | RVToolsMerge-${{ steps.get-version.outputs.version }}-osx-arm64.zip | - |            ### 🚀 Quick Start
 
-            ### 🚀 Quick Start
+            #### 🏆 Windows Users - Winget *(availability pending)*
+            Install directly from the Windows Package Manager:
+            ```powershell
+            winget install RvToolsMerge.RvToolsMerge
+            ```
+            > **Note**: RVToolsMerge is currently pending submission to the winget repository. If the winget command doesn't work, please use the MSI installer method below.
 
+            #### Windows Users - MSI Installer (Recommended)
+            1. Download the MSI installer for your architecture (x64 or ARM64)
+            2. Run the installer and follow the setup wizard
+            3. Run the executable file `RVToolsMerge.exe` to start the application
+
+            #### All Platforms (Portable)
             1. Download the ZIP archive for your platform
             2. Extract the archive to a directory of your choice
-            3. Run the executable file to start the application
+            3. Run the executable file `RVToolsMerge.exe` to start the application
 
             ### 📋 What's Changed
 
@@ -558,4 +760,4 @@ jobs:
       - name: Cleanup
         if: always()
         run: |
-          rm -rf artifacts release-files
+          rm -rf artifacts release-files release-coverage

@@ -81,15 +81,46 @@ For a complete reference of all column mappings, see [Column Mappings Documentat
 
 Download the latest release for your platform from the [Releases page](https://github.com/sbroenne/RVToolsMerge/releases):
 
-### Downloads
+### Windows
 
-- **Windows x64**: `RVToolsMerge-[version]-win-x64.zip`
-- **Windows ARM64**: `RVToolsMerge-[version]-win-arm64.zip`
-- **Linux x64**: `RVToolsMerge-[version]-linux-x64.zip`
-- **Linux ARM64**: `RVToolsMerge-[version]-linux-arm64.zip`
-- **macOS ARM64**: `RVToolsMerge-[version]-osx-arm64.zip` (Apple Silicon)
+**Using Windows Package Manager (winget)** _(availability pending)_:
+
+```powershell
+winget install RvToolsMerge.RvToolsMerge
+```
+
+> **Note**: RVToolsMerge is currently pending submission to the winget repository. If the winget command doesn't work, please use the manual installation methods below.
+
+**Manual Download**:
+
+- **Windows x64**: `RVToolsMerge-[version]-win-x64.msi` - Full installer with shortcuts and uninstall support
+- **Windows ARM64**: `RVToolsMerge-[version]-win-arm64.msi` - Full installer with shortcuts and uninstall support
+
+### All Platforms (Portable ZIP)
+
+- **Windows x64**: `RVToolsMerge-[version]-win-x64.zip` - Portable version, no installation required
+- **Windows ARM64**: `RVToolsMerge-[version]-win-arm64.zip` - Portable version, no installation required
+- **Linux x64**: `RVToolsMerge-[version]-linux-x64.zip` - Portable version for Linux
+- **macOS ARM64**: `RVToolsMerge-[version]-osx-arm64.zip` - Portable version for macOS (Apple Silicon)
 
 ### Installation Instructions
+
+#### Windows - Package Manager _(when available)_
+
+1. Open PowerShell or Command Prompt
+2. Run: `winget install RvToolsMerge.RvToolsMerge`
+3. After installation, RVToolsMerge will be available from any command prompt or PowerShell window
+
+> **If winget installation fails**: RVToolsMerge may not be available in the winget repository yet. Please use the MSI installer method below instead.
+
+#### Windows - MSI Installer (Recommended)
+
+1. Download the appropriate MSI file for your architecture (x64 or ARM64)
+2. Double-click the MSI file to start the installation
+3. Follow the installation wizard prompts
+4. After installation, RVToolsMerge will be available from any command prompt or PowerShell window
+
+#### All Platforms - Portable ZIP
 
 1. Download the appropriate ZIP file for your platform
 2. Extract the contents to a folder of your choice
@@ -411,6 +442,26 @@ This project uses GitHub Actions for automated workflows:
 | **Workflow Cleanup**  | Automated cleanup of old workflow runs              |
 
 Detailed CI/CD documentation is available in [continuous-integration.md](/docs/continuous-integration.md).
+
+### Infrastructure and Self-Hosted Runners
+
+For CI/CD workloads requiring code signing of release artifacts, the project includes Azure infrastructure automation for deploying secure Windows-based GitHub runners:
+
+- **Azure GitHub Runner**: Deploy self-hosted Windows runners for artifact signing workflows
+- **Code Signing Environment**: Secure Windows environment with access to code signing certificates and tools
+- **Signing Tools**: Pre-configured with .NET SDK, Windows SDK, and signtool.exe for authenticode signing
+- **Security Isolation**: Network-isolated environment with encrypted storage for certificate security
+- **Cost-Effective**: Multiple VM sizes from ~$23-135 USD/month with automatic shutdown policies
+- **Bicep Infrastructure**: Infrastructure as Code for consistent and repeatable deployments
+
+The self-hosted runners enable:
+
+- **Authenticode Signing**: Sign .exe files and MSI installers with trusted certificates
+- **Enhanced Security**: Dedicated signing environment separate from public GitHub runners
+- **Certificate Management**: Secure storage and access to code signing certificates
+- **Trusted Releases**: Provide users with signed, verifiable release artifacts
+
+Comprehensive deployment guide available in [Azure GitHub Runner Deployment Guide](/docs/azure-github-runner-deployment.md).
 
 ### Version Management
 
