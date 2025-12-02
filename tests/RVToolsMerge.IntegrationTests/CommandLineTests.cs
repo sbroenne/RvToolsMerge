@@ -45,6 +45,7 @@ public class CommandLineTests
 
     /// <summary>
     /// Creates a CommandApp for testing with the mock file system.
+    /// Uses CommandApp&lt;TCommand&gt; pattern matching Program.cs for consistency.
     /// </summary>
     private CommandApp<MergeCommand> CreateTestApp()
     {
