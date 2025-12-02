@@ -4,7 +4,6 @@
     "ms-dotnettools.csdevkit",
     "ms-dotnettools.vscode-dotnet-runtime",
     "editorconfig.editorconfig",
-    "streetsidesoftware.code-spell-checker",
     "ryanluker.vscode-coverage-gutters",
     "github.vscode-github-actions"
   ]
