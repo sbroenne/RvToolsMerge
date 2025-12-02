@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Trimmer roots file to preserve types needed by Spectre.Console.Cli.
+    The CLI framework uses reflection to discover command settings types.
+-->
+<linker>
+  <!-- Preserve all command and settings types for Spectre.Console.Cli -->
+  <assembly fullname="RVToolsMerge">
+    <type fullname="RVToolsMerge.Commands.MergeCommand" preserve="all" />
+    <type fullname="RVToolsMerge.Commands.MergeCommandSettings" preserve="all" />
+    <type fullname="RVToolsMerge.Infrastructure.TypeRegistrar" preserve="all" />
+    <type fullname="RVToolsMerge.Infrastructure.TypeResolver" preserve="all" />
+  </assembly>
+
+  <!-- Preserve Spectre.Console.Cli types that use reflection -->
+  <assembly fullname="Spectre.Console.Cli" preserve="all" />
+</linker>
