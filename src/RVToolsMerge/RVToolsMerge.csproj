@@ -25,9 +25,9 @@
     <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
     <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
     <DebugType>embedded</DebugType>
-    <Version>1.4.3</Version>
-    <AssemblyVersion>1.4.3.0</AssemblyVersion>
-    <FileVersion>1.4.3.0</FileVersion>
+    <Version>1.4.4</Version>
+    <AssemblyVersion>1.4.4.0</AssemblyVersion>
+    <FileVersion>1.4.4.0</FileVersion>
     <Authors>Stefan Broenner</Authors>
     <Company>Stefan Broenner</Company>
     <Product>RVToolsMerge</Product>
