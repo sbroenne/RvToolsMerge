@@ -13,11 +13,6 @@ on:
         type: string
         default: ""
         description: "Git reference (tag, branch, or commit) to build from"
-      enableCodeSigning:
-        required: false
-        type: boolean
-        default: false
-        description: "Enable code signing for Windows artifacts (requires self-hosted runner)"
   workflow_dispatch:
     inputs:
       configuration:
@@ -33,11 +28,6 @@ on:
         type: string
         default: ""
         description: "Git reference (tag, branch, or commit) to build from (leave empty for current branch)"
-      enableCodeSigning:
-        required: false
-        type: boolean
-        default: false
-        description: "Enable code signing for Windows artifacts (requires self-hosted runner)"
 
 permissions:
   contents: read
@@ -52,7 +42,6 @@ env:
   DOTNET_CLI_TELEMETRY_OPTOUT: "true"
 
 jobs:
-  # Build job with conditional runner selection based on platform
   build-all-platforms:
     strategy:
       fail-fast: false
@@ -61,31 +50,26 @@ jobs:
           - runtime: win-x64
             cache-suffix: ""
             run-tests: true
-            create-msi: true
             os: windows
           - runtime: linux-x64
             cache-suffix: ""
             run-tests: true
-            create-msi: false
             os: linux
           - runtime: osx-arm64
             cache-suffix: ""
             run-tests: true
-            create-msi: false
             os: macos
           # Cross-compilation builds (no native tests)
           - runtime: win-arm64
             cache-suffix: "-arm64"
             run-tests: false
-            create-msi: true
             os: windows
           - runtime: linux-arm64
             cache-suffix: "-arm64"
             run-tests: false
-            create-msi: false
             os: linux
 
-    runs-on: ${{ matrix.os == 'windows' && inputs.enableCodeSigning && vars.SELF_HOSTED_RUNNER || matrix.os == 'windows' && 'windows-latest' || matrix.os == 'linux' && 'ubuntu-latest' || matrix.os == 'macos' && 'macos-latest' }}
+    runs-on: ${{ matrix.os == 'windows' && 'windows-latest' || matrix.os == 'linux' && 'ubuntu-latest' || matrix.os == 'macos' && 'macos-latest' }}
 
     steps:
       - name: Checkout code
@@ -133,191 +117,9 @@ jobs:
         if: matrix.os != 'windows'
         run: chmod +x publish/RVToolsMerge
 
-      - name: Code sign executable (Windows only)
-        if: matrix.os == 'windows' && inputs.enableCodeSigning
-        working-directory: publish
-        run: |
-          # Get the path to signtool
-          $signtoolPath = Get-ChildItem -Path "${env:ProgramFiles(x86)}\Windows Kits\10\bin" -Recurse -Filter "signtool.exe" | 
-                         Where-Object { $_.Directory.Name -match "x64" } | 
-                         Sort-Object FullName -Descending | 
-                         Select-Object -First 1
-
-          if (-not $signtoolPath) {
-            Write-Error "signtool.exe not found in Windows SDK"
-            exit 1
-          }
-
-          Write-Host "Using signtool at: $($signtoolPath.FullName)"
-
-          # Sign the executable
-          $exePath = ".\RVToolsMerge.exe"
-          
-          if (-not (Test-Path $exePath)) {
-            Write-Error "Executable not found at: $exePath"
-            exit 1
-          }
-
-          # Sign with specific certificate thumbprint to avoid selecting wrong certificate
-          # Thumbprint for: CN="Open Source Developer, Stefan Brönner" issued by Certum
-          $thumbprint = "B309C7D408B16C81ABDBAD629F2FF4A94A8DD995"
-          Write-Host "Signing executable: $exePath"
-          Write-Host "Using certificate thumbprint: $thumbprint"
-          & "$($signtoolPath.FullName)" sign /sha1 $thumbprint /fd SHA256 /tr http://timestamp.digicert.com /td SHA256 "$exePath"
-          
-          if ($LASTEXITCODE -ne 0) {
-            Write-Error "Failed to sign executable with exit code: $LASTEXITCODE"
-            exit 1
-          }
-
-          # Verify the signature
-          Write-Host "Verifying signature..."
-          & "$($signtoolPath.FullName)" verify /pa "$exePath"
-          if ($LASTEXITCODE -ne 0) {
-            Write-Error "Signature verification failed"
-            exit 1
-          }
-          Write-Host "✅ Executable signed and verified successfully"
-        shell: pwsh
-
-      - name: Create MSI installer (Windows only)
-        if: matrix.os == 'windows' && inputs.configuration == 'Release'
-        working-directory: installer
-        run: |
-          $publishDir = Join-Path $env:GITHUB_WORKSPACE "publish"
-          $outputDir = Join-Path $env:GITHUB_WORKSPACE "msi-output"
-
-          # Create output directory
-          New-Item -ItemType Directory -Force -Path $outputDir
-
-          # Extract version from project file using proper Windows path separators
-          $projectFile = Join-Path $env:GITHUB_WORKSPACE "src" "RVToolsMerge" "RVToolsMerge.csproj"
-          Write-Host "Looking for project file at: $projectFile"
-
-          if (-not (Test-Path $projectFile)) {
-              Write-Error "Project file not found at: $projectFile"
-              exit 1
-          }
-
-          $projectContent = Get-Content $projectFile -Raw
-          if ($projectContent -match '<Version>(.*?)</Version>') {
-              $version = $matches[1].Trim()
-              Write-Host "Extracted version: $version"
-          } else {
-              Write-Error "Could not extract version from project file"
-              Write-Host "Project file content preview:"
-              $projectContent | Select-Object -First 30 | Write-Host
-              exit 1
-          }
-
-          # Validate version format
-          if (-not ($version -match '^\d+\.\d+\.\d+(\.\d+)?$')) {
-              Write-Error "Invalid version format: $version. Expected format: X.Y.Z or X.Y.Z.W"
-              exit 1
-          }
-
-          # Install WiX toolset
-          dotnet tool install --global wix
-          # Add WiX UI extension
-          wix extension add WixToolset.UI.wixext
-
-          # Build MSI using wix command
-          $msiName = "RVToolsMerge-$version-${{ matrix.runtime }}.msi"
-          $outputPath = Join-Path $outputDir $msiName
-          Write-Host "Building MSI: $msiName"
-          Write-Host "Output path: $outputPath"
-          Write-Host "Publish directory: $publishDir"
-
-          # Use wix build command with UI extension
-          $wixCommand = "wix build RVToolsMerge.wxs -ext WixToolset.UI.wixext -define PublishDir=`"$publishDir`" -out `"$outputPath`""
-
-          Write-Host "Executing: $wixCommand"
-
-          Invoke-Expression $wixCommand
-
-          if ($LASTEXITCODE -ne 0) {
-              Write-Error "MSI build failed with exit code: $LASTEXITCODE"
-              Write-Host "WiX version:"
-              wix --version
-              Write-Host "Current working directory:"
-              Get-Location
-              Write-Host "Files in current directory:"
-              Get-ChildItem -Name
-              exit 1
-          }
-
-          # Verify MSI was created
-          if (Test-Path $outputPath) {
-              Write-Host "MSI created successfully: $outputPath"
-              $msiInfo = Get-Item $outputPath
-              Write-Host "MSI size: $($msiInfo.Length) bytes"
-          } else {
-              Write-Error "MSI file not found at expected location: $outputPath"
-              Write-Host "Output directory contents:"
-              Get-ChildItem -Path $outputDir -Recurse | Write-Host
-              exit 1
-          }
-        shell: pwsh
-
-      - name: Code sign MSI installer (Windows only)
-        if: matrix.os == 'windows' && inputs.configuration == 'Release' && inputs.enableCodeSigning
-        working-directory: msi-output
-        run: |
-          # Get the path to signtool
-          $signtoolPath = Get-ChildItem -Path "${env:ProgramFiles(x86)}\Windows Kits\10\bin" -Recurse -Filter "signtool.exe" | 
-                         Where-Object { $_.Directory.Name -match "x64" } | 
-                         Sort-Object FullName -Descending | 
-                         Select-Object -First 1
-
-          if (-not $signtoolPath) {
-            Write-Error "signtool.exe not found in Windows SDK"
-            exit 1
-          }
-
-          Write-Host "Using signtool at: $($signtoolPath.FullName)"
-
-          # Find the MSI file
-          $msiFile = Get-ChildItem -Filter "*.msi" | Select-Object -First 1
-          
-          if (-not $msiFile) {
-            Write-Error "MSI file not found in output directory"
-            exit 1
-          }
-
-          Write-Host "Signing MSI installer: $($msiFile.Name)"
-          
-          # Sign with specific certificate thumbprint to avoid selecting wrong certificate
-          # Thumbprint for: CN="Open Source Developer, Stefan Brönner" issued by Certum
-          $thumbprint = "B309C7D408B16C81ABDBAD629F2FF4A94A8DD995"
-          Write-Host "Using certificate thumbprint: $thumbprint"
-          & "$($signtoolPath.FullName)" sign /sha1 $thumbprint /fd SHA256 /tr http://timestamp.digicert.com /td SHA256 "$($msiFile.FullName)"
-          
-          if ($LASTEXITCODE -ne 0) {
-            Write-Error "Failed to sign MSI with exit code: $LASTEXITCODE"
-            exit 1
-          }
-
-          # Verify the signature
-          Write-Host "Verifying MSI signature..."
-          & "$($signtoolPath.FullName)" verify /pa "$($msiFile.FullName)"
-          if ($LASTEXITCODE -ne 0) {
-            Write-Error "MSI signature verification failed"
-            exit 1
-          }
-          Write-Host "✅ MSI installer signed and verified successfully"
-        shell: pwsh
-
       - name: Upload build artifact
         uses: actions/upload-artifact@v5
         with:
           name: RVToolsMerge-${{ matrix.runtime }}
           path: publish/
-          retention-days: 30
-
-      - name: Upload MSI artifact (Windows only)
-        if: matrix.os == 'windows' && inputs.configuration == 'Release'
-        uses: actions/upload-artifact@v5
-        with:
-          name: RVToolsMerge-${{ matrix.runtime }}-msi
-          path: msi-output/*.msi
           retention-days: 30
