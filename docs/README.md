@@ -5,10 +5,11 @@ This directory contains additional documentation for the RVToolsMerge project.
 ## Contents
 
 -   [azure-migrate-validation.md](azure-migrate-validation.md): Documentation for Azure Migrate validation features and limits
--   [azure-github-runner-deployment.md](azure-github-runner-deployment.md): Comprehensive guide for deploying self-hosted GitHub Actions runners on Azure with Windows GUI
 -   [continuous-integration.md](continuous-integration.md): Details about the Continuous Integration and Continuous Deployment configuration
--   [rvtools-column-mappings.md](rvtools-column-mappings.md): Documentation for column mappings used in RVTools exports
+-   [DEVELOPMENT.md](DEVELOPMENT.md): Development guide for building, testing, and contributing to RVToolsMerge
 -   [github-workflows.md](github-workflows.md): Information about GitHub workflows, issues, and project automation
+-   [rvtools-column-mappings.md](rvtools-column-mappings.md): Documentation for column mappings used in RVTools exports
+-   [rvtools-supported-sheets.md](rvtools-supported-sheets.md): Documentation for supported RVTools sheets and required columns
 
 ## Project Documentation Structure
 
