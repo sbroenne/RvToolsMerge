@@ -229,7 +229,7 @@ For details on reporting security vulnerabilities, please see our [Security Poli
 
 ## Related Projects
 
--   [Excel MCP Server](https://sbroenne.github.io/mcp-server-excel/) - AI-powered Excel automation through the Model Context Protocol. Control Microsoft Excel with natural language through GitHub Copilot, Claude, and other AI assistants. Features 172 operations covering Power Query, DAX, VBA macros, PivotTables, Charts, and more.
+-   [Excel MCP Server](https://excelmcpserver.dev/) - AI-powered Excel automation through the Model Context Protocol. Control Microsoft Excel with natural language through GitHub Copilot, Claude, and other AI assistants. Features 172 operations covering Power Query, DAX, VBA macros, PivotTables, Charts, and more.
 
 **Ideal companion for RVTools analysis**: After merging your RVTools exports with RVToolsMerge, use Excel MCP Server to analyze the data using natural language—create PivotTables summarizing VM resources by cluster, build charts showing memory utilization trends, or write DAX measures for capacity planning—all through conversational AI commands.
 
