@@ -417,7 +417,7 @@ jobs:
           echo "::notice::Creating release for version $VERSION from tag $TAG_NAME"
 
       - name: Download All Artifacts
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           path: artifacts
 
