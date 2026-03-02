@@ -103,7 +103,7 @@ jobs:
           DOTNET_RUNTIME: ${{ matrix.runtime }}
 
       - name: Upload test results
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: always() && matrix.run-tests
         with:
           name: test-results-${{ matrix.runtime }}
@@ -118,7 +118,7 @@ jobs:
         run: chmod +x publish/RVToolsMerge
 
       - name: Upload build artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: RVToolsMerge-${{ matrix.runtime }}
           path: publish/
