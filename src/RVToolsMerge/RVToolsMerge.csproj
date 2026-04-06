@@ -75,8 +75,8 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="Spectre.Console" Version="0.54.0" />
-    <PackageReference Include="Spectre.Console.Cli" Version="0.53.1" />
+    <PackageReference Include="Spectre.Console" Version="0.55.0" />
+    <PackageReference Include="Spectre.Console.Cli" Version="0.55.0" />
     <PackageReference Include="System.IO.Abstractions" Version="22.1.0" />
   </ItemGroup>
 
