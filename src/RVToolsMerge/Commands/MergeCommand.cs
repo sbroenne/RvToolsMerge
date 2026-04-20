@@ -47,7 +47,7 @@ public class MergeCommand : AsyncCommand<MergeCommandSettings>
     /// <param name="settings">The command settings.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Exit code (0 for success, 1 for error).</returns>
-    public override async Task<int> ExecuteAsync(CommandContext context, MergeCommandSettings settings, CancellationToken cancellationToken)
+    protected override async Task<int> ExecuteAsync(CommandContext context, MergeCommandSettings settings, CancellationToken cancellationToken)
     {
         // Get version and product information
         var appInfo = GetApplicationInfo();
