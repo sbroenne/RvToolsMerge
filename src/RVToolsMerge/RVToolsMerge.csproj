@@ -77,7 +77,7 @@
     </PackageReference>
     <PackageReference Include="Spectre.Console" Version="0.57.2" />
     <PackageReference Include="Spectre.Console.Cli" Version="0.57.2" />
-    <PackageReference Include="System.IO.Abstractions" Version="23.0.1" />
+    <PackageReference Include="System.IO.Abstractions" Version="23.1.0" />
   </ItemGroup>
 
   <!-- Trimmer configuration to preserve types needed by Spectre.Console.Cli -->
